@@ -77,7 +77,7 @@ src/
 ## Sudoku spec (v1)
 
 - Puzzles generated on device; every puzzle has exactly one solution (verified by a solver that counts up to 2 solutions).
-- Difficulty is rated by the human techniques needed, not by number of givens:
+- Difficulty is rated by the human techniques needed, not by number of givens. **Five levels, not three** (user, 2026-10-15). Names and technique boundaries are an M6 open decision; the three-level sketch it replaces:
   - Easy: naked/hidden singles only.
   - Medium: + naked/hidden pairs, pointing/claiming.
   - Hard: needs techniques beyond Medium.
@@ -143,6 +143,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
 - M5: do games with hints count towards best/average time? Do abandoned games count as "played"?
+- M6: names of the five difficulty levels and which techniques each one allows.
 - M6: puzzles needing techniques beyond the implemented ones (or guessing): rate as Hard or discard? (Recommendation: discard.)
 - M6: how to keep generation off the UI path (chunked async vs. other).
 
