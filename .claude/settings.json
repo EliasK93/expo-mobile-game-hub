@@ -1,5 +1,23 @@
 {
   "enabledPlugins": {
     "expo@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npm run gate)",
+      "Bash(npm test)",
+      "Bash(npx jest *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx expo lint)",
+      "Bash(gitleaks git --staged --redact --no-banner)",
+      "Bash(git status --short)",
+      "PowerShell(npm run gate)",
+      "PowerShell(npm test)",
+      "PowerShell(npx jest *)",
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell(npx expo lint)",
+      "PowerShell(gitleaks git --staged --redact --no-banner)",
+      "PowerShell(git status --short)"
+    ]
   }
 }

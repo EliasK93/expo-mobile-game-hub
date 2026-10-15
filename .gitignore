@@ -38,6 +38,9 @@ yarn-error.*
 
 example
 
+# graphify (contains extracted content)
+graphify-out/
+
 # generated native folders
 /ios
 /android

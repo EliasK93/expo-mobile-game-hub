@@ -10,7 +10,7 @@ Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versio
 
 1. **Agents do not run git** (add, commit, push, checkout, stash, reset) unless the user asks for that specific commit or push, right then. The user tests in the web preview before anything is committed, and parallel agents corrupt each other's index.
 2. **Write the check first, then the code, and paste the real output.** A claim without output does not count.
-3. **Test through the real entry point.** Game logic: Jest tests on the pure `logic/` functions. Screens: render the route with `renderRouter` from `expo-router/testing-library`, not a component on its own. A component tested in isolation passes whether or not the app wires it up.
+3. **Test through the real entry point.** Game logic: Jest tests on the pure `logic/` functions. Screens: render the route with `renderRouter` from `expo-router/testing-library`, not a component on its own. A component tested in isolation passes whether or not the app wires it up. Route tests live in `src/__tests__/` (every file in `src/app/` becomes a route, so tests cannot go there).
 4. **One rule lives in one place.** Before you write a second variant of anything, find the shared place. A copy is the next bug.
 5. **Checks never touch real state.** Tests use the AsyncStorage Jest mock, never real saved games or stats. If you cannot isolate it, stop and report.
 6. **Never run logged-in CLIs that reach real resources** (`eas`, `eas-cli`, `gh`). That includes reads and `--help`. The user releases each command explicitly, each time.
@@ -28,15 +28,12 @@ Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versio
 Run every step from the repository root, every time, before handing off work for the user to test and commit.
 
 ```bash
-npx tsc --noEmit         # type check
-npm test                 # Jest (script added in milestone 1)
-npx expo lint            # lint
 git add <the change>     # stage first: the secret scan checks staged content
-gitleaks git --staged --redact --no-banner
+npm run gate             # tsc --noEmit, jest, expo lint, gitleaks on the staged content
 git status --short       # nothing left unstaged or untracked
 ```
 
-`git add` here is part of the gate, not a commit; rule 1 still applies to commit and push. Every check that exists is a gate line, because a check people must remember to run does not exist. Iterate on the affected tests while you work, and run the full gate once, at hand-off. Milestone 1 wraps the checks in `npm run gate` and a pre-commit hook in `.git/hooks/` (next to graphify's hooks; do not set `core.hooksPath`, it would silently disable them).
+`git add` here is part of the gate, not a commit; rule 1 still applies to commit and push. `npm run gate` does not stage anything itself. Every check that exists is a gate line, because a check people must remember to run does not exist. Iterate on the affected tests while you work, and run the full gate once, at hand-off. The same `npm run gate` runs in the pre-commit hook in `.git/hooks/pre-commit` (next to graphify's hooks; do not set `core.hooksPath`, it would silently disable them). Hooks are not part of a clone: on a fresh clone, recreate it as `#!/bin/sh` + `npm run gate`.
 
 ## Stack
 
@@ -93,7 +90,8 @@ src/
 | `npx expo start`, then `w` | Starts the dev server and opens the app in the browser. Code changes appear automatically (Fast Refresh). Stop with `Ctrl+C`. |
 | `npx expo start -c` | Same, but clears Expo's cache first; use when errors make no sense. |
 | `npx tsc --noEmit` | Type-checks all TS without producing output. |
-| `npm test` | Runs the Jest unit tests (from milestone 1). |
+| `npm test` | Runs the Jest unit tests. |
+| `npm run gate` | Runs type check, Jest, lint and the secret scan on staged files. Stage first with `git add`. |
 | `npx expo lint` | Lints the code for common mistakes. |
 | `npx expo-doctor` | Checks the project for dependency/config problems. |
 
@@ -153,3 +151,4 @@ Things verified only in the web preview that must be tested on the phone (add as
 
 - [ ] Saved games/stats survive closing and reopening the app (web uses browser storage instead).
 - [ ] Puzzle generation doesn't freeze the UI (phone CPU is slower than the PC).
+- [ ] The hardware back button on the Sudoku screen returns to the home screen.
