@@ -38,6 +38,7 @@ git status --short       # nothing left unstaged or untracked
 ## Stack
 
 - Expo SDK 57 (see `package.json`), React Native, TypeScript `strict`, Expo Router (routes in `src/app/`).
+- Typed routes are **off** (`experiments.typedRoutes` removed from `app.json`): their types lived in a gitignored cache that only the dev server regenerated, which broke `tsc` in the gate. Route wiring is covered by `src/__tests__/navigation.test.tsx`, which opens every route in the registry. `Game.route` is a plain string.
 - Jest via `jest-expo`.
 - Persistence: `@react-native-async-storage/async-storage`.
 - Release: EAS `preview` profile → APK (`npx eas-cli@latest build -p android --profile preview`, run by the user, see rule 6).
@@ -69,7 +70,7 @@ src/
 
 - Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file + one registry entry. Never edit another game's folder to add a game.
 - Games never import from each other. Shared code goes in `components/`, `hooks/`, `constants/`, `lib/`.
-- `logic/` is plain TypeScript with no framework imports, so it can be tested without a phone or browser. All rules, solving, generating, undo history and scoring live there; UI holds no game rules.
+- `logic/` is plain TypeScript with no framework imports (enforced by an ESLint `no-restricted-imports` block in `eslint.config.js`, so `npx expo lint` and the gate fail on a React/React Native/Expo/`@/components`/`@/hooks` import), so it can be tested without a phone or browser. All rules, solving, generating, undo history and scoring live there; UI holds no game rules.
 - AsyncStorage keys are namespaced per game: `"<game>:<what>"`, e.g. `"sudoku:save"`, `"sudoku:stats"`. Stored JSON includes a `version` field so the format can change later.
 - Heavy work (puzzle generation) must not freeze the UI; ask before choosing how (chunked async is the default candidate, since worker threads via worklets are native-only).
 
@@ -128,7 +129,7 @@ Herdr, graphify (plus its git hooks), gitleaks and ponytail are user-level insta
 Tick an item only when its re-check (rule 7) passes and the user has verified it in the web preview. Android-specific items go to "Android checks".
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
-- [ ] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests.
+- [x] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests. Re-check: `npm run gate` (`npx jest src/games`: 5 suites, incl. `generate.test.ts` uniqueness per seed).
 - [ ] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection.
 - [ ] 4. Notes, error highlighting, undo/redo.
 - [ ] 5. Save/resume, timer, stats.
@@ -139,7 +140,6 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
-- M2: typed routes live in the gitignored `.expo/types/router.d.ts`, which only `npx expo start` regenerates, so `npm run gate` fails at `tsc` after a route is added or removed. Find a way to regenerate them without the dev server and put it in the gate (user chose: investigate in M2).
 - M3: build an early preview APK after M3 to test on the phone sooner?
 - M4: error highlighting = conflicts with peers (row/col/box) or mismatch with the solution?
 - M5: do games with hints count towards best/average time? Do abandoned games count as "played"?
@@ -152,4 +152,5 @@ Things verified only in the web preview that must be tested on the phone (add as
 
 - [ ] Saved games/stats survive closing and reopening the app (web uses browser storage instead).
 - [ ] Puzzle generation doesn't freeze the UI (phone CPU is slower than the PC).
+- [ ] Measure how long `generate()` takes on the phone (PC average over 10 seeds is a few ms); this feeds the M6 decision on keeping generation off the UI path.
 - [ ] The hardware back button on the Sudoku screen returns to the home screen.
