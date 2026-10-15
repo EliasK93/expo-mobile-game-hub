@@ -12,7 +12,6 @@ import {
   type Game,
 } from './game';
 import { push, start } from './history';
-import { mulberry32 } from './random';
 import { isSolved } from './validate';
 
 const SOLUTION = parseGrid('534678912672195348198342567859761423426853791713924856961537284287419635345286179');
@@ -27,12 +26,12 @@ const wide = (): Game => ({ puzzle: WIDE_PUZZLE, solution: SOLUTION, values: WID
 const hasNote = (g: Game, i: number, v: number) => (g.notes[i] & (1 << v)) !== 0;
 
 describe('newGame', () => {
-  it('starts with the puzzle as the values, no notes, and the same seed gives the same game', () => {
-    const g = newGame(mulberry32(1));
+  it('starts with the puzzle as the values and no notes', () => {
+    const g = newGame({ puzzle: PUZZLE, solution: SOLUTION });
+    expect(g).toEqual(game());
     expect(g.values).toEqual(g.puzzle);
     expect(g.notes).toEqual(NO_NOTES);
     expect(isSolved(g.solution)).toBe(true);
-    expect(newGame(mulberry32(1))).toEqual(g);
   });
 });
 

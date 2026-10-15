@@ -25,27 +25,6 @@ export function fill(g: number[], random: Random, i = 0): boolean {
   return false;
 }
 
-// ponytail: the givens target stands in for difficulty until M6 adds a technique rating;
-// generation runs synchronously on the UI thread until the M6 decision on keeping it off the UI path.
-export function generate({ givens = 32, random = Math.random }: { givens?: number; random?: Random } = {}): {
-  puzzle: Grid;
-  solution: Grid;
-} {
-  const solution = new Array<number>(81).fill(0);
-  fill(solution, random);
-
-  const puzzle = [...solution];
-  let remaining = 81;
-  for (const i of shuffle(Array.from({ length: 81 }, (_, k) => k), random)) {
-    if (remaining <= givens) break;
-    const keep = puzzle[i];
-    puzzle[i] = 0;
-    if (countSolutions(puzzle, 2) === 1) remaining--;
-    else puzzle[i] = keep; // removing it would allow a second solution
-  }
-  return { puzzle, solution };
-}
-
 // A puzzle that needs exactly `level`: unique, solvable with the level's techniques, and not with fewer.
 // Fills a grid, then digs out cells in random order, keeping a removal while the puzzle stays unique and
 // rate() <= level. If the result rates below `level`, it starts over with a new grid (`attempts` counts the grids).

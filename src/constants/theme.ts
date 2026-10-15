@@ -22,6 +22,7 @@ export const Colors = {
     digitEntered: '#1F6FDB',
     cellConflict: '#F8C9C9',
     digitConflict: '#C62828',
+    cellHint: '#FFE9A8',
   },
   dark: {
     text: '#ffffff',
@@ -37,6 +38,7 @@ export const Colors = {
     digitEntered: '#6FAEFF',
     cellConflict: '#6B2A2A',
     digitConflict: '#FF8A80',
+    cellHint: '#6B5A1F',
   },
 } as const;
 

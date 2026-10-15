@@ -7,25 +7,56 @@ import { load, remove, save } from '@/lib/storage';
 import { newClock, readClock, startClock, stopClock } from '@/lib/timer';
 
 import { isWon, newGame, redoGame, setValue, toggleNote, undoGame, type Game } from '../logic/game';
+import { nextHint, type Hint } from '../logic/hint';
 import { push, start } from '../logic/history';
-import { fromSave, hasProgress, SAVE_KEY, SAVE_VERSION, STATS_BUCKET, STATS_KEY, STATS_VERSION, toSave } from '../logic/save';
+import {
+  bucketOf,
+  DEFAULT_LEVEL,
+  fromSave,
+  fromSettings,
+  hasProgress,
+  LEGACY_SAVE_VERSION,
+  SAVE_KEY,
+  SAVE_VERSION,
+  SETTINGS_KEY,
+  SETTINGS_VERSION,
+  STATS_KEY,
+  STATS_VERSION,
+  toSave,
+  type LevelId,
+} from '../logic/save';
+import type { Level } from '../logic/techniques';
+import { closePuzzleCache, fillPuzzleCache, makePuzzle, openPuzzleCache, takeCached } from './puzzle-cache';
 
-// loading = looking for a saved game, prompt = asking Continue or New game, playing = the board.
-type Status = 'loading' | 'prompt' | 'playing';
+// loading = looking for a saved game, prompt = asking Continue or New game, making = waiting for a puzzle that was
+// not in the cache, playing = the board.
+type Status = 'loading' | 'prompt' | 'making' | 'playing';
+
+// Shown under the loading and making screens; nothing reads it.
+const BLANK = newGame({ puzzle: Array<number>(81).fill(0), solution: Array<number>(81).fill(0) });
 
 // A game without progress is not worth resuming, so its save is deleted instead.
-const writeSave = (game: Game, ms: number, hinted: boolean) =>
-  hasProgress(game) ? save(SAVE_KEY, SAVE_VERSION, toSave(game, ms, hinted)) : remove(SAVE_KEY);
+const writeSave = (game: Game, ms: number, hinted: boolean, level: LevelId) =>
+  hasProgress(game) ? save(SAVE_KEY, SAVE_VERSION, toSave(game, ms, hinted, level)) : remove(SAVE_KEY);
+
+// Version 2 first; a version 1 save (made before levels) is read as the same data without a level.
+async function loadSave() {
+  return (await load(SAVE_KEY, SAVE_VERSION)) ?? (await load(SAVE_KEY, LEGACY_SAVE_VERSION));
+}
 
 // Delete the save first: if the app dies in between, the win is lost rather than counted twice on resume.
-async function recordWinStats(ms: number, hinted: boolean) {
+async function recordWinStats(ms: number, hinted: boolean, level: LevelId) {
   await remove(SAVE_KEY);
   const stats = (await load<Stats>(STATS_KEY, STATS_VERSION)) ?? {};
-  await save(STATS_KEY, STATS_VERSION, recordWin(stats, STATS_BUCKET, ms, hinted));
+  await save(STATS_KEY, STATS_VERSION, recordWin(stats, bucketOf(level), ms, hinted));
 }
 
 export function useSudoku() {
-  const [history, setHistory] = useState(() => start(newGame()));
+  const [history, setHistory] = useState(() => start(BLANK));
+  const [level, setLevel] = useState<LevelId>(DEFAULT_LEVEL); // of the game on the board
+  const [lastLevel, setLastLevel] = useState<Level>(DEFAULT_LEVEL); // marked in the picker
+  const [picking, setPicking] = useState(false);
+  const [hint, setHint] = useState<Hint | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [notesMode, setNotesMode] = useState(false);
   const [status, setStatus] = useState<Status>('loading');
@@ -33,6 +64,7 @@ export function useSudoku() {
   const [focused, setFocused] = useState(false);
   const [appActive, setAppActive] = useState(true);
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [round, setRound] = useState(0); // counts games, so the clock effect restarts for a new game
   const clock = useRef(newClock());
   const hinted = useRef(false);
   const recorded = useRef(false);
@@ -43,25 +75,60 @@ export function useSudoku() {
   // An effect event always sees the latest game, also when called from the clock's cleanup (a plain closure would
   // see the game from when the effect started). Nothing is saved once the game is won: the win deletes the save.
   const saveNow = useEffectEvent(() => {
-    if (!won) writeSave(game, readClock(clock.current, Date.now()), hinted.current);
+    if (!won) writeSave(game, readClock(clock.current, Date.now()), hinted.current, level);
   });
+
+  // Puts a game on the board with the clock at ms. The clock effect restarts because `round` changes.
+  const startGame = useCallback((g: Game, lvl: LevelId, ms = 0, wasHinted = false) => {
+    setHistory(start(g));
+    setSelected(null);
+    setNotesMode(false);
+    setLevel(lvl);
+    setHint(null);
+    setPicking(false);
+    hinted.current = wasHinted;
+    recorded.current = false;
+    clock.current = newClock(ms);
+    setElapsedMs(ms);
+    setRound((r) => r + 1);
+    setStatus('playing');
+  }, []);
+
+  // Starts a game at the level: from the cache if one is ready, otherwise "making" until it is generated.
+  const begin = useCallback(
+    (lvl: Level) => {
+      setPicking(false);
+      setHint(null);
+      setLastLevel(lvl);
+      save(SETTINGS_KEY, SETTINGS_VERSION, { level: lvl });
+      const cached = takeCached(lvl);
+      if (cached) return startGame(newGame(cached), lvl);
+      setStatus('making');
+      makePuzzle(lvl).then((p) => p && startGame(newGame(p), lvl)); // null = the screen closed meanwhile
+    },
+    [startGame],
+  );
 
   useEffect(() => {
     let alive = true;
-    load(SAVE_KEY, SAVE_VERSION).then((data) => {
+    Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION), openPuzzleCache()]).then(([data, settings]) => {
       if (!alive) return;
+      const last = fromSettings(settings);
+      setLastLevel(last);
       const saved = fromSave(data);
       if (saved && hasProgress(saved.game)) {
         setPending(saved);
         setStatus('prompt');
+        fillPuzzleCache();
       } else {
-        setStatus('playing');
+        begin(last);
       }
     });
     return () => {
       alive = false;
+      closePuzzleCache();
     };
-  }, []);
+  }, [begin]);
 
   useFocusEffect(
     useCallback(() => {
@@ -86,12 +153,13 @@ export function useSudoku() {
       setElapsedMs(readClock(clock.current, Date.now()));
       saveNow();
     };
-  }, [running]);
+  }, [running, round]);
 
-  // Save after every move. Not while loading or asking, or the saved game would be overwritten before the user chose.
+  // Save after every move, and when a hint is shown (it sets `hinted`). Not while loading or asking, or the saved
+  // game would be overwritten before the user chose.
   useEffect(() => {
     if (status === 'playing') saveNow();
-  }, [game, status, won]);
+  }, [game, status, won, hint]);
 
   // The win is recorded once: `recorded` guards against the effect running again.
   useEffect(() => {
@@ -100,32 +168,22 @@ export function useSudoku() {
     clock.current = stopClock(clock.current, Date.now());
     const ms = readClock(clock.current, Date.now());
     setElapsedMs(ms);
-    recordWinStats(ms, hinted.current);
-  }, [won]);
-
-  // Starts a fresh clock at ms; if the old one was running, the new one must run too (the clock effect won't rerun).
-  const resetClock = (ms: number) => {
-    clock.current = running ? startClock(newClock(ms), Date.now()) : newClock(ms);
-    setElapsedMs(ms);
-  };
-
-  const restart = () => {
-    setHistory(start(newGame()));
-    setSelected(null);
-    setNotesMode(false);
-    hinted.current = false;
-    recorded.current = false;
-    resetClock(0);
-  };
+    recordWinStats(ms, hinted.current, level);
+  }, [won, level]);
 
   // v = 0 always erases, even in notes mode. push ignores actions that changed nothing.
   const enter = (v: number) => {
     if (selected === null) return;
+    setHint(null);
     setHistory((h) => push(h, v !== 0 && notesMode ? toggleNote(h.present, selected, v) : setValue(h.present, selected, v)));
   };
 
   return {
     game,
+    level,
+    lastLevel,
+    picking,
+    hint,
     selected,
     notesMode,
     won,
@@ -137,25 +195,49 @@ export function useSudoku() {
     select: setSelected,
     enter,
     erase: () => enter(0),
-    undo: () => setHistory(undoGame),
-    redo: () => setHistory(redoGame),
+    undo: () => {
+      setHint(null);
+      setHistory(undoGame);
+    },
+    redo: () => {
+      setHint(null);
+      setHistory(redoGame);
+    },
     toggleNotes: () => setNotesMode((on) => !on),
-    restart,
-    // The prompt's two buttons.
+    openPicker: () => {
+      setHint(null);
+      setPicking(true);
+    },
+    closePicker: () => setPicking(false),
+    // Picking a level from the Continue prompt gives up the saved game.
+    pickLevel: (lvl: Level) => {
+      if (status === 'prompt') {
+        remove(SAVE_KEY);
+        setPending(null);
+      }
+      begin(lvl);
+    },
+    // Showing a hint counts as using one, even if the player then makes the move alone.
+    showHint: () => {
+      const h = nextHint(game.values, game.solution);
+      if (!h) return;
+      hinted.current = true;
+      setPicking(false);
+      setHint(h);
+    },
+    // Apply is a normal move, so Undo takes it back. digit 0 erases a wrong digit.
+    applyHint: () => {
+      if (!hint) return;
+      setHistory((h) => push(h, setValue(h.present, hint.cell, hint.digit)));
+      setSelected(hint.cell);
+      setHint(null);
+    },
+    closeHint: () => setHint(null),
+    // The prompt's Continue button.
     continueSaved: () => {
       if (!pending) return;
-      setHistory(start(pending.game));
-      hinted.current = pending.hinted;
-      recorded.current = false;
-      resetClock(pending.elapsedMs);
+      startGame(pending.game, pending.level, pending.elapsedMs, pending.hinted);
       setPending(null);
-      setStatus('playing');
-    },
-    discardSaved: () => {
-      remove(SAVE_KEY);
-      setPending(null);
-      restart();
-      setStatus('playing');
     },
   };
 }

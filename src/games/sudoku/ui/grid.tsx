@@ -12,9 +12,10 @@ const THIN = 1;
 const THICK = 2; // box edges
 const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-type Props = { game: Game; selected: number | null; onSelect: (i: number) => void };
+// hintCells: the cells a shown hint points at.
+type Props = { game: Game; selected: number | null; onSelect: (i: number) => void; hintCells?: readonly number[] };
 
-export function Grid({ game, selected, onSelect }: Props) {
+export function Grid({ game, selected, onSelect, hintCells = [] }: Props) {
   const theme = useTheme();
   const { width, height } = useWindowDimensions();
   // Square grid: screen width minus padding, but never taller than about half the screen so the pad fits without scrolling.
@@ -33,23 +34,26 @@ export function Grid({ game, selected, onSelect }: Props) {
         const c = colOf(i);
         const given = isGiven(game, i);
         const bad = conflicts.has(i);
+        const hinted = hintCells.includes(i);
         const noteDigits = notesOf(game, i);
         const backgroundColor =
           i === selected
             ? theme.cellSelected
             : bad
               ? theme.cellConflict
-              : sameValue.has(i)
-                ? theme.cellSameValue
-                : related.has(i)
-                  ? theme.cellRelated
-                  : theme.background;
+              : hinted
+                ? theme.cellHint
+                : sameValue.has(i)
+                  ? theme.cellSameValue
+                  : related.has(i)
+                    ? theme.cellRelated
+                    : theme.background;
         const content = v !== 0 ? v : noteDigits.length ? `notes ${noteDigits.join(' ')}` : 'empty';
         return (
           <Pressable
             key={i}
             accessibilityRole="button"
-            accessibilityLabel={`Row ${r + 1}, column ${c + 1}, ${content}${given ? ', given' : ''}${bad ? ', conflict' : ''}`}
+            accessibilityLabel={`Row ${r + 1}, column ${c + 1}, ${content}${given ? ', given' : ''}${bad ? ', conflict' : ''}${hinted ? ', hint' : ''}`}
             accessibilityState={{ selected: i === selected }}
             onPress={() => onSelect(i)}
             style={{

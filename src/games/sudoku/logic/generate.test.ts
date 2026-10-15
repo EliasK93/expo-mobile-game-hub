@@ -1,59 +1,31 @@
-import { formatGrid } from './board';
-import { generate } from './generate';
+import { fill, shuffle } from './generate';
 import { mulberry32 } from './random';
-import { countSolutions, solve } from './solve';
 import { isSolved } from './validate';
 
-const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const givensOf = (g: readonly number[]) => g.filter((v) => v !== 0).length;
-
-describe('generate', () => {
-  const times: number[] = [];
-  const counts: number[] = [];
-
-  it.each(SEEDS)('seed %i: unique, consistent puzzle with ~32 givens', (seed) => {
-    const t0 = Date.now();
-    const { puzzle, solution } = generate({ random: mulberry32(seed) });
-    times.push(Date.now() - t0);
-
-    expect(countSolutions(puzzle, 2)).toBe(1);
-    expect(formatGrid(solve(puzzle)!)).toBe(formatGrid(solution));
-    expect(isSolved(solution)).toBe(true);
-    puzzle.forEach((v, i) => {
-      if (v !== 0) expect(v).toBe(solution[i]);
-    });
-
-    const n = givensOf(puzzle);
-    counts.push(n);
-    expect(n).toBeGreaterThanOrEqual(32);
-    expect(n).toBeLessThanOrEqual(40);
+// generateLevel is tested in generate-level.test.ts; this file covers the two helpers it builds on.
+describe('fill', () => {
+  it.each([1, 2, 3])('seed %i: fills an empty grid with a valid solved grid', (seed) => {
+    const g = new Array<number>(81).fill(0);
+    expect(fill(g, mulberry32(seed))).toBe(true);
+    expect(isSolved(g)).toBe(true);
   });
 
-  it('gives the same puzzle for the same seed', () => {
-    const a = generate({ random: mulberry32(99) });
-    const b = generate({ random: mulberry32(99) });
-    expect(formatGrid(a.puzzle)).toBe(formatGrid(b.puzzle));
-    expect(formatGrid(a.solution)).toBe(formatGrid(b.solution));
+  it('gives the same grid for the same seed and different grids for different seeds', () => {
+    const grid = (seed: number) => {
+      const g = new Array<number>(81).fill(0);
+      fill(g, mulberry32(seed));
+      return g.join('');
+    };
+    expect(grid(9)).toBe(grid(9));
+    expect(grid(1)).not.toBe(grid(2));
   });
+});
 
-  it('gives different puzzles for different seeds', () => {
-    const a = generate({ random: mulberry32(1) });
-    const b = generate({ random: mulberry32(2) });
-    expect(formatGrid(a.puzzle)).not.toBe(formatGrid(b.puzzle));
-  });
-
-  it('respects a custom givens target', () => {
-    const { puzzle } = generate({ givens: 40, random: mulberry32(5) });
-    expect(givensOf(puzzle)).toBe(40);
-  });
-
-  afterAll(() => {
-    const avg = times.reduce((s, t) => s + t, 0) / times.length;
-    // Data point for the M6 decision (UI-thread blocking); not an assertion.
-    console.log(
-      `GENERATION avg=${avg.toFixed(0)}ms max=${Math.max(...times)}ms givens min=${Math.min(
-        ...counts,
-      )} max=${Math.max(...counts)} (n=${times.length})`,
-    );
+describe('shuffle', () => {
+  it('keeps the same items, in place, and is repeatable for one seed', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    expect(shuffle(items, mulberry32(4))).toBe(items);
+    expect([...items].sort()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    expect(shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], mulberry32(4))).toEqual(items);
   });
 });

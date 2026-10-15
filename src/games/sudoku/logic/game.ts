@@ -1,17 +1,15 @@
 import { peers, type Grid } from './board';
-import { generate } from './generate';
 import { redo, undo, type History } from './history';
-import type { Random } from './random';
 import { conflicts, isSolved } from './validate';
 
 // puzzle = the givens, solution = the answer, values = what is on the board now (givens + entered digits).
 // notes = one bitmask per cell, bit v set = pencil mark v (same idea as candidateMask in board.ts).
 export type Game = { puzzle: Grid; solution: Grid; values: Grid; notes: readonly number[] };
 
-export function newGame(random?: Random): Game {
-  const { puzzle, solution } = generate({ random });
-  return { puzzle, solution, values: puzzle, notes: Array(81).fill(0) };
-}
+// What the generator and the puzzle cache hand over.
+export type Puzzle = Pick<Game, 'puzzle' | 'solution'>;
+
+export const newGame = ({ puzzle, solution }: Puzzle): Game => ({ puzzle, solution, values: puzzle, notes: Array(81).fill(0) });
 
 export const isGiven = (game: Game, i: number) => game.puzzle[i] !== 0;
 

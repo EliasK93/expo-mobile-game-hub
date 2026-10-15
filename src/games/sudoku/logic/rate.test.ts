@@ -1,5 +1,5 @@
 import { formatGrid, parseGrid } from './board';
-import { generate } from './generate';
+import { sparsePuzzle } from './sparse-puzzle';
 import { mulberry32 } from './random';
 import { rate, solveByLogic } from './rate';
 import { countSolutions, solve } from './solve';
@@ -81,9 +81,9 @@ describe('rate', () => {
 
   // The ladder only applies sound techniques, so whenever it finishes, the puzzle has exactly one solution
   // and the logical solve is that solution.
-  describe.each([1, 2, 3, 4, 5, 6, 7, 8])('old generator, seed %i', (seed) => {
+  describe.each([1, 2, 3, 4, 5, 6, 7, 8])('sparse puzzles, seed %i', (seed) => {
     it.each([24, 28, 32])('with %i givens, the logical solve matches solve()', (givens) => {
-      const { puzzle } = generate({ givens, random: mulberry32(seed * 100 + givens) });
+      const { puzzle } = sparsePuzzle(givens, mulberry32(seed * 100 + givens));
       const result = solveByLogic(puzzle);
       if (result === null) return; // too hard for the ladder: nothing to compare
       expect(countSolutions(puzzle, 2)).toBe(1);

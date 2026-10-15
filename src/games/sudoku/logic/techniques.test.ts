@@ -1,5 +1,5 @@
 import { parseGrid } from './board';
-import { generate } from './generate';
+import { sparsePuzzle } from './sparse-puzzle';
 import { mulberry32 } from './random';
 import {
   LADDER,
@@ -342,11 +342,11 @@ describe('candidateGrid and applyStep', () => {
   });
 });
 
-// The strongest check on the techniques: on sparse puzzles from the old generator, every placement
+// The strongest check on the techniques: on sparse puzzles (sparse-puzzle.ts), every placement
 // and every elimination must agree with the brute-force solution.
 describe('soundness against the brute-force solution', () => {
   it.each([1, 2, 3, 4, 5, 6])('seed %i: no step contradicts the solution', (seed) => {
-    const { puzzle, solution } = generate({ givens: 24, random: mulberry32(seed) });
+    const { puzzle, solution } = sparsePuzzle(24, mulberry32(seed));
     const state = { values: [...puzzle] as number[], cands: candidateGrid(puzzle) };
     let steps = 0;
     for (let step = findStep(state.values, state.cands); step; step = findStep(state.values, state.cands)) {
