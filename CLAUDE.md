@@ -140,7 +140,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 - [x] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `shows Solved! when the last cell is filled correctly, and locks the grid`).
 - [x] 4. Notes, error highlighting, undo/redo. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `placing a digit removes that note from the peers, and Undo brings it back`, `are disabled after a win, and pressing Undo changes nothing`).
 - [x] 5. Save/resume, timer, stats. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `asks to continue, and Continue brings back the digit, the notes and the time`, `extra presses, rerenders and time after the win change nothing`; `src/__tests__/home.test.tsx`).
-- [ ] 6. Technique-based solver → difficulty rater + hints; background puzzle cache per difficulty.
+- [ ] 6. Technique-based solver → difficulty rater (five levels) + difficulty picker + hints; background puzzle cache per difficulty; stats per difficulty.
 - [ ] 7. EAS APK build, installed on the phone; work through "Android checks".
 
 ## Open decisions
@@ -148,6 +148,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
 - M6: names of the five difficulty levels and which techniques each one allows.
+- M6: how the player picks the difficulty (e.g. a picker on "New game" vs. a remembered setting) and where it sits.
 - M6: puzzles needing techniques beyond the implemented ones (or guessing): rate as Hard or discard? (Recommendation: discard.)
 - M6: how to keep generation off the UI path (chunked async vs. other).
 
