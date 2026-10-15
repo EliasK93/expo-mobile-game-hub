@@ -14,10 +14,4 @@ describe('navigation', () => {
     expect(getPathname()).toBe(game.route);
     expect(screen.queryByTestId('expo-router-unmatched')).toBeNull();
   });
-
-  it('shows the Sudoku placeholder', () => {
-    renderRouter('./src/app', { initialUrl: '/sudoku' });
-
-    expect(screen.getByText('Coming soon')).toBeTruthy();
-  });
 });

@@ -14,6 +14,12 @@ export const Colors = {
     backgroundElement: '#F0F0F3',
     backgroundSelected: '#E0E1E6',
     textSecondary: '#60646C',
+    cellSelected: '#A9CBF8',
+    cellRelated: '#E8EEF7',
+    cellSameValue: '#C9DDF9',
+    gridLine: '#C4C7CE',
+    gridLineBold: '#1C1E21',
+    digitEntered: '#1F6FDB',
   },
   dark: {
     text: '#ffffff',
@@ -21,6 +27,12 @@ export const Colors = {
     backgroundElement: '#212225',
     backgroundSelected: '#2E3135',
     textSecondary: '#B0B4BA',
+    cellSelected: '#2F5FA8',
+    cellRelated: '#1A1D22',
+    cellSameValue: '#27456F',
+    gridLine: '#3A3D43',
+    gridLineBold: '#B0B4BA',
+    digitEntered: '#6FAEFF',
   },
 } as const;
 

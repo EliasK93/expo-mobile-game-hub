@@ -1,6 +1,7 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { games } from '@/games/registry';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -8,6 +9,10 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="index" options={{ title: 'Game Hub' }} />
+        {/* The route file name is the game's route without the leading "/", so each header title comes from the registry. */}
+        {games.map((game) => (
+          <Stack.Screen key={game.id} name={game.route.slice(1)} options={{ title: game.title }} />
+        ))}
       </Stack>
     </ThemeProvider>
   );

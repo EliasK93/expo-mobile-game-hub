@@ -82,6 +82,7 @@ src/
   - Medium: + naked/hidden pairs, pointing/claiming.
   - Hard: needs techniques beyond Medium.
 - A few puzzles per difficulty are pre-generated and cached in the background so "New game" is instant.
+- M3 decisions: touch only (no keyboard input). On a win the grid locks and shows "Solved!"; "New game" is always available. Web output is a single-page app (`web.output` removed from `app.json`), so a random puzzle at first render causes no hydration mismatch.
 - Features: notes/pencil marks, error highlighting, hints (= apply/explain the next simplest technique), undo/redo, timer, stats per difficulty (played, best time, average time), save & resume.
 
 ## Commands for the user
@@ -130,7 +131,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
 - [x] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests. Re-check: `npm run gate` (`npx jest src/games`: 5 suites, incl. `generate.test.ts` uniqueness per seed).
-- [ ] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection.
+- [x] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `shows Solved! when the last cell is filled correctly, and locks the grid`).
 - [ ] 4. Notes, error highlighting, undo/redo.
 - [ ] 5. Save/resume, timer, stats.
 - [ ] 6. Technique-based solver → difficulty rater + hints; background puzzle cache per difficulty.
@@ -140,7 +141,6 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
-- M3: build an early preview APK after M3 to test on the phone sooner?
 - M4: error highlighting = conflicts with peers (row/col/box) or mismatch with the solution?
 - M5: do games with hints count towards best/average time? Do abandoned games count as "played"?
 - M6: puzzles needing techniques beyond the implemented ones (or guessing): rate as Hard or discard? (Recommendation: discard.)
@@ -154,3 +154,7 @@ Things verified only in the web preview that must be tested on the phone (add as
 - [ ] Puzzle generation doesn't freeze the UI (phone CPU is slower than the PC).
 - [ ] Measure how long `generate()` takes on the phone (PC average over 10 seeds is a few ms); this feeds the M6 decision on keeping generation off the UI path.
 - [ ] The hardware back button on the Sudoku screen returns to the home screen.
+- [ ] Sudoku cells are big enough to tap accurately on a small screen.
+- [ ] The grid, number pad and "New game" fit on the phone screen without scrolling.
+- [ ] Tapping cells and digits feels responsive.
+- [ ] Dark/light mode follows the phone's system setting.

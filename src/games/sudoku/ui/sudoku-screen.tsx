@@ -1,14 +1,26 @@
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
+import { Grid } from './grid';
+import { NumberPad } from './number-pad';
+import { useSudoku } from './use-sudoku';
+
 export function SudokuScreen() {
+  const { game, selected, won, select, enter, erase, restart } = useSudoku();
+
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title">Sudoku</ThemedText>
-      <ThemedText themeColor="textSecondary">Coming soon</ThemedText>
+      <ThemedView style={styles.status}>{won && <ThemedText type="subtitle">Solved!</ThemedText>}</ThemedView>
+      <Grid game={game} selected={selected} onSelect={select} />
+      <NumberPad onDigit={enter} onErase={erase} />
+      <Pressable accessibilityRole="button" onPress={restart}>
+        <ThemedView type="backgroundSelected" style={styles.newGame}>
+          <ThemedText type="smallBold">New game</ThemedText>
+        </ThemedView>
+      </Pressable>
     </ThemedView>
   );
 }
@@ -17,7 +29,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
+    padding: Spacing.three,
+    gap: Spacing.three,
   },
+  status: { minHeight: 44, justifyContent: 'center' }, // reserved so the grid doesn't jump when "Solved!" appears
+  newGame: { paddingVertical: Spacing.two, paddingHorizontal: Spacing.four, borderRadius: Spacing.two },
 });
