@@ -8,7 +8,7 @@ Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versio
 
 ## Rules
 
-1. **Agents do not run git** (add, commit, push, checkout, stash, reset) unless the user asks for that specific commit or push, right then. The user tests in the web preview before anything is committed, and parallel agents corrupt each other's index.
+1. **Commit yes, push never.** The main pane may commit work whose plan the user approved (or that the user asked for), once the gate passes and the user has tested any UI change in the web preview. Never commit ideas the user has not agreed to. Never push, never rewrite history (`reset --hard`, rebase, amend, force). Doer panes run no git except `git add`/`git status` for the gate, because parallel agents corrupt each other's index.
 2. **Write the check first, then the code, and paste the real output.** A claim without output does not count.
 3. **Test through the real entry point.** Game logic: Jest tests on the pure `logic/` functions. Screens: render the route with `renderRouter` from `expo-router/testing-library`, not a component on its own. A component tested in isolation passes whether or not the app wires it up. Route tests live in `src/__tests__/` (every file in `src/app/` becomes a route, so tests cannot go there).
 4. **One rule lives in one place.** Before you write a second variant of anything, find the shared place. A copy is the next bug.
@@ -19,7 +19,7 @@ Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versio
 9. **Never claim a run you did not make.** That covers tests, builds, graph queries, ponytail passes and pane dispatches.
 10. **Plan mode for every milestone**: present the plan, wait for approval, then implement.
 11. **Ambiguity or a decision with trade-offs → ask the user**, don't guess.
-12. **Never start long-running processes** (`npx expo start`, watchers, EAS builds). Tell the user when to run them, whether a restart is needed (new package, `app.json`/config change; `npx expo start -c` clears the cache), and exactly what to test in the browser.
+12. **Inside the repo: go. Outside effects: ask first.** Commands whose effects stay inside this repository, or that test and orchestrate work on it, need no approval: `npx expo start` (in a Herdr pane, stopped when done), graphify, the gate, Herdr panes and agents, local commits per rule 1. Anything that leaves the repo or has real consequences needs the user's yes each time: push, `eas`/`gh` (rule 6), anything that costs money, publishes, touches global config or files outside the repo, or can't be undone. Still tell the user exactly what to test in the browser.
 13. **No new library without saying why** and what the no-library alternative would be. Install only with `npx expo install <pkg>`.
 14. **Expo APIs change every SDK**: check the versioned docs (see AGENTS.md) before using any Expo/RN API.
 
@@ -102,7 +102,7 @@ Requires `HERDR_ENV=1`. If it is not set, say so instead of quietly doing the wo
 - **The main pane orchestrates. It does not do the work.** Implementation, review, analysis and checks run in a Herdr pane with a dispatched agent (`--model claude-sonnet-5-5`, high effort; xhigh only for genuinely hard cases). This keeps the main context free for the next handoff.
 - **A doer runs in its own visible pane,** never as an in-pane subagent. A dispatch names the pane.
 - **Helpers may work read-only in-pane.** Anything that edits files or has side effects runs in a visible pane.
-- **Limits travel with the work.** The doer passes the brief's limits on to every helper, in that helper's own prompt: which files it owns, no git, no logged-in CLIs.
+- **Limits travel with the work.** The doer passes the brief's limits on to every helper, in that helper's own prompt: which files it owns, no git beyond the gate's `git add`/`git status` (rule 1), no logged-in CLIs.
 - **Files have owners.** Every pane gets an explicit list of files it may edit. If it needs another file, it reports that and does not edit it. Shared files (`registry.ts`, `src/app/_layout.tsx`, `constants/theme.ts`, `package.json`) belong to one pane at a time.
 
 ## graphify
@@ -127,7 +127,7 @@ Herdr, graphify (plus its git hooks), gitleaks and ponytail are user-level insta
 
 Tick an item only when its re-check (rule 7) passes and the user has verified it in the web preview. Android-specific items go to "Android checks".
 
-- [ ] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands.
+- [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
 - [ ] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests.
 - [ ] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection.
 - [ ] 4. Notes, error highlighting, undo/redo.
