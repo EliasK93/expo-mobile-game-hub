@@ -139,6 +139,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
+- M2: typed routes live in the gitignored `.expo/types/router.d.ts`, which only `npx expo start` regenerates, so `npm run gate` fails at `tsc` after a route is added or removed. Find a way to regenerate them without the dev server and put it in the gate (user chose: investigate in M2).
 - M3: build an early preview APK after M3 to test on the phone sooner?
 - M4: error highlighting = conflicts with peers (row/col/box) or mismatch with the solution?
 - M5: do games with hints count towards best/average time? Do abandoned games count as "played"?
