@@ -74,3 +74,126 @@ describe('Sudoku screen', () => {
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
   });
 });
+
+describe('Notes', () => {
+  it('adds and removes a pencil mark while Notes is on', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    fireEvent.press(screen.getByLabelText('Notes'));
+    expect(screen.getByLabelText('Notes').props.accessibilityState.selected).toBe(true);
+
+    enter(5);
+    expect(screen.getByLabelText('Row 1, column 1, notes 5')).toBeTruthy();
+
+    enter(5);
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+  });
+
+  it('ignores notes on a given cell and on a filled cell', () => {
+    fireEvent.press(screen.getByLabelText('Notes'));
+    fireEvent.press(screen.getByLabelText('Row 1, column 2, 3, given'));
+    enter(5);
+    expect(screen.getByLabelText('Row 1, column 2, 3, given')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Notes')); // off
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    fireEvent.press(screen.getByLabelText('Notes')); // on
+    enter(7);
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+  });
+
+  it('placing a digit removes that note from the peers, and Undo brings it back', () => {
+    // Three empty cells: row 1 columns 1 and 2 are peers, row 9 column 9 is not.
+    screen.unmount();
+    (generate as jest.Mock).mockReturnValue({ puzzle: PUZZLE.map((v, i) => (i === 1 ? 0 : v)), solution: SOLUTION });
+    renderRouter('./src/app', { initialUrl: '/sudoku' });
+
+    fireEvent.press(screen.getByLabelText('Notes'));
+    fireEvent.press(screen.getByLabelText('Row 1, column 2, empty'));
+    enter(5);
+    enter(7);
+    expect(screen.getByLabelText('Row 1, column 2, notes 5 7')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Notes')); // off
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    expect(screen.getByLabelText('Row 1, column 2, notes 7')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Undo'));
+    expect(screen.getByLabelText('Row 1, column 2, notes 5 7')).toBeTruthy();
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+  });
+});
+
+describe('Conflicts', () => {
+  it('marks a clashing digit and the given it clashes with, not a clean digit', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(3);
+    expect(screen.getByLabelText('Row 1, column 1, 3, conflict')).toBeTruthy();
+    expect(screen.getByLabelText('Row 1, column 2, 3, given, conflict')).toBeTruthy();
+
+    enter(5);
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+    expect(screen.getByLabelText('Row 1, column 2, 3, given')).toBeTruthy();
+  });
+});
+
+describe('Undo and Redo', () => {
+  const state = (label: string) => screen.getByLabelText(label).props.accessibilityState;
+
+  it('are disabled on a fresh game', () => {
+    expect(state('Undo').disabled).toBe(true);
+    expect(state('Redo').disabled).toBe(true);
+  });
+
+  it('undo removes the last digit and redo puts it back', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    expect(state('Undo').disabled).toBe(false);
+
+    fireEvent.press(screen.getByLabelText('Undo'));
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+    expect(state('Redo').disabled).toBe(false);
+
+    fireEvent.press(screen.getByLabelText('Redo'));
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+  });
+
+  it('undo steps back through notes and erasing', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    fireEvent.press(screen.getByLabelText('Notes'));
+    enter(4);
+    fireEvent.press(screen.getByLabelText('Notes'));
+    enter(5);
+    fireEvent.press(screen.getByLabelText('Erase'));
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Undo')); // the erase
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Undo')); // the digit
+    expect(screen.getByLabelText('Row 1, column 1, notes 4')).toBeTruthy();
+  });
+
+  it('are disabled after a win, and pressing Undo changes nothing', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    fireEvent.press(screen.getByLabelText(LAST_EMPTY));
+    enter(9);
+    expect(screen.getByText('Solved!')).toBeTruthy();
+
+    expect(state('Undo').disabled).toBe(true);
+    expect(state('Redo').disabled).toBe(true);
+    fireEvent.press(screen.getByLabelText('Undo'));
+    expect(screen.getByLabelText('Row 9, column 9, 9')).toBeTruthy();
+  });
+
+  it('New game clears the history', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    expect(state('Undo').disabled).toBe(false);
+
+    fireEvent.press(screen.getByText('New game'));
+    expect(state('Undo').disabled).toBe(true);
+    expect(state('Redo').disabled).toBe(true);
+  });
+});

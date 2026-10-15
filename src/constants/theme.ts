@@ -20,6 +20,8 @@ export const Colors = {
     gridLine: '#C4C7CE',
     gridLineBold: '#1C1E21',
     digitEntered: '#1F6FDB',
+    cellConflict: '#F8C9C9',
+    digitConflict: '#C62828',
   },
   dark: {
     text: '#ffffff',
@@ -33,6 +35,8 @@ export const Colors = {
     gridLine: '#3A3D43',
     gridLineBold: '#B0B4BA',
     digitEntered: '#6FAEFF',
+    cellConflict: '#6B2A2A',
+    digitConflict: '#FF8A80',
   },
 } as const;
 

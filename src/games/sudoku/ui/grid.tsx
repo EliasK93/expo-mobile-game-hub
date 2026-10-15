@@ -5,11 +5,12 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { colOf, rowOf } from '../logic/board';
-import { highlights, isGiven, type Game } from '../logic/game';
+import { highlights, isGiven, notesOf, type Game } from '../logic/game';
 
 const OUTER = 2; // outer frame width
 const THIN = 1;
 const THICK = 2; // box edges
+const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 type Props = { game: Game; selected: number | null; onSelect: (i: number) => void };
 
@@ -18,7 +19,8 @@ export function Grid({ game, selected, onSelect }: Props) {
   const { width, height } = useWindowDimensions();
   // Square grid: screen width minus padding, but never taller than about half the screen so the pad fits without scrolling.
   const cell = Math.floor(Math.min(width - 2 * Spacing.three, height * 0.5, MaxContentWidth) / 9);
-  const { related, sameValue } = highlights(game, selected);
+  const { related, sameValue, conflicts } = highlights(game, selected);
+  const slot = Math.floor((cell - THICK) / 3); // one note position in the 3x3 mini grid
 
   return (
     <View
@@ -30,19 +32,24 @@ export function Grid({ game, selected, onSelect }: Props) {
         const r = rowOf(i);
         const c = colOf(i);
         const given = isGiven(game, i);
+        const bad = conflicts.has(i);
+        const noteDigits = notesOf(game, i);
         const backgroundColor =
           i === selected
             ? theme.cellSelected
-            : sameValue.has(i)
-              ? theme.cellSameValue
-              : related.has(i)
-                ? theme.cellRelated
-                : theme.background;
+            : bad
+              ? theme.cellConflict
+              : sameValue.has(i)
+                ? theme.cellSameValue
+                : related.has(i)
+                  ? theme.cellRelated
+                  : theme.background;
+        const content = v !== 0 ? v : noteDigits.length ? `notes ${noteDigits.join(' ')}` : 'empty';
         return (
           <Pressable
             key={i}
             accessibilityRole="button"
-            accessibilityLabel={`Row ${r + 1}, column ${c + 1}, ${v === 0 ? 'empty' : v}${given ? ', given' : ''}`}
+            accessibilityLabel={`Row ${r + 1}, column ${c + 1}, ${content}${given ? ', given' : ''}${bad ? ', conflict' : ''}`}
             accessibilityState={{ selected: i === selected }}
             onPress={() => onSelect(i)}
             style={{
@@ -59,10 +66,23 @@ export function Grid({ game, selected, onSelect }: Props) {
             }}>
             {v !== 0 && (
               <ThemedText
-                themeColor={given ? 'text' : 'digitEntered'}
+                themeColor={bad ? 'digitConflict' : given ? 'text' : 'digitEntered'}
                 style={{ fontSize: cell * 0.55, lineHeight: cell * 0.7, fontWeight: given ? 700 : 500 }}>
                 {v}
               </ThemedText>
+            )}
+            {v === 0 && noteDigits.length > 0 && (
+              <View style={{ width: slot * 3, height: slot * 3, flexDirection: 'row', flexWrap: 'wrap' }}>
+                {DIGITS.map((d) => (
+                  <View key={d} style={{ width: slot, height: slot, alignItems: 'center', justifyContent: 'center' }}>
+                    {noteDigits.includes(d) && (
+                      <ThemedText themeColor="textSecondary" style={{ fontSize: cell * 0.28, lineHeight: slot, fontWeight: 500 }}>
+                        {d}
+                      </ThemedText>
+                    )}
+                  </View>
+                ))}
+              </View>
             )}
           </Pressable>
         );

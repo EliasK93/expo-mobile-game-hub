@@ -9,13 +9,22 @@ import { NumberPad } from './number-pad';
 import { useSudoku } from './use-sudoku';
 
 export function SudokuScreen() {
-  const { game, selected, won, select, enter, erase, restart } = useSudoku();
+  const { game, selected, notesMode, won, canUndo, canRedo, select, enter, erase, undo, redo, toggleNotes, restart } = useSudoku();
 
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.status}>{won && <ThemedText type="subtitle">Solved!</ThemedText>}</ThemedView>
       <Grid game={game} selected={selected} onSelect={select} />
-      <NumberPad onDigit={enter} onErase={erase} />
+      <NumberPad
+        onDigit={enter}
+        onErase={erase}
+        onUndo={undo}
+        onRedo={redo}
+        onToggleNotes={toggleNotes}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        notesMode={notesMode}
+      />
       <Pressable accessibilityRole="button" onPress={restart}>
         <ThemedView type="backgroundSelected" style={styles.newGame}>
           <ThemedText type="smallBold">New game</ThemedText>

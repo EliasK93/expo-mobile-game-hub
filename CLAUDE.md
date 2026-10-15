@@ -83,6 +83,7 @@ src/
   - Hard: needs techniques beyond Medium.
 - A few puzzles per difficulty are pre-generated and cached in the background so "New game" is instant.
 - M3 decisions: touch only (no keyboard input). On a win the grid locks and shows "Solved!"; "New game" is always available. Web output is a single-page app (`web.output` removed from `app.json`), so a random puzzle at first render causes no hydration mismatch.
+- M4 decisions: error highlighting marks conflicts only (the same digit twice in a row, column or box; both clashing cells, givens included, turn red; nothing is compared with the solution, so a wrong digit that clashes with nothing stays normal). Notes use a "Notes" toggle button: while on, digits 1-9 add or remove pencil marks (not on givens or filled cells). Placing a digit clears that cell's notes and that digit's notes in its row, column and box. Undo/redo covers digits, notes and erasing; after a win both are disabled (rule lives in `undoGame`/`redoGame`); "New game" clears the history.
 - Features: notes/pencil marks, error highlighting, hints (= apply/explain the next simplest technique), undo/redo, timer, stats per difficulty (played, best time, average time), save & resume.
 
 ## Commands for the user
@@ -132,7 +133,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
 - [x] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests. Re-check: `npm run gate` (`npx jest src/games`: 5 suites, incl. `generate.test.ts` uniqueness per seed).
 - [x] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `shows Solved! when the last cell is filled correctly, and locks the grid`).
-- [ ] 4. Notes, error highlighting, undo/redo.
+- [x] 4. Notes, error highlighting, undo/redo. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `placing a digit removes that note from the peers, and Undo brings it back`, `are disabled after a win, and pressing Undo changes nothing`).
 - [ ] 5. Save/resume, timer, stats.
 - [ ] 6. Technique-based solver → difficulty rater + hints; background puzzle cache per difficulty.
 - [ ] 7. EAS APK build, installed on the phone; work through "Android checks".
@@ -141,7 +142,6 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
-- M4: error highlighting = conflicts with peers (row/col/box) or mismatch with the solution?
 - M5: do games with hints count towards best/average time? Do abandoned games count as "played"?
 - M6: puzzles needing techniques beyond the implemented ones (or guessing): rate as Hard or discard? (Recommendation: discard.)
 - M6: how to keep generation off the UI path (chunked async vs. other).
@@ -158,3 +158,4 @@ Things verified only in the web preview that must be tested on the phone (add as
 - [x] The grid, number pad and "New game" fit on the phone screen without scrolling.
 - [x] Tapping cells and digits feels responsive.
 - [x] Dark/light mode follows the phone's system setting.
+- [ ] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
