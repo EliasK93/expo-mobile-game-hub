@@ -11,9 +11,12 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <ThemedView style={styles.list}>
         {games.map((game) => (
-          <Link key={game.id} href={game.route}>
-            <ThemedText type="subtitle">{game.title}</ThemedText>
-          </Link>
+          <ThemedView key={game.id}>
+            <Link href={game.route}>
+              <ThemedText type="subtitle">{game.title}</ThemedText>
+            </Link>
+            {game.Summary && <game.Summary />}
+          </ThemedView>
         ))}
       </ThemedView>
     </ThemedView>

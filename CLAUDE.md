@@ -84,6 +84,11 @@ src/
 - A few puzzles per difficulty are pre-generated and cached in the background so "New game" is instant.
 - M3 decisions: touch only (no keyboard input). On a win the grid locks and shows "Solved!"; "New game" is always available. Web output is a single-page app (`web.output` removed from `app.json`), so a random puzzle at first render causes no hydration mismatch.
 - M4 decisions: error highlighting marks conflicts only (the same digit twice in a row, column or box; both clashing cells, givens included, turn red; nothing is compared with the solution, so a wrong digit that clashes with nothing stays normal). Notes use a "Notes" toggle button: while on, digits 1-9 add or remove pencil marks (not on givens or filled cells). Placing a digit clears that cell's notes and that digit's notes in its row, column and box. Undo/redo covers digits, notes and erasing; after a win both are disabled (rule lives in `undoGame`/`redoGame`); "New game" clears the history.
+- M5 decisions (user, 2026-10-15):
+  - Stats count only solved games; abandoned games are discarded. A win with a hint counts as solved but never enters best or average time (hints arrive in M6; the `hinted` flag is already in the save format). Until M6 every game goes into one stats bucket, `classic`. Keys: `"sudoku:save"` and `"sudoku:stats"`, both version 1 (`logic/save.ts`, `lib/stats.ts`).
+  - One save slot; the undo history is not saved. When an unfinished save with progress exists, opening Sudoku asks **Continue** or **New game**. Saved after every move and when the clock stops; nothing is saved before the first move, and a win deletes the save.
+  - The timer runs only while the Sudoku screen is focused, the app is in the foreground and the game isn't won (`lib/timer.ts` is a pure clock). It sits above the grid; the win banner reads "Solved! in m:ss". The win is recorded exactly once.
+  - Home shows a summary under "Sudoku" ("Solved 3 · Best 4:12 · Avg 6:30", or "No puzzles solved yet") through the optional `Summary` component of a registry entry, reloaded whenever home gets focus.
 - Features: notes/pencil marks, error highlighting, hints (= apply/explain the next simplest technique), undo/redo, timer, stats per difficulty (played, best time, average time), save & resume.
 
 ## Commands for the user
@@ -134,7 +139,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 - [x] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests. Re-check: `npm run gate` (`npx jest src/games`: 5 suites, incl. `generate.test.ts` uniqueness per seed).
 - [x] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `shows Solved! when the last cell is filled correctly, and locks the grid`).
 - [x] 4. Notes, error highlighting, undo/redo. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `placing a digit removes that note from the peers, and Undo brings it back`, `are disabled after a win, and pressing Undo changes nothing`).
-- [ ] 5. Save/resume, timer, stats.
+- [x] 5. Save/resume, timer, stats. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `asks to continue, and Continue brings back the digit, the notes and the time`, `extra presses, rerenders and time after the win change nothing`; `src/__tests__/home.test.tsx`).
 - [ ] 6. Technique-based solver → difficulty rater + hints; background puzzle cache per difficulty.
 - [ ] 7. EAS APK build, installed on the phone; work through "Android checks".
 
@@ -142,7 +147,6 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
-- M5: do games with hints count towards best/average time? Do abandoned games count as "played"?
 - M6: names of the five difficulty levels and which techniques each one allows.
 - M6: puzzles needing techniques beyond the implemented ones (or guessing): rate as Hard or discard? (Recommendation: discard.)
 - M6: how to keep generation off the UI path (chunked async vs. other).
@@ -159,4 +163,7 @@ Things verified only in the web preview that must be tested on the phone (add as
 - [x] The grid, number pad and "New game" fit on the phone screen without scrolling.
 - [x] Tapping cells and digits feels responsive.
 - [x] Dark/light mode follows the phone's system setting.
+- [ ] The timer pauses when the app goes to the background and continues when it returns.
+- [ ] A game survives killing the app: reopening Sudoku shows the Continue / New game prompt, and Continue brings back digits, notes and time.
+- [ ] The home summary updates after a win (back button from Sudoku to home).
 - [ ] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
