@@ -151,10 +151,10 @@ Ask the user when the milestone comes up; move the answer into the spec above an
 Things verified only in the web preview that must be tested on the phone (add as they come up, tick when confirmed):
 
 - [ ] Saved games/stats survive closing and reopening the app (web uses browser storage instead).
-- [ ] Puzzle generation doesn't freeze the UI (phone CPU is slower than the PC).
-- [ ] Measure how long `generate()` takes on the phone (PC average over 10 seeds is a few ms); this feeds the M6 decision on keeping generation off the UI path.
-- [ ] The hardware back button on the Sudoku screen returns to the home screen.
-- [ ] Sudoku cells are big enough to tap accurately on a small screen.
-- [ ] The grid, number pad and "New game" fit on the phone screen without scrolling.
-- [ ] Tapping cells and digits feels responsive.
-- [ ] Dark/light mode follows the phone's system setting.
+- [x] Puzzle generation doesn't freeze the UI (phone CPU is slower than the PC). Confirmed on the first preview APK (2026-10-15) for the M2 generator (32 givens, backtracking only); re-check once M6 adds technique rating.
+- [ ] Measure how long `generate()` takes on the phone (PC average over 10 seeds is a few ms); this feeds the M6 decision on keeping generation off the UI path. First APK: "New game" felt instant, not measured.
+- [x] The hardware back button on the Sudoku screen returns to the home screen.
+- [x] Sudoku cells are big enough to tap accurately on a small screen.
+- [x] The grid, number pad and "New game" fit on the phone screen without scrolling.
+- [x] Tapping cells and digits feels responsive.
+- [x] Dark/light mode follows the phone's system setting.
