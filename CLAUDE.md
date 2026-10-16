@@ -162,6 +162,6 @@ Hub-wide things verified only in the web preview that must be tested on the phon
 - [x] Saved data (games, stats, settings) survives closing and reopening the app (web uses browser storage instead).
 - [x] Dark/light mode follows the phone's system setting.
 - [x] The hardware back button on a game screen returns to the home screen (confirmed on Sudoku).
-- [ ] Home is a 3-column grid on the phone: tiles are square, the art and names are readable, the sort chips fit in one row, and the chosen sort is still there after closing and reopening the app.
-- [ ] The app is called "Game Hub" under its launcher icon; the icon (yellow background, 3×3 tile) is not cut off in the phone's icon shape and, with themed icons on, the monochrome version looks right; the splash screen shows the tile on the paper colour, not clipped, without a blue flash.
-- [ ] Playtime pauses while the app is in the background and while the phone screen is off, and counts again on return: open Sudoku, send the app to the background for a minute, come back, and check that Playtime sorting only reflects the time the app was in front.
+- [x] Home is a 3-column grid on the phone: tiles are square, the art and names are readable, the sort chips fit in one row, and the chosen sort is still there after closing and reopening the app.
+- [x] The app is called "Game Hub" under its launcher icon; the icon (yellow background, 3×3 tile) is not cut off in the phone's icon shape and, with themed icons on, the monochrome version looks right; the splash screen shows the tile on the paper colour, not clipped, without a blue flash.
+- [ ] Playtime pauses while the app is in the background and while the phone screen is off, and counts again on return: open Sudoku, send the app to the background for a minute, come back, and check that Playtime sorting only reflects the time the app was in front. Not visible yet with one game; check once a second game exists.
