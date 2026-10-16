@@ -2,9 +2,9 @@
 
 # Working agreement: Game Hub
 
-Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versions of games. Sudoku first; Solitaire etc. later, and it is meant to grow. Expo SDK 57 + React Native + TypeScript (strict) + Expo Router. Day-to-day it runs in the web preview (`npx expo start`, then `w`).
+Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versions of games. Sudoku is the first game; more (e.g. Solitaire) come later, and it is meant to grow. Expo SDK 57 + React Native + TypeScript (strict) + Expo Router. Day-to-day it runs in the web preview (`npx expo start`, then `w`).
 
-**Where a document and the repository disagree, the repository wins.** Check the code before acting on any status claim in a document, including the checklists below.
+**Where a document and the repository disagree, the repository wins.** Check the code before acting on any status claim in a document, including the checklists below and in the game docs.
 
 ## Rules
 
@@ -48,8 +48,7 @@ git status --short       # nothing left unstaged or untracked
 Daily work runs in the web preview; Android is verified with APK builds (Expo Go is not used).
 
 - Keep the app fully working in the web preview. Use only libraries/APIs that support both web and Android; check before adding one.
-- Whenever something may behave differently on Android (touch/gestures, keyboard, layout/safe areas, fonts, back button, app going to background, storage, performance of heavy work), tell the user and add it to "Android checks" below.
-- No `Platform.OS === 'web'` workarounds without asking.
+- Whenever something may behave differently on Android (touch/gestures, keyboard, layout/safe areas, fonts, back button, app going to background, storage, performance of heavy work), tell the user and add it to the Android checks: the hub-wide list below if it applies to every game, otherwise "Android checks" in that game's doc.
 
 ## Architecture
 
@@ -58,50 +57,41 @@ src/
   app/                  # Expo Router routes ONLY — thin files that render a game's screen
     _layout.tsx
     index.tsx           # home: lists games from the registry
-    sudoku.tsx          # -> games/sudoku/ui
+    <id>.tsx            # one per game, e.g. sudoku.tsx -> games/sudoku/ui
   games/
     registry.ts         # list of available games (id, title, route) shown on home
-    sudoku/
+    <id>/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
-      data/puzzles.json # the shipped puzzle pool (see "Sudoku spec"); read only by logic/pool.ts
+      data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
   components/ hooks/ constants/   # shared UI, hooks, theme (from template)
   lib/                  # shared non-UI helpers: storage, stats, timer
 ```
 
-- Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file + one registry entry. Never edit another game's folder to add a game.
+- Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file + one registry entry + a `docs/<id>.md`. Never edit another game's folder to add a game.
 - Games never import from each other. Shared code goes in `components/`, `hooks/`, `constants/`, `lib/`.
 - `logic/` is plain TypeScript with no framework imports (enforced by an ESLint `no-restricted-imports` block in `eslint.config.js`, so `npx expo lint` and the gate fail on a React/React Native/Expo/`@/components`/`@/hooks` import), so it can be tested without a phone or browser. All rules, solving, generating, undo history and scoring live there; UI holds no game rules.
-- AsyncStorage keys are namespaced per game: `"<game>:<what>"`, e.g. `"sudoku:save"`, `"sudoku:stats"`. Stored JSON includes a `version` field so the format can change later.
-- Heavy work never runs on the device's UI path: Sudoku puzzles are generated here, ahead of time, and ship as data (the pool in "Sudoku spec"). If a later game needs on-device heavy work, it must run in slices between screen updates, never as one blocking call (worker threads via worklets are native-only).
+- AsyncStorage keys are namespaced per game: `"<game>:<what>"`, e.g. `"sudoku:save"`. Stored JSON includes a `version` field so the format can change later. Each game's keys and versions are listed in its doc.
+- Heavy work never runs on the device's UI path: a game generates it ahead of time and ships the result as data (its doc says how). If a later game needs on-device heavy work, it must run in slices between screen updates, never as one blocking call (worker threads via worklets are native-only).
 
-## Sudoku spec (v1)
+## Games
 
-- Puzzles are generated ahead of time with the real generator and shipped as a pool (M6 decisions); every puzzle has exactly one solution (verified by a solver that counts up to 2 solutions).
-- Difficulty is rated by the human techniques needed, not by number of givens. **Five levels** (user, 2026-10-15); names only from `LEVEL_NAMES` in `logic/techniques.ts`. Each level allows the earlier techniques plus its own:
-  1. Very easy: full house, hidden single in a box.
-  2. Easy: + naked single, hidden single in a row or column.
-  3. Medium: + naked pair, hidden pair, pointing, claiming.
-  4. Hard: + naked and hidden triple, X-Wing.
-  5. Expert: + Swordfish, XY-Wing, naked and hidden quad.
-  - A puzzle that needs more than Expert (or guessing) is discarded, so every puzzle is solvable by logic and a hint always works.
-- Puzzles come from a shipped pool, so "New game" is instant (see the pool under M6 decisions).
-- M3 decisions: touch only (no keyboard input). On a win the grid locks and shows "Solved!"; "New game" is always available. Web output is a single-page app (`web.output` removed from `app.json`), so a random puzzle at first render causes no hydration mismatch.
-- M4 decisions: error highlighting marks conflicts only (the same digit twice in a row, column or box; both clashing cells, givens included, turn red; nothing is compared with the solution, so a wrong digit that clashes with nothing stays normal). Notes use a "Notes" toggle button: while on, digits 1-9 add or remove pencil marks (not on givens or filled cells). Placing a digit clears that cell's notes and that digit's notes in its row, column and box. Undo/redo covers digits, notes and erasing; after a win both are disabled (rule lives in `undoGame`/`redoGame`); "New game" clears the history.
-- M5 decisions (user, 2026-10-15):
-  - Stats count only solved games; abandoned games are discarded. A win with a hint counts as solved but never enters best or average time (hints arrive in M6; the `hinted` flag is already in the save format). Until M6 every game goes into one stats bucket, `classic`. Keys: `"sudoku:save"` and `"sudoku:stats"`, both version 1 (`logic/save.ts`, `lib/stats.ts`).
-  - One save slot; the undo history is not saved. When an unfinished save with progress exists, opening Sudoku asks **Continue** or **New game**. Saved after every move and when the clock stops; nothing is saved before the first move, and a win deletes the save.
-  - The timer runs only while the Sudoku screen is focused, the app is in the foreground, the game isn't won and the level picker isn't open (`lib/timer.ts` is a pure clock). It sits above the grid; while the picker is open the time and level are hidden and the time spent there doesn't count. The win banner reads "Solved! in m:ss". The win is recorded exactly once.
-  - Home shows a summary under "Sudoku" ("Solved 3 · Best 4:12 · Avg 6:30", or "No puzzles solved yet") through the optional `Summary` component of a registry entry, reloaded whenever home gets focus.
-- M6 decisions (user, 2026-10-15):
-  - Picker: "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked and a Cancel button. The last level is stored in `sudoku:settings` (version 1); the default is Medium. Opening Sudoku without a save shows the picker at once (the last level used marked, no Cancel, nothing starts by itself); with a save it shows the Continue / New game prompt at once. The current level is shown next to the timer.
-  - Pool (user, 2026-10-16, replaces the on-device cache and generation): `src/games/sudoku/data/puzzles.json` holds 1000 puzzles per level, as 81-character strings (`0` = empty), no solutions. All come from `generateLevel()` with seeds 1 to 1000 per level, so the file can be rebuilt (`logic/build-puzzles.test.ts`, skipped unless `SUDOKU_BUILD` or `SUDOKU_MERGE` is set; its header says how, and Hard needs several parallel processes). `logic/pool.ts`: `pickPuzzle(level)` takes a random entry, `transform()` applies a random rotation or mirror plus a random relabeling of the digits 1-9 (same solution count, same rating), and `solve()` gives the solution. Every game start is instant and nothing is generated on the device. The old `sudoku:cache` storage key is left as a harmless orphan.
-  - Save version 2 adds `level`; a version 1 save still loads, as level `classic`. Stats buckets: the level number as text (`"3"`), plus `classic` for the pre-M6 games.
-  - Hint: the "Hint" button highlights the cells involved (theme token `cellHint`) and explains; "Apply" makes the move with `setValue`, so Undo works, and "Close" drops it. A move or New game closes the hint. Hints reason from the real candidates, not the notes. A wrong digit you entered is reported first ("This 4 is wrong.") and Apply erases it; that is the one place the solution is compared. Showing a hint already sets `hinted`: such a win counts as solved but stays out of best and average time.
-  - Home: one line per level that has wins, in level order, then Classic ("Easy: 5 · Best 3:10 · Avg 4:02"; a level with only hinted wins shows just its count).
-- Features: notes/pencil marks, error highlighting, hints (= apply/explain the next simplest technique), undo/redo, timer, stats per difficulty (played, best time, average time), save & resume.
+- [Sudoku](docs/sudoku.md)
 
-## Commands for the user
+Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
+
+A new game's doc follows this structure:
+
+1. Overview
+2. Spec
+3. Decisions, each with its reason
+4. Architecture and storage keys
+5. Milestones, each with its re-check
+6. Android checks
+7. Open decisions
+8. Known shortcuts (the `ponytail:` comments in the game's folder: file, what was cut, when to revisit)
+
+## Commands
 
 | Command | What it does |
 |---|---|
@@ -144,15 +134,12 @@ Herdr, graphify (plus its git hooks), gitleaks and ponytail are user-level insta
 
 ## Milestones
 
-Tick an item only when its re-check (rule 7) passes and the user has verified it in the web preview. Android-specific items go to "Android checks".
+Tick an item only when its re-check (rule 7) passes and the user has verified it in the web preview. Android-specific items go to the Android checks (hub-wide below, game-specific in the game's doc).
+
+Milestones that belong to one game live in its doc (`docs/<game>.md`, "Milestones"). Hub-wide:
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
-- [x] 2. Core logic (no UI): board model, validator, backtracking solver, generator with uniqueness check, tests. Re-check: `npm run gate` (`npx jest src/games`: 5 suites, incl. `generate.test.ts` uniqueness per seed).
-- [x] 3. Playable game: grid, number pad, selection, highlighting (row/col/box/same number), win detection. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `shows Solved! when the last cell is filled correctly, and locks the grid`).
-- [x] 4. Notes, error highlighting, undo/redo. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `placing a digit removes that note from the peers, and Undo brings it back`, `are disabled after a win, and pressing Undo changes nothing`).
-- [x] 5. Save/resume, timer, stats. Re-check: `npm run gate` (`src/__tests__/sudoku.test.tsx`: `asks to continue, and Continue brings back the digit, the notes and the time`, `extra presses, rerenders and time after the win change nothing`; `src/__tests__/home.test.tsx`).
-- [x] 6. Technique-based solver → difficulty rater (five levels) + difficulty picker + hints; background puzzle cache per difficulty; stats per difficulty. Re-check: `npm run gate` (`src/games/sudoku/logic/generate-level.test.ts`; `src/__tests__/sudoku.test.tsx`: `picking a level starts a game at that level, shows it next to the timer, and remembers it`, `a win after a hint counts as solved but leaves best and average time alone`).
-- [ ] 7. EAS APK build, installed on the phone; work through "Android checks".
+- [ ] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. Repeat after each batch of changes.
 
 ## Open decisions
 
@@ -162,20 +149,8 @@ None right now.
 
 ## Android checks
 
-Things verified only in the web preview that must be tested on the phone (add as they come up, tick when confirmed):
+Hub-wide things verified only in the web preview that must be tested on the phone (add as they come up, tick when confirmed). Game-specific checks are in each game's doc.
 
-- [ ] Saved games/stats survive closing and reopening the app (web uses browser storage instead).
-- [ ] New game and opening Sudoku are instant on the phone: the Continue prompt or the level picker shows at once, and every level, Hard and Expert included, starts the moment it is tapped.
-- [x] The hardware back button on the Sudoku screen returns to the home screen.
-- [x] Sudoku cells are big enough to tap accurately on a small screen.
-- [x] The grid, number pad and "New game" fit on the phone screen without scrolling.
-- [x] Tapping cells and digits feels responsive.
+- [ ] Saved data (games, stats, settings) survives closing and reopening the app (web uses browser storage instead).
 - [x] Dark/light mode follows the phone's system setting.
-- [ ] The timer pauses when the app goes to the background and continues when it returns.
-- [ ] A game survives killing the app: reopening Sudoku shows the Continue / New game prompt, and Continue brings back digits, notes and time.
-- [ ] The home summary updates after a win (back button from Sudoku to home).
-- [ ] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
-- [ ] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
-- [ ] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
-- [ ] The level picker, which now replaces the grid, fits without scrolling, from the game screen, from the Continue prompt and when Sudoku opens without a save.
-- [ ] The hint highlight colour is clear in light and dark mode.
+- [x] The hardware back button on a game screen returns to the home screen (confirmed on Sudoku).

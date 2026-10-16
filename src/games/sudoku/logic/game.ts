@@ -6,7 +6,7 @@ import { conflicts, isSolved } from './validate';
 // notes = one bitmask per cell, bit v set = pencil mark v (same idea as candidateMask in board.ts).
 export type Game = { puzzle: Grid; solution: Grid; values: Grid; notes: readonly number[] };
 
-// What the generator and the puzzle cache hand over.
+// What the generator and the pool (pickPuzzle) hand over.
 export type Puzzle = Pick<Game, 'puzzle' | 'solution'>;
 
 export const newGame = ({ puzzle, solution }: Puzzle): Game => ({ puzzle, solution, values: puzzle, notes: Array(81).fill(0) });
