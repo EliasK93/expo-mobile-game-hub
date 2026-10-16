@@ -1,12 +1,12 @@
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { glyphStyle } from '@/components/glyph-style';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { colOf, DIGITS, rowOf } from '../logic/board';
 import { highlights, isGiven, notesOf, type Game } from '../logic/game';
-import { digitStyle } from './digit-style';
 
 const OUTER = 2; // outer frame width
 const THIN = 1;
@@ -71,7 +71,7 @@ export function Grid({ game, selected, onSelect, hintCells = [] }: Props) {
             {v !== 0 && (
               <ThemedText
                 themeColor={bad ? 'digitConflict' : given ? 'text' : 'accent'}
-                style={digitStyle(cell * 0.55, given ? 700 : 500)}>
+                style={glyphStyle(cell * 0.55, given ? 700 : 500)}>
                 {v}
               </ThemedText>
             )}
@@ -80,7 +80,7 @@ export function Grid({ game, selected, onSelect, hintCells = [] }: Props) {
                 {DIGITS.map((d) => (
                   <View key={d} style={{ width: slot, height: slot, alignItems: 'center', justifyContent: 'center' }}>
                     {noteDigits.includes(d) && (
-                      <ThemedText themeColor="textSecondary" style={digitStyle(cell * 0.28, 500)}>
+                      <ThemedText themeColor="textSecondary" style={glyphStyle(cell * 0.28, 500)}>
                         {d}
                       </ThemedText>
                     )}

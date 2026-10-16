@@ -1,10 +1,9 @@
 import { StyleSheet } from 'react-native';
 
+import { glyphStyle } from '@/components/glyph-style';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-
-import { digitStyle } from './digit-style';
 
 // The tile on home: a small 3x3 Sudoku with a few digits, in the game's own colours. Fills the square it is given.
 // 0 = empty. The middle cell is "selected" and, like the 9, holds a digit "entered" in blue ink.
@@ -38,5 +37,5 @@ const styles = StyleSheet.create({
   grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', borderWidth: 2 },
   cell: { width: '33.333%', height: '33.333%', borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   // ponytail: fixed digit size, not measured from the tile; measure with onLayout if a tile looks cramped or empty at some width.
-  digit: digitStyle(22, 700),
+  digit: glyphStyle(22, 700),
 });
