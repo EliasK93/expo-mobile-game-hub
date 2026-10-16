@@ -69,7 +69,7 @@ export function Grid({ game, selected, onSelect, hintCells = [] }: Props) {
             }}>
             {v !== 0 && (
               <ThemedText
-                themeColor={bad ? 'digitConflict' : given ? 'text' : 'digitEntered'}
+                themeColor={bad ? 'digitConflict' : given ? 'text' : 'accent'}
                 style={{ fontSize: cell * 0.55, lineHeight: cell * 0.7, fontWeight: given ? 700 : 500 }}>
                 {v}
               </ThemedText>

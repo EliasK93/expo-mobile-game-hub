@@ -1,40 +1,41 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * The "Pencil & Paper" palette, light and dark: graphite on notebook paper, blue ink, pencil-yellow selection.
+ * Every colour in the app comes from here. The Sudoku cell tokens are part of it, so one place sets the whole look.
+ * `cellSameValue` and `cellHint` have no counterpart in the palette mock-up; they are derived (see comments).
  */
 
 export const Colors = {
   light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-    cellSelected: '#A9CBF8',
-    cellRelated: '#E8EEF7',
-    cellSameValue: '#C9DDF9',
-    gridLine: '#C4C7CE',
-    gridLineBold: '#1C1E21',
-    digitEntered: '#1F6FDB',
-    cellConflict: '#F8C9C9',
+    text: '#202124',
+    background: '#FBFAF6',
+    backgroundElement: '#EFEDE5',
+    backgroundSelected: '#DAD8CF',
+    textSecondary: '#62656B',
+    accent: '#2D5BD3',
+    cellSelected: '#FBE7A1',
+    cellRelated: '#F4F2EA',
+    cellSameValue: '#E6E3D8', // a step darker than cellRelated, still lighter than the grid lines
+    gridLine: '#DAD8CF',
+    gridLineBold: '#2A2B2E',
+    cellConflict: '#F8DCDA',
     digitConflict: '#C62828',
-    cellHint: '#FFE9A8',
+    cellHint: '#BFD0F5', // accent-blue tint: yellow is the selection, so the hint cannot be yellow too
   },
   dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-    cellSelected: '#2F5FA8',
-    cellRelated: '#1A1D22',
-    cellSameValue: '#27456F',
-    gridLine: '#3A3D43',
-    gridLineBold: '#B0B4BA',
-    digitEntered: '#6FAEFF',
-    cellConflict: '#6B2A2A',
+    text: '#ECECEA',
+    background: '#18191B',
+    backgroundElement: '#232427',
+    backgroundSelected: '#323438',
+    textSecondary: '#A5A7AB',
+    accent: '#8FB0FF',
+    cellSelected: '#4A4120',
+    cellRelated: '#1F2022',
+    cellSameValue: '#2C2E31',
+    gridLine: '#323438',
+    gridLineBold: '#B9BBBF',
+    cellConflict: '#3A1F1F',
     digitConflict: '#FF8A80',
-    cellHint: '#6B5A1F',
+    cellHint: '#34507F',
   },
 } as const;
 

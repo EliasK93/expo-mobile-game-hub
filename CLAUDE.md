@@ -68,7 +68,7 @@ src/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
-  components/ hooks/ constants/   # shared UI (themed text/view, `button`), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background), theme
+  components/ hooks/ constants/   # shared UI (themed text/view, `button`), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours included; the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
   lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle)
 ```
 
