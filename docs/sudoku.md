@@ -121,14 +121,14 @@ Verified only in the web preview so far; test them on the phone (add as they com
 - [x] The home summary updates after a win (back button from Sudoku to home). *(Replaced 2026-10-16: the stats are in the level picker now, see the next item.)*
 - [x] After a win, "New game" shows the new solved count and best time on that level's button, and the level buttons with their second line still fit the picker and Cancel on a small screen without scrolling.
 - [x] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
-- [ ] With a hint shown (the hint panel replaces the number pad, the Undo/Redo/Notes/Erase row and the Hint / New game row), Apply and Close are fully visible above Android's navigation bar, also when the explanation wraps to two or three lines; Apply and Close bring the pad back. Re-check: `src/__tests__/sudoku.test.tsx`, `replaces the number pad and the Undo/Redo/Notes/Erase row while shown`.
+- [x] With a hint shown (the hint panel replaces the number pad, the Undo/Redo/Notes/Erase row and the Hint / New game row), Apply and Close are fully visible above Android's navigation bar, also when the explanation wraps to two or three lines; Apply and Close bring the pad back. Re-check: `src/__tests__/sudoku.test.tsx`, `replaces the number pad and the Undo/Redo/Notes/Erase row while shown`.
 - [x] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
 - [x] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
 - [x] The level picker, which now replaces the grid, fits without scrolling, from the game screen, from the Continue prompt and when Sudoku opens without a save.
 - [x] The hint highlight colour is clear in light and dark mode.
 - [x] With the Pencil & Paper palette (2026-10-16), the selected cell (yellow), same-digit cells, hint cells (blue), conflicts (red) and entered digits (blue ink) are clearly different from each other in light and dark mode on the phone.
 
-- [ ] Digits in the home tile, the grid and the pencil notes are vertically centred in their cells (not sitting low). Shared style: `digitStyle` in `src/games/sudoku/ui/digit-style.ts`.
+- [x] Digits in the home tile, the grid and the pencil notes are vertically centred in their cells (not sitting low). Shared style: `digitStyle` in `src/games/sudoku/ui/digit-style.ts`.
 
 ## Open decisions
 
