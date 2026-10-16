@@ -90,7 +90,7 @@ src/
 - M5 decisions (user, 2026-10-15):
   - Stats count only solved games; abandoned games are discarded. A win with a hint counts as solved but never enters best or average time (hints arrive in M6; the `hinted` flag is already in the save format). Until M6 every game goes into one stats bucket, `classic`. Keys: `"sudoku:save"` and `"sudoku:stats"`, both version 1 (`logic/save.ts`, `lib/stats.ts`).
   - One save slot; the undo history is not saved. When an unfinished save with progress exists, opening Sudoku asks **Continue** or **New game**. Saved after every move and when the clock stops; nothing is saved before the first move, and a win deletes the save.
-  - The timer runs only while the Sudoku screen is focused, the app is in the foreground and the game isn't won (`lib/timer.ts` is a pure clock). It sits above the grid; the win banner reads "Solved! in m:ss". The win is recorded exactly once.
+  - The timer runs only while the Sudoku screen is focused, the app is in the foreground, the game isn't won and the level picker isn't open (`lib/timer.ts` is a pure clock). It sits above the grid; while the picker is open the time and level are hidden and the time spent there doesn't count. The win banner reads "Solved! in m:ss". The win is recorded exactly once.
   - Home shows a summary under "Sudoku" ("Solved 3 · Best 4:12 · Avg 6:30", or "No puzzles solved yet") through the optional `Summary` component of a registry entry, reloaded whenever home gets focus.
 - M6 decisions (user, 2026-10-15):
   - Picker: "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked and a Cancel button. The last level is stored in `sudoku:settings` (version 1); the default is Medium. Opening Sudoku without a save starts the last level at once. The current level is shown next to the timer.
@@ -176,4 +176,6 @@ Things verified only in the web preview that must be tested on the phone (add as
 - [ ] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
 - [ ] While the background filler works (right after install, or after taking a puzzle), the grid and number pad stay smooth: tapping cells and digits shows no stutter. Generation runs in slices of about 8 ms, but one step can take about 33 ms on the PC (Hard), more on the phone.
 - [ ] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
+- [ ] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
+- [ ] The level picker, which now replaces the grid, fits without scrolling, from the game screen and from the Continue prompt.
 - [ ] "Making a puzzle…" shows and then goes away by itself when a level's cache is empty, and the hint highlight colour is clear in light and dark mode.

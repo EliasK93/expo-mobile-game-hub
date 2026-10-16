@@ -70,7 +70,7 @@ export function useSudoku() {
   const recorded = useRef(false);
   const game = history.present;
   const won = isWon(game);
-  const running = status === 'playing' && focused && appActive && !won;
+  const running = status === 'playing' && focused && appActive && !won && !picking;
 
   // An effect event always sees the latest game, also when called from the clock's cleanup (a plain closure would
   // see the game from when the effect started). Nothing is saved once the game is won: the win deletes the save.

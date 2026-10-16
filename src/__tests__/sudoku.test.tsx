@@ -151,6 +151,22 @@ describe('Level picker', () => {
     expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
   });
 
+  it('replaces the grid, the number pad and the hint row while open, and Cancel brings back the same board', () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    fireEvent.press(screen.getByLabelText('New game'));
+
+    expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
+    expect(screen.queryByLabelText('Enter 1')).toBeNull();
+    expect(screen.queryByLabelText('Hint')).toBeNull();
+    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert']) expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
+    expect(screen.getByLabelText('Cancel')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Cancel'));
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+    expect(screen.getByLabelText('Enter 1')).toBeTruthy();
+  });
+
   it('picking a level starts a game at that level, shows it next to the timer, and remembers it', async () => {
     newGame('Expert');
     await settle();
@@ -472,6 +488,23 @@ describe('Save and resume', () => {
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
   });
 
+  it('the picker from the prompt replaces the prompt, and Cancel brings the prompt back', async () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    screen.unmount();
+    await settle();
+    await open();
+
+    fireEvent.press(screen.getByLabelText(NEW_GAME));
+    expect(screen.queryByLabelText(NEW_GAME)).toBeNull();
+    expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
+    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert']) expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Cancel'));
+    fireEvent.press(screen.getByLabelText(CONTINUE));
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+  });
+
   it('the prompt\'s New game opens the picker; a level gives a fresh board and deletes the save', async () => {
     fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
     enter(5);
@@ -480,7 +513,7 @@ describe('Save and resume', () => {
     await open();
 
     fireEvent.press(screen.getByLabelText(NEW_GAME));
-    expect(screen.getByLabelText(CONTINUE)).toBeTruthy(); // nothing is lost until a level is picked
+    expect(screen.queryByLabelText(CONTINUE)).toBeNull(); // the picker replaces the prompt; nothing is lost until a level is picked
     level('Hard');
     await settle();
 
@@ -532,6 +565,23 @@ describe('Timer', () => {
 
     await tick(1000);
     expect(screen.getByText('0:03')).toBeTruthy();
+  });
+
+  it('pauses and hides the time and level while the level picker is open, and Cancel goes on from the same time', async () => {
+    await tick(3000);
+    expect(screen.getByText('0:03')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('New game'));
+    await tick(10_000);
+    expect(screen.queryByText(/^\d+:\d\d$/)).toBeNull();
+    expect(screen.queryByText('Medium')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Cancel'));
+    expect(screen.getByText('0:03')).toBeTruthy();
+    expect(screen.getByText('Medium')).toBeTruthy();
+
+    await tick(1000);
+    expect(screen.getByText('0:04')).toBeTruthy();
   });
 
   it('pauses while the app is in the background and goes on when it returns', async () => {
