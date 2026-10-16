@@ -59,7 +59,7 @@ src/lib/stats.ts, storage.ts, timer.ts, history.ts, random.ts   # shared helpers
 | `techniques.ts` | `Level`/`LEVELS`/`LEVEL_NAMES`, the technique `LADDER`, `findStep`, `applyStep`, candidate state |
 | `rate.ts` | `solveByLogic` and `rate`: solves with the simplest technique at each step; the rating is the highest level any step needed, `null` when stuck |
 | `hint.ts` | `nextHint(values, solution)`: the next move as one `setValue`, with the cells to highlight and the explanation; a wrong digit comes first |
-| `generate.ts` | `fill`, and `generateLevel` (a generator function: fills a grid, digs out cells while the puzzle stays unique and rates at most the level, retries when it rates below). Used to build the pool, not by the app at runtime |
+| `generate.ts` | `fill`, and `generateLevel` (a plain function: fills a grid, digs out cells while the puzzle stays unique and rates at most the level, retries when it rates below). Used to build the pool, not by the app at runtime |
 | `pool.ts` | `pickPuzzle(level)` and `transform()` over `data/puzzles.json` (see M6 decisions) |
 | `game.ts` | `Game` model and the pure moves: `newGame`, `setValue`, `toggleNote`, `notesOf`, `isGiven`, `isWon`, `highlights`, `undoGame`/`redoGame` (wrappers over `lib/history`) |
 | `save.ts` | Save/settings formats, storage keys and versions, `toSave`/`fromSave`/`fromSettings`, `DEFAULT_LEVEL`, `bucketOf`, `levelName`, `LevelId` |

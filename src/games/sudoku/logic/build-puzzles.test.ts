@@ -34,10 +34,7 @@ build('generate a slice of the pool', () => {
     if (!level || !dir) throw new Error('SUDOKU_BUILD=<level>:<from>-<to> and SUDOKU_BUILD_OUT=<folder> are both needed');
     const part: Part = { level: Number(level) as Level, from: Number(from), puzzles: [] };
     for (let seed = part.from; seed <= Number(to); seed++) {
-      const gen = generateLevel(part.level, mulberry32(seed));
-      let r = gen.next();
-      while (!r.done) r = gen.next();
-      part.puzzles.push(formatGrid(r.value.puzzle));
+      part.puzzles.push(formatGrid(generateLevel(part.level, mulberry32(seed)).puzzle));
     }
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(`${dir}/${level}-${from}-${to}.json`, JSON.stringify(part));

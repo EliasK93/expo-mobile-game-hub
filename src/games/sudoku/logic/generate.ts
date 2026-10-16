@@ -20,27 +20,19 @@ export function fill(g: number[], random: Random, i = 0): boolean {
 // A puzzle that needs exactly `level`: unique, solvable with the level's techniques, and not with fewer.
 // Fills a grid, then digs out cells in random order, keeping a removal while the puzzle stays unique and
 // rate() <= level. If the result rates below `level`, it starts over with a new grid (`attempts` counts the grids).
-// A generator function that yields after each uniqueness or rating check; the offline pool build drives it to the end.
-// `random` is required: the pool is rebuilt from seeds, so an unseeded run would not be reproducible.
+// Only the offline pool build calls it. `random` is required: the pool is rebuilt from seeds, so an unseeded run would not be reproducible.
 // ponytail: no cap on `attempts`; Hard needs up to ~190 grids on the PC (measure.test.ts), so a bad seed range can run for long.
-export function* generateLevel(
-  level: Level,
-  random: Random,
-): Generator<void, { puzzle: Grid; solution: Grid; attempts: number }> {
+export function generateLevel(level: Level, random: Random): { puzzle: Grid; solution: Grid; attempts: number } {
   for (let attempts = 1; ; attempts++) {
     const solution = new Array<number>(81).fill(0);
     fill(solution, random);
-    yield;
 
     const puzzle = [...solution];
     let rated: Level = 1;
     for (const i of shuffle(Array.from({ length: 81 }, (_, k) => k), random)) {
       const keep = puzzle[i];
       puzzle[i] = 0;
-      const unique = countSolutions(puzzle, 2) === 1;
-      yield;
-      const r = unique ? rate(puzzle, level) : null;
-      if (unique) yield;
+      const r = countSolutions(puzzle, 2) === 1 ? rate(puzzle, level) : null;
       if (r === null) puzzle[i] = keep; // a second solution, or it would need a technique above the level
       else rated = r;
     }
