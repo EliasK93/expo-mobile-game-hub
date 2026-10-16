@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { useGameClock } from '@/hooks/use-game-clock';
-import { recordWin, type Stats } from '@/lib/stats';
+import { recordWinStored } from '@/lib/stats';
 import { load, remove, save } from '@/lib/storage';
 
 import { isWon, newGame, redoGame, setValue, toggleNote, undoGame, type Game } from '../logic/game';
@@ -40,13 +40,6 @@ const writeSave = (game: Game, ms: number, hinted: boolean, level: LevelId) =>
 // Version 2 first; a version 1 save (made before levels) is read as the same data without a level.
 async function loadSave() {
   return (await load(SAVE_KEY, SAVE_VERSION)) ?? (await load(SAVE_KEY, LEGACY_SAVE_VERSION));
-}
-
-// Delete the save first: if the app dies in between, the win is lost rather than counted twice on resume.
-async function recordWinStats(ms: number, hinted: boolean, level: LevelId) {
-  await remove(SAVE_KEY);
-  const stats = (await load<Stats>(STATS_KEY, STATS_VERSION)) ?? {};
-  await save(STATS_KEY, STATS_VERSION, recordWin(stats, bucketOf(level), ms, hinted));
 }
 
 export function useSudoku() {
@@ -137,7 +130,14 @@ export function useSudoku() {
   useEffect(() => {
     if (!won || recorded.current) return;
     recorded.current = true;
-    recordWinStats(stop(), hinted.current, level);
+    recordWinStored({
+      saveKey: SAVE_KEY,
+      statsKey: STATS_KEY,
+      version: STATS_VERSION,
+      bucket: bucketOf(level),
+      ms: stop(),
+      hinted: hinted.current,
+    });
   }, [won, level, stop]);
 
   // v = 0 always erases, even in notes mode. push ignores actions that changed nothing.

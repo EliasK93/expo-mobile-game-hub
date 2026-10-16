@@ -2,26 +2,19 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
+import { statsLine, type Stats } from '@/lib/stats';
 import { load } from '@/lib/storage';
-import { average, type Stats } from '@/lib/stats';
-import { formatTime } from '@/lib/timer';
 
 import { bucketOf, levelName, STATS_KEY, STATS_VERSION, type LevelId } from '../logic/save';
 import { LEVELS } from '../logic/techniques';
 
 const IDS: LevelId[] = [...LEVELS, 'classic'];
 
-// One line per level that has wins, in level order, then Classic. A level with only hinted wins shows just its count.
+// One line per level that has wins, in level order, then Classic.
 function linesOf(stats: Stats | null): string[] {
   return IDS.flatMap((id) => {
     const e = stats?.[bucketOf(id)];
-    if (!e || e.solved === 0) return [];
-    const avg = average(e);
-    return [
-      [`${levelName(id)}: ${e.solved}`, e.bestMs !== null && `Best ${formatTime(e.bestMs)}`, avg !== null && `Avg ${formatTime(avg)}`]
-        .filter(Boolean)
-        .join(' · '),
-    ];
+    return e && e.solved > 0 ? [statsLine(levelName(id), e)] : [];
   });
 }
 

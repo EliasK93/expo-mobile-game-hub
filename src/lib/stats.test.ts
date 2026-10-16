@@ -1,4 +1,7 @@
-import { average, recordWin, type Stats } from './stats';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { average, recordWin, recordWinStored, statsLine, type Stats } from './stats';
+import { load, save } from './storage';
 
 describe('stats', () => {
   it('records a first timed win', () => {
@@ -33,5 +36,45 @@ describe('stats', () => {
   it('average is totalMs / timedCount, or null with no timed wins', () => {
     expect(average({ solved: 2, timedCount: 2, totalMs: 10000, bestMs: 4000 })).toBe(5000);
     expect(average({ solved: 1, timedCount: 0, totalMs: 0, bestMs: null })).toBeNull();
+  });
+
+  describe('recordWinStored', () => {
+    const where = { saveKey: 'test:save', statsKey: 'test:stats', version: 1 };
+
+    it('deletes the save and adds the win to the stored stats', async () => {
+      await save('test:save', 1, { game: 'half done' });
+      await save('test:stats', 1, recordWin({}, 'easy', 4000, false));
+
+      await recordWinStored({ ...where, bucket: 'easy', ms: 3000, hinted: false });
+
+      expect(await AsyncStorage.getItem('test:save')).toBeNull();
+      expect(await load<Stats>('test:stats', 1)).toEqual({
+        easy: { solved: 2, timedCount: 2, totalMs: 7000, bestMs: 3000 },
+      });
+    });
+
+    it('starts the stats when there are none', async () => {
+      await recordWinStored({ ...where, bucket: 'easy', ms: 3000, hinted: true });
+      expect(await load<Stats>('test:stats', 1)).toEqual({ easy: { solved: 1, timedCount: 0, totalMs: 0, bestMs: null } });
+    });
+
+    it('deletes the save before it writes the stats, so a crash in between loses the win rather than counting it twice', async () => {
+      await recordWinStored({ ...where, bucket: 'easy', ms: 3000, hinted: false });
+      const [removed] = (AsyncStorage.removeItem as jest.Mock).mock.invocationCallOrder;
+      const [written] = (AsyncStorage.setItem as jest.Mock).mock.invocationCallOrder;
+      expect(removed).toBeLessThan(written);
+    });
+  });
+
+  describe('statsLine', () => {
+    it('shows name, solved count, best and average time', () => {
+      expect(statsLine('Easy', { solved: 5, timedCount: 2, totalMs: 484_000, bestMs: 190_000 })).toBe(
+        'Easy: 5 · Best 3:10 · Avg 4:02',
+      );
+    });
+
+    it('shows just the count when every win was hinted', () => {
+      expect(statsLine('Easy', { solved: 2, timedCount: 0, totalMs: 0, bestMs: null })).toBe('Easy: 2');
+    });
   });
 });
