@@ -4,7 +4,7 @@ Read this before working on Sudoku. The hub-wide rules (gate, tests, git, Herdr,
 
 ## Overview
 
-Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its route in `src/app/sudoku.tsx` and its entry in `src/games/registry.ts` (with an optional `Summary` line shown on home).
+Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its route in `src/app/sudoku.tsx` (the screen wrapped in the hub's `GameRoute`, which records playtime) and its entry in `src/games/registry.ts` (with its `Tile`, the art on home).
 
 ## Spec (v1)
 
@@ -27,13 +27,15 @@ Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its ro
   - Stats count only solved games; abandoned games are discarded. A win with a hint counts as solved but never enters best or average time (hints arrive in M6; the `hinted` flag is already in the save format). Until M6 every game goes into one stats bucket, `classic`. Keys: `"sudoku:save"` and `"sudoku:stats"`, both version 1 (`logic/save.ts`, `lib/stats.ts`).
   - One save slot; the undo history is not saved. When an unfinished save with progress exists, opening Sudoku asks **Continue** or **New game**. Saved after every move and when the clock stops; nothing is saved before the first move, and a win deletes the save.
   - The timer runs only while the Sudoku screen is focused, the app is in the foreground, the game isn't won and the level picker isn't open (`lib/timer.ts` is a pure clock). It sits above the grid; while the picker is open the time and level are hidden and the time spent there doesn't count. The win banner reads "Solved! in m:ss". The win is recorded exactly once.
-  - Home shows a summary under "Sudoku" ("Solved 3 · Best 4:12 · Avg 6:30", or "No puzzles solved yet") through the optional `Summary` component of a registry entry, reloaded whenever home gets focus.
+  - Home showed a stats summary under "Sudoku" until 2026-10-16; the stats moved into the level picker (see M6 decisions, "Stats in the picker") and the registry's `Summary` is gone.
 - M6 decisions (decided 2026-10-15):
   - Picker: "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked and a Cancel button. The last level is stored in `sudoku:settings` (version 1); the default is Medium. Opening Sudoku without a save shows the picker at once (the last level used marked, no Cancel, nothing starts by itself); with a save it shows the Continue / New game prompt at once. The current level is shown next to the timer.
   - Pool (decided 2026-10-16, replaces the on-device cache and generation): `src/games/sudoku/data/puzzles.json` holds 1000 puzzles per level, as 81-character strings (`0` = empty), no solutions. All come from `generateLevel()` with seeds 1 to 1000 per level, so the file can be rebuilt (`logic/build-puzzles.test.ts`, skipped unless `SUDOKU_BUILD` or `SUDOKU_MERGE` is set; its header says how, and Hard needs several parallel processes). `logic/pool.ts`: `pickPuzzle(level)` takes a random entry, `transform()` applies a random rotation or mirror plus a random relabeling of the digits 1-9 (same solution count, same rating), and `solve()` gives the solution. Every game start is instant and nothing is generated on the device. The old `sudoku:cache` storage key is removed when Sudoku opens (see Storage keys).
   - Save version 2 adds `level`; a version 1 save still loads, as level `classic`. Stats buckets: the level number as text (`"3"`), plus `classic` for the pre-M6 games.
   - Hint: the "Hint" button highlights the cells involved (theme token `cellHint`, a blue tint because the selection is yellow) and explains; "Apply" makes the move with `setValue`, so Undo works, and "Close" drops it. A move or New game closes the hint. Hints reason from the real candidates, not the notes. A wrong digit you entered is reported first ("This 4 is wrong.") and Apply erases it; that is the one place the solution is compared. Showing a hint already sets `hinted`: such a win counts as solved but stays out of best and average time.
-  - Home: one line per level that has wins, in level order, then Classic ("Easy: 5 · Best 3:10 · Avg 4:02"; a level with only hinted wins shows just its count).
+  - Stats in the picker (decided 2026-10-16, replaces the lines on home): each level button shows "5 solved · Best 3:10" from `sudoku:stats` under its name; a level with only hinted wins shows just "2 solved", a level without wins shows nothing. Wins from before levels existed (bucket `classic`) show as one small line "Classic: 3 solved · Best 4:12" under the levels, only if there are any. No average is shown (it is still stored). The stats are read when Sudoku opens and refreshed when a win is recorded. Home shows no stats.
+  - Tile (decided 2026-10-16): `ui/tile.tsx`, a small 3×3 Sudoku in the theme colours with a few digits, one cell selected (yellow) and two digits in blue ink.
+  - The in-game "New game" button and the "Continue" button of the Continue prompt use the hub Button's `primary` (accent) variant; every other Sudoku button is plain.
 
 ## Architecture
 
@@ -76,11 +78,11 @@ The shipped pool: 1000 puzzles per level as 81-character strings, read only by `
 
 | File | What it does |
 |---|---|
-| `sudoku-screen.tsx` | The screen: timer and level, grid, number pad, hint panel, level picker, Continue / New game prompt |
+| `sudoku-screen.tsx` | The screen: timer and level, grid, number pad, hint panel, level picker (with the stats), Continue / New game prompt |
 | `use-sudoku.ts` | The hook that holds the state and wires `logic/` to storage and the shared clock (`hooks/use-game-clock`, which handles app focus and foreground) |
 | `grid.tsx` | The 9x9 grid: selection, highlighting, conflicts, notes, hint cells |
 | `number-pad.tsx` | Digits, Undo, Redo, Notes, Erase |
-| `summary.tsx` | `SudokuSummary`, the stats lines on home (registry `Summary`) |
+| `tile.tsx` | `SudokuTile`, the art on home (registry `Tile`) |
 
 ### Storage keys
 
@@ -116,7 +118,8 @@ Verified only in the web preview so far; test them on the phone (add as they com
 - [x] Tapping cells and digits feels responsive.
 - [x] The timer pauses when the app goes to the background and continues when it returns.
 - [x] A game survives killing the app: reopening Sudoku shows the Continue / New game prompt, and Continue brings back digits, notes and time.
-- [x] The home summary updates after a win (back button from Sudoku to home).
+- [x] The home summary updates after a win (back button from Sudoku to home). *(Replaced 2026-10-16: the stats are in the level picker now, see the next item.)*
+- [ ] After a win, "New game" shows the new solved count and best time on that level's button, and the level buttons with their second line still fit the picker and Cancel on a small screen without scrolling.
 - [x] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
 - [x] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
 - [x] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
@@ -138,4 +141,5 @@ Deliberate shortcuts marked with a `ponytail:` comment in `src/games/sudoku/**` 
 |---|---|---|
 | `logic/generate.ts` (`generateLevel`) | No cap on `attempts`: it runs until it succeeds. Hard needed up to about 190 grids on the development PC (`measure.test.ts`), so a bad seed range can run for long | Generation runs anywhere other than the offline pool build, or the build hangs |
 | `logic/puzzles-data.test.ts` (`SAMPLE_EVERY`) | Rates only every 10th puzzle (100 per level, about 1.6 s) because all 5000 take about 16 s | After a pool rebuild: set `SAMPLE_EVERY` to 1 to check them all |
+| `ui/tile.tsx` (`digit`) | The digits on the home tile have a fixed font size (22) instead of one measured from the tile | A tile looks cramped or empty at some screen width |
 | `logic/techniques.ts` (`combinations`) | The subset and fish techniques rebuild their combinations on every scan (many small arrays); fine while a Hard puzzle takes about 1 s on the development PC (`measure.test.ts`) | If the phone is too slow for hints: precompute the candidate cells per unit |

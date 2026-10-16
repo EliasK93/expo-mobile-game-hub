@@ -50,8 +50,7 @@ describe('stats', () => {
       expect(await AsyncStorage.getItem('test:save')).toBeNull();
       expect(await load<Stats>('test:stats', 1)).toEqual({
         easy: { solved: 2, timedCount: 2, totalMs: 7000, bestMs: 3000 },
-      });
-    });
+      });    });
 
     it('starts the stats when there are none', async () => {
       await recordWinStored({ ...where, bucket: 'easy', ms: 3000, hinted: true });
@@ -67,14 +66,12 @@ describe('stats', () => {
   });
 
   describe('statsLine', () => {
-    it('shows name, solved count, best and average time', () => {
-      expect(statsLine('Easy', { solved: 5, timedCount: 2, totalMs: 484_000, bestMs: 190_000 })).toBe(
-        'Easy: 5 · Best 3:10 · Avg 4:02',
-      );
+    it('shows the solved count and the best time', () => {
+      expect(statsLine({ solved: 5, timedCount: 2, totalMs: 484_000, bestMs: 190_000 })).toBe('5 solved · Best 3:10');
     });
 
     it('shows just the count when every win was hinted', () => {
-      expect(statsLine('Easy', { solved: 2, timedCount: 0, totalMs: 0, bestMs: null })).toBe('Easy: 2');
+      expect(statsLine({ solved: 2, timedCount: 0, totalMs: 0, bestMs: null })).toBe('2 solved');
     });
   });
 });

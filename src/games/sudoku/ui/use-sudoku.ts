@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { useGameClock } from '@/hooks/use-game-clock';
-import { recordWinStored } from '@/lib/stats';
+import { recordWin, recordWinStored, type Stats } from '@/lib/stats';
 import { load, remove, save } from '@/lib/storage';
 
 import { isWon, newGame, redoGame, setValue, toggleNote, undoGame, type Game } from '../logic/game';
@@ -52,6 +52,7 @@ export function useSudoku() {
   const [notesMode, setNotesMode] = useState(false);
   const [status, setStatus] = useState<Status>('loading');
   const [pending, setPending] = useState<ReturnType<typeof fromSave>>(null);
+  const [stats, setStats] = useState<Stats>({}); // shown in the picker
   const hinted = useRef(false);
   const recorded = useRef(false);
   const game = history.present;
@@ -104,9 +105,10 @@ export function useSudoku() {
     let alive = true;
     // ponytail: removes the key of the old on-device cache on every open; delete this line once every installed copy has opened Sudoku once.
     remove('sudoku:cache');
-    Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION)]).then(([data, settings]) => {
+    Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION), load<Stats>(STATS_KEY, STATS_VERSION)]).then(([data, settings, stored]) => {
       if (!alive) return;
       setLastLevel(fromSettings(settings));
+      setStats(stored ?? {});
       const saved = fromSave(data);
       if (saved && hasProgress(saved.game)) {
         setPending(saved);
@@ -126,18 +128,15 @@ export function useSudoku() {
     if (status === 'playing') saveNow();
   }, [game, status, won, hint]);
 
-  // The win is recorded once: `recorded` guards against the effect running again.
+  // The win is recorded once: `recorded` guards against the effect running again. The picker's stats get it at once
+  // (the same recordWin as the stored ones, no waiting for storage).
   useEffect(() => {
     if (!won || recorded.current) return;
     recorded.current = true;
-    recordWinStored({
-      saveKey: SAVE_KEY,
-      statsKey: STATS_KEY,
-      version: STATS_VERSION,
-      bucket: bucketOf(level),
-      ms: stop(),
-      hinted: hinted.current,
-    });
+    const ms = stop();
+    const bucket = bucketOf(level);
+    setStats((s) => recordWin(s, bucket, ms, hinted.current));
+    recordWinStored({ saveKey: SAVE_KEY, statsKey: STATS_KEY, version: STATS_VERSION, bucket, ms, hinted: hinted.current });
   }, [won, level, stop]);
 
   // v = 0 always erases, even in notes mode. push ignores actions that changed nothing.
@@ -151,6 +150,7 @@ export function useSudoku() {
     game,
     level,
     lastLevel,
+    stats,
     picking,
     hint,
     selected,

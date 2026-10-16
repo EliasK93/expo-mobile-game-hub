@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
-import { AppState } from 'react-native';
+import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
+import { AppState, StyleSheet } from 'react-native';
 
+import { Colors } from '@/constants/theme';
 import { parseGrid } from '@/games/sudoku/logic/board';
 import { pickPuzzle } from '@/games/sudoku/logic/pool';
 
@@ -179,6 +180,45 @@ describe('Level picker', () => {
     expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0); // the picker, nothing started
     expect(screen.getByLabelText('Level: Expert').props.accessibilityState.selected).toBe(true);
     expect(screen.getByLabelText('Level: Medium').props.accessibilityState.selected).toBe(false);
+  });
+
+  describe('stats', () => {
+    const STATS = {
+      2: { solved: 5, timedCount: 4, totalMs: 968_000, bestMs: 190_000 },
+      3: { solved: 2, timedCount: 0, totalMs: 0, bestMs: null }, // only hinted wins
+      4: { solved: 0, timedCount: 0, totalMs: 0, bestMs: null },
+    };
+    const detail = (name: string) => within(screen.getByLabelText(`Level: ${name}`));
+
+    it('each level button shows its solved count and best time; a level without wins shows nothing', async () => {
+      await reopen(() => seed('sudoku:stats', { version: 1, data: STATS }));
+
+      expect(detail('Easy').getByText('5 solved · Best 3:10')).toBeTruthy();
+      expect(detail('Medium').getByText('2 solved')).toBeTruthy(); // hinted wins count, but have no best time
+      expect(detail('Hard').queryByText(/solved/)).toBeNull();
+      expect(detail('Very easy').queryByText(/solved/)).toBeNull();
+      expect(screen.queryByText(/^Classic/)).toBeNull();
+    });
+
+    it('shows the same stats when the picker is opened from a running game', async () => {
+      await reopen(() => seed('sudoku:stats', { version: 1, data: STATS }));
+      level('Medium');
+      fireEvent.press(screen.getByLabelText('New game'));
+
+      expect(detail('Easy').getByText('5 solved · Best 3:10')).toBeTruthy();
+    });
+
+    it('shows wins from before levels existed as one small line under the levels, only if there are any', async () => {
+      await reopen(() => seed('sudoku:stats', { version: 1, data: { classic: { solved: 3, timedCount: 2, totalMs: 780_000, bestMs: 252_000 } } }));
+
+      expect(screen.getByText('Classic: 3 solved · Best 4:12')).toBeTruthy();
+    });
+
+    it('does not show an average time', async () => {
+      await reopen(() => seed('sudoku:stats', { version: 1, data: STATS }));
+
+      expect(screen.queryByText(/Avg/)).toBeNull();
+    });
   });
 
   it('every level starts at once with the pool puzzle', () => {
@@ -535,6 +575,27 @@ describe('Save and resume', () => {
   });
 });
 
+describe('Primary buttons', () => {
+  const textColor = (label: string, text: string) => StyleSheet.flatten(within(screen.getByLabelText(label)).getByText(text).props.style).color;
+
+  it('New game on the game screen is the accent button; the other buttons are not', () => {
+    expect(textColor('New game', 'New game')).toBe(Colors.light.onAccent);
+    expect(textColor('Hint', 'Hint')).toBe(Colors.light.text);
+    expect(textColor('Enter 1', '1')).toBe(Colors.light.text);
+  });
+
+  it('Continue in the Continue prompt is the accent button, New game there is not', async () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    await settle();
+    screen.unmount();
+    await open();
+
+    expect(textColor('Continue saved game', 'Continue')).toBe(Colors.light.onAccent);
+    expect(textColor('Start new game', 'New game')).toBe(Colors.light.text);
+  });
+});
+
 describe('Timer', () => {
   it('shows 0:00 and counts seconds', async () => {
     expect(screen.getByText('0:00')).toBeTruthy();
@@ -574,11 +635,13 @@ describe('Timer', () => {
 
   it('pauses while the app is in the background and goes on when it returns', async () => {
     const listeners: ((s: string) => void)[] = [];
-    // RN's jest mock of AppState is a jest.fn; capture the listener of the next mount only (Once keeps the default for later tests).
-    (AppState.addEventListener as jest.Mock).mockImplementationOnce((_: string, l: (s: string) => void) => {
+    // RN's jest mock of AppState is a jest.fn; capture the listeners of the next mount only (Once keeps the default for later tests).
+    // Two clocks listen: the hub's GameRoute (playtime) and the Sudoku timer.
+    const capture = (_: string, l: (s: string) => void) => {
       listeners.push(l);
       return { remove: () => {} };
-    });
+    };
+    (AppState.addEventListener as jest.Mock).mockImplementationOnce(capture).mockImplementationOnce(capture);
     screen.unmount();
     await open();
     level('Medium');
@@ -651,11 +714,10 @@ describe('Win', () => {
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
   });
 
-  it('home shows the new result after a win', async () => {
+  it('the level picker shows the new result after a win', async () => {
     await win();
-    await act(async () => router.navigate('/'));
-    await settle();
+    fireEvent.press(screen.getByLabelText('New game'));
 
-    expect(screen.getByText('Medium: 1 · Best 0:02 · Avg 0:02')).toBeTruthy();
+    expect(within(screen.getByLabelText('Level: Medium')).getByText('1 solved · Best 0:02')).toBeTruthy();
   });
 });

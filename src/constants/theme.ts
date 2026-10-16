@@ -12,6 +12,7 @@ export const Colors = {
     backgroundSelected: '#DAD8CF',
     textSecondary: '#62656B',
     accent: '#2D5BD3',
+    onAccent: '#FFFFFF', // text on an accent background (the primary button)
     cellSelected: '#FBE7A1',
     cellRelated: '#F4F2EA',
     cellSameValue: '#E6E3D8', // a step darker than cellRelated, still lighter than the grid lines
@@ -28,6 +29,7 @@ export const Colors = {
     backgroundSelected: '#323438',
     textSecondary: '#A5A7AB',
     accent: '#8FB0FF',
+    onAccent: '#0E1530',
     cellSelected: '#4A4120',
     cellRelated: '#1F2022',
     cellSameValue: '#2C2E31',

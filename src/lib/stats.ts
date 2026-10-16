@@ -23,13 +23,9 @@ export function recordWin(stats: Stats, bucket: string, ms: number, hinted: bool
 
 export const average = (e: StatsEntry): number | null => (e.timedCount === 0 ? null : e.totalMs / e.timedCount);
 
-// "Name: 5 · Best 3:10 · Avg 4:02". An entry with only hinted wins shows just the count.
-export function statsLine(name: string, e: StatsEntry): string {
-  const avg = average(e);
-  return [`${name}: ${e.solved}`, e.bestMs !== null && `Best ${formatTime(e.bestMs)}`, avg !== null && `Avg ${formatTime(avg)}`]
-    .filter(Boolean)
-    .join(' · ');
-}
+// "5 solved · Best 3:10". An entry with only hinted wins shows just the count.
+export const statsLine = (e: StatsEntry): string =>
+  e.bestMs === null ? `${e.solved} solved` : `${e.solved} solved · Best ${formatTime(e.bestMs)}`;
 
 // Delete the save first: if the app dies in between, the win is lost rather than counted twice on resume.
 export async function recordWinStored(o: { saveKey: string; statsKey: string; version: number; bucket: string; ms: number; hinted: boolean }) {

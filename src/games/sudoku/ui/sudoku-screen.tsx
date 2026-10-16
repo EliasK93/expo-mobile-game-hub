@@ -5,22 +5,38 @@ import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { statsLine, type Stats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
 
-import { levelName } from '../logic/save';
+import { bucketOf, levelName } from '../logic/save';
 import { LEVEL_NAMES, LEVELS, type Level } from '../logic/techniques';
 import { Grid } from './grid';
 import { NumberPad } from './number-pad';
 import { useSudoku } from './use-sudoku';
 
-// The five levels (names from LEVEL_NAMES); the one used last is marked. Without onCancel there is no game to go back to.
-function LevelPicker({ lastLevel, onPick, onCancel }: { lastLevel: Level; onPick: (l: Level) => void; onCancel?: () => void }) {
+// The five levels (names from LEVEL_NAMES); the one used last is marked, and each shows its solved count and best time
+// once it has wins. Wins from before levels existed are one small line under the levels. Without onCancel there is no game to go back to.
+function LevelPicker({ lastLevel, stats, onPick, onCancel }: { lastLevel: Level; stats: Stats; onPick: (l: Level) => void; onCancel?: () => void }) {
+  const classic = stats[bucketOf('classic')];
   return (
     <ThemedView style={styles.panel}>
       <ThemedText type="subtitle" style={styles.heading}>Pick a level</ThemedText>
-      {LEVELS.map((l) => (
-        <Button key={l} label={`Level: ${LEVEL_NAMES[l]}`} text={l === lastLevel ? `${LEVEL_NAMES[l]} (last used)` : LEVEL_NAMES[l]} selected={l === lastLevel} onPress={() => onPick(l)} />
-      ))}
+      {LEVELS.map((l) => {
+        const e = stats[bucketOf(l)];
+        return (
+          <Button
+            key={l}
+            label={`Level: ${LEVEL_NAMES[l]}`}
+            text={l === lastLevel ? `${LEVEL_NAMES[l]} (last used)` : LEVEL_NAMES[l]}
+            detail={e && e.solved > 0 ? statsLine(e) : undefined}
+            selected={l === lastLevel}
+            onPress={() => onPick(l)}
+          />
+        );
+      })}
+      {classic && classic.solved > 0 && (
+        <ThemedText type="small" themeColor="textSecondary" style={styles.heading}>{`Classic: ${statsLine(classic)}`}</ThemedText>
+      )}
       {onCancel && <Button label="Cancel" onPress={onCancel} />}
     </ThemedView>
   );
@@ -28,7 +44,7 @@ function LevelPicker({ lastLevel, onPick, onCancel }: { lastLevel: Level; onPick
 
 export function SudokuScreen() {
   const {
-    game, level, lastLevel, picking, hint, selected, notesMode, won, status, elapsedMs, canUndo, canRedo,
+    game, level, lastLevel, stats, picking, hint, selected, notesMode, won, status, elapsedMs, canUndo, canRedo,
     select, enter, erase, undo, redo, toggleNotes, openPicker, closePicker, pickLevel,
     showHint, applyHint, closeHint, continueSaved,
   } = useSudoku();
@@ -42,7 +58,7 @@ export function SudokuScreen() {
   if (status === 'picker' || picking) {
     return (
       <ThemedView style={container}>
-        <LevelPicker lastLevel={lastLevel} onPick={pickLevel} onCancel={status === 'picker' ? undefined : closePicker} />
+        <LevelPicker lastLevel={lastLevel} stats={stats} onPick={pickLevel} onCancel={status === 'picker' ? undefined : closePicker} />
       </ThemedView>
     );
   }
@@ -52,7 +68,7 @@ export function SudokuScreen() {
       <ThemedView style={container}>
         <ThemedView style={styles.panel}>
           <ThemedText type="subtitle" style={styles.heading}>Continue your game?</ThemedText>
-          <Button label="Continue saved game" text="Continue" onPress={continueSaved} />
+          <Button label="Continue saved game" text="Continue" primary onPress={continueSaved} />
           <Button label="Start new game" text="New game" onPress={openPicker} />
         </ThemedView>
       </ThemedView>
@@ -91,7 +107,7 @@ export function SudokuScreen() {
       ) : (
         <ThemedView style={styles.row}>
           <Button flex label="Hint" onPress={showHint} disabled={won} />
-          <Button flex label="New game" onPress={openPicker} />
+          <Button flex primary label="New game" onPress={openPicker} />
         </ThemedView>
       )}
     </ThemedView>
