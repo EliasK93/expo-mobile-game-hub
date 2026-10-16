@@ -86,16 +86,7 @@ export function SudokuScreen() {
         </ThemedView>
       </ThemedView>
       <Grid game={game} selected={selected} onSelect={select} hintCells={hint?.cells} />
-      <NumberPad
-        onDigit={enter}
-        onErase={erase}
-        onUndo={undo}
-        onRedo={redo}
-        onToggleNotes={toggleNotes}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        notesMode={notesMode}
-      />
+      {/* A shown hint takes the place of the pad, the Undo/Redo/Notes/Erase row and the Hint / New game row, so its buttons stay on screen even with a long explanation. The grid stays, to see the highlighted cells. */}
       {hint ? (
         <ThemedView type="backgroundElement" style={styles.hint}>
           <ThemedText>{hint.explanation}</ThemedText>
@@ -105,10 +96,22 @@ export function SudokuScreen() {
           </ThemedView>
         </ThemedView>
       ) : (
-        <ThemedView style={styles.row}>
-          <Button flex label="Hint" onPress={showHint} disabled={won} />
-          <Button flex primary label="New game" onPress={openPicker} />
-        </ThemedView>
+        <>
+          <NumberPad
+            onDigit={enter}
+            onErase={erase}
+            onUndo={undo}
+            onRedo={redo}
+            onToggleNotes={toggleNotes}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            notesMode={notesMode}
+          />
+          <ThemedView style={styles.row}>
+            <Button flex label="Hint" onPress={showHint} disabled={won} />
+            <Button flex primary label="New game" onPress={openPicker} />
+          </ThemedView>
+        </>
       )}
     </ThemedView>
   );

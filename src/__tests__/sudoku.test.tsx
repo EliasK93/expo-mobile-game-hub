@@ -252,17 +252,32 @@ describe('Hint', () => {
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
   });
 
-  it('Close drops the hint without a move, and any move closes it too', () => {
+  it('Close drops the hint without a move', () => {
     press('Hint');
     press('Close hint');
     expect(hintCells()).toHaveLength(0);
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+  });
+
+  it('replaces the number pad and the Undo/Redo/Notes/Erase row while shown; the grid stays; Close and Apply bring the pad back', () => {
+    press('Hint');
+
+    expect(screen.queryByLabelText('Enter 1')).toBeNull();
+    expect(screen.queryByLabelText('Undo')).toBeNull();
+    expect(screen.getByText(/^Full house/)).toBeTruthy();
+    expect(screen.getByLabelText('Apply hint')).toBeTruthy();
+    expect(screen.getByLabelText('Close hint')).toBeTruthy();
+    expect(screen.getByLabelText(FIRST_EMPTY.replace('empty', 'empty, hint'))).toBeTruthy();
+    expect(screen.getByLabelText(LAST_EMPTY)).toBeTruthy();
+
+    press('Close hint');
+    expect(screen.getByLabelText('Enter 1')).toBeTruthy();
+    expect(screen.getByLabelText('Undo')).toBeTruthy();
 
     press('Hint');
-    press(LAST_EMPTY);
-    enter(9);
-    expect(screen.queryByLabelText('Apply hint')).toBeNull();
-    expect(hintCells()).toHaveLength(0);
+    press('Apply hint');
+    expect(screen.getByLabelText('Enter 1')).toBeTruthy();
+    expect(screen.getByLabelText('Undo')).toBeTruthy();
   });
 
   it('reports a wrong digit first, and Apply erases it', () => {
