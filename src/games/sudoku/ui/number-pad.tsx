@@ -1,10 +1,10 @@
 import { StyleSheet } from 'react-native';
 
+import { Button } from '@/components/button';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 import { DIGITS } from '../logic/board';
-import { Button } from './button';
 
 type Props = {
   onDigit: (v: number) => void;

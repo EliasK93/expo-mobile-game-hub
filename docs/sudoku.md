@@ -47,6 +47,7 @@ src/games/sudoku/
 src/app/sudoku.tsx        # route, renders ui/sudoku-screen
 src/__tests__/sudoku.test.tsx, home.test.tsx, navigation.test.tsx   # route tests
 src/lib/stats.ts, storage.ts, timer.ts, history.ts, random.ts   # shared helpers Sudoku uses (hub-wide, not Sudoku-only)
+src/hooks/use-game-clock.ts, src/components/button.tsx   # the shared clock hook and text button Sudoku uses
 ```
 
 ### `logic/`
@@ -76,10 +77,9 @@ The shipped pool: 1000 puzzles per level as 81-character strings, read only by `
 | File | What it does |
 |---|---|
 | `sudoku-screen.tsx` | The screen: timer and level, grid, number pad, hint panel, level picker, Continue / New game prompt |
-| `use-sudoku.ts` | The hook that holds the state and wires `logic/` to storage, the clock, app focus and app foreground |
+| `use-sudoku.ts` | The hook that holds the state and wires `logic/` to storage and the shared clock (`hooks/use-game-clock`, which handles app focus and foreground) |
 | `grid.tsx` | The 9x9 grid: selection, highlighting, conflicts, notes, hint cells |
 | `number-pad.tsx` | Digits, Undo, Redo, Notes, Erase |
-| `button.tsx` | The button used across the Sudoku screen |
 | `summary.tsx` | `SudokuSummary`, the stats lines on home (registry `Summary`) |
 
 ### Storage keys

@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -8,7 +9,6 @@ import { formatTime } from '@/lib/timer';
 
 import { levelName } from '../logic/save';
 import { LEVEL_NAMES, LEVELS, type Level } from '../logic/techniques';
-import { Button } from './button';
 import { Grid } from './grid';
 import { NumberPad } from './number-pad';
 import { useSudoku } from './use-sudoku';

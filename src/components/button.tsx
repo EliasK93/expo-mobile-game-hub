@@ -15,7 +15,7 @@ type Props = {
   textType?: ThemedTextProps['type'];
 };
 
-// The one text button of the Sudoku screens (screen buttons and number pad). A disabled one is dimmed.
+// The hub's one text button. A disabled one is dimmed.
 // The label stretches to the full width of the button: a shrink-wrapped, centred Text gets its last word cut off on some Android fonts.
 export function Button({ label, text = label, onPress, selected, disabled, flex, background = 'backgroundSelected', textType = 'smallBold' }: Props) {
   return (

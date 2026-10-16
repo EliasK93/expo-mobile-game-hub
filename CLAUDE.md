@@ -68,7 +68,7 @@ src/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
-  components/ hooks/ constants/   # shared UI, hooks, theme (from template)
+  components/ hooks/ constants/   # shared UI (themed text/view, `button`), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background), theme
   lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle)
 ```
 
