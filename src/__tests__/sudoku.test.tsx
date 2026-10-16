@@ -4,11 +4,10 @@ import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-librar
 import { AppState } from 'react-native';
 
 import { parseGrid } from '@/games/sudoku/logic/board';
-import { generateLevel } from '@/games/sudoku/logic/generate';
+import { pickPuzzle } from '@/games/sudoku/logic/pool';
 
-// The real generator is replaced by a fixed puzzle with two empty cells: row 1 column 1 (answer 5) and row 9 column 9 (answer 9).
-// It is a generator function like the real one, so the real runner (runChunked) drives it.
-jest.mock('@/games/sudoku/logic/generate', () => ({ generateLevel: jest.fn() }));
+// The pool pick is replaced by a fixed puzzle with two empty cells: row 1 column 1 (answer 5) and row 9 column 9 (answer 9).
+jest.mock('@/games/sudoku/logic/pool', () => ({ pickPuzzle: jest.fn() }));
 
 const SOLUTION = parseGrid('534678912672195348198342567859761423426853791713924856961537284287419635345286179');
 const PUZZLE = parseGrid('.3467891267219534819834256785976142342685379171392485696153728428741963534528617.');
@@ -25,30 +24,20 @@ const newGame = (name = 'Medium') => {
   level(name);
 };
 
-const generator = (puzzle = PUZZLE) =>
-  function* () {
-    yield;
-    return { puzzle, solution: SOLUTION, attempts: 1 };
-  };
-const makeAll = (puzzle = PUZZLE) => (generateLevel as jest.Mock).mockReset().mockImplementation(generator(puzzle));
-const asCache = (byLevel: Record<number, number[][]>) => ({
-  version: 1,
-  data: Object.fromEntries(Object.entries(byLevel).map(([l, ps]) => [l, ps.map((puzzle) => ({ puzzle, solution: SOLUTION }))])),
-});
-// Every level holds a full set (3), so the filler has nothing to make; `own` replaces the puzzles of some levels.
-const fullCache = (own: Record<number, number[]> = {}) =>
-  asCache(Object.fromEntries([1, 2, 3, 4, 5].map((l) => [l, Array(3).fill(own[l] ?? PUZZLE)])));
+// Every level hands out this puzzle.
+const makeAll = (puzzle = PUZZLE) => (pickPuzzle as jest.Mock).mockReset().mockReturnValue({ puzzle, solution: SOLUTION });
 
 // Fake timers so the clock is exact. Storage is the AsyncStorage mock (jest.setup.js), cleared before each test.
 // settle() lets the pending storage promises finish; they need no timers.
 const settle = async () => {
   for (let i = 0; i < 5; i++) await act(async () => {});
 };
+// Opening shows the Continue prompt or the level picker; no game starts by itself.
 const open = async () => {
   renderRouter('./src/app', { initialUrl: '/sudoku' });
   await settle();
 };
-// Starts over: leaves the screen, empties storage (and so the puzzle cache), then opens it again.
+// Starts over: leaves the screen, empties storage, then opens it again.
 const reopen = async (setup?: () => Promise<void>) => {
   screen.unmount();
   await settle();
@@ -60,10 +49,12 @@ const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
 const seed = (key: string, value: unknown) => AsyncStorage.setItem(key, JSON.stringify(value));
 
+// Most tests start from a running Medium game: open Sudoku (no save, so the picker) and pick Medium.
 beforeEach(async () => {
   jest.useFakeTimers();
   makeAll();
   await open();
+  level('Medium');
 });
 
 afterEach(() => {
@@ -114,10 +105,20 @@ describe('Sudoku screen', () => {
     expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
   });
 
-  it('opens on its own at the last level, first Medium, without any button press', () => {
-    expect(generateLevel).toHaveBeenCalledWith(3);
+  it('without a save opens on the level picker at once, with nothing started and nothing to cancel back to', async () => {
+    (pickPuzzle as jest.Mock).mockClear();
+    await reopen();
+
+    expect(pickPuzzle).not.toHaveBeenCalled();
+    expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
+    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert']) expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
+    expect(screen.getByLabelText('Level: Medium').props.accessibilityState.selected).toBe(true); // the first game is Medium
+    expect(screen.queryByLabelText('Cancel')).toBeNull();
+
+    level('Medium');
+    expect(pickPuzzle).toHaveBeenCalledWith(3);
     expect(screen.getByText('Medium')).toBeTruthy();
-    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy(); // in the same press, nothing to wait for
   });
 
   it('New game resets the board', () => {
@@ -175,58 +176,21 @@ describe('Level picker', () => {
     expect((await saved('sudoku:settings')).data).toEqual({ level: 5 });
 
     await reopen(() => seed('sudoku:settings', { version: 1, data: { level: 5 } }));
-    expect(screen.getByText('Expert')).toBeTruthy(); // starts the last level right away
-    fireEvent.press(screen.getByLabelText('New game'));
+    expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0); // the picker, nothing started
     expect(screen.getByLabelText('Level: Expert').props.accessibilityState.selected).toBe(true);
     expect(screen.getByLabelText('Level: Medium').props.accessibilityState.selected).toBe(false);
   });
 
-  it('takes a ready puzzle from the cache straight away, with no generation', async () => {
-    const OTHER = PUZZLE.map((v, i) => (i === 1 ? 0 : v));
-    await reopen(() => seed('sudoku:cache', fullCache({ 2: OTHER })));
-    (generateLevel as jest.Mock).mockClear();
-    expect(generateLevel).not.toHaveBeenCalled(); // the first game came out of the cache too
+  it('every level starts at once with the pool puzzle, with no waiting state', () => {
+    makeAll(WIDE);
+    for (const [l, name] of [[1, 'Very easy'], [2, 'Easy'], [3, 'Medium'], [4, 'Hard'], [5, 'Expert']] as const) {
+      newGame(name);
 
-    newGame('Easy');
-
-    expect(screen.queryByText('Making a puzzle…')).toBeNull();
-    expect(screen.getByLabelText('Row 1, column 2, empty')).toBeTruthy(); // the cached puzzle, in the same press
-    expect(screen.getByText('Easy')).toBeTruthy();
-  });
-
-  it('refills the cache after a puzzle was taken', async () => {
-    await reopen(() => seed('sudoku:cache', fullCache()));
-    (generateLevel as jest.Mock).mockClear();
-
-    newGame('Hard');
-    await settle();
-
-    expect(generateLevel).toHaveBeenCalledWith(4);
-    expect((await saved('sudoku:cache')).data['4']).toHaveLength(3);
-  });
-
-  it('shows "Making a puzzle…" while the level is made when the cache has none', async () => {
-    let release = false;
-    // Every step "takes" 10 ms on the fake clock, so the runner has to wait with setTimeout between steps.
-    (generateLevel as jest.Mock).mockReset().mockImplementation(function* () {
-      while (!release) {
-        jest.setSystemTime(Date.now() + 10);
-        yield;
-      }
-      return { puzzle: WIDE, solution: SOLUTION, attempts: 1 };
-    });
-    await reopen();
-
-    expect(screen.getByText('Making a puzzle…')).toBeTruthy();
-    expect(screen.queryByLabelText(/^Row 1, column 1, /)).toBeNull();
-
-    release = true;
-    await act(async () => {
-      await jest.advanceTimersByTimeAsync(50);
-    });
-
-    expect(screen.queryByText('Making a puzzle…')).toBeNull();
-    expect(screen.getByLabelText('Row 1, column 2, empty')).toBeTruthy();
+      expect(pickPuzzle).toHaveBeenLastCalledWith(l);
+      expect(screen.queryByText('Making a puzzle…')).toBeNull();
+      expect(screen.getByLabelText('Row 1, column 2, empty')).toBeTruthy(); // the picked puzzle, in the same press
+      expect(screen.getByText(name)).toBeTruthy();
+    }
   });
 });
 
@@ -337,6 +301,7 @@ describe('Notes', () => {
   it('placing a digit removes that note from the peers, and Undo brings it back', async () => {
     makeAll(WIDE);
     await reopen();
+    level('Medium');
 
     fireEvent.press(screen.getByLabelText('Notes'));
     fireEvent.press(screen.getByLabelText('Row 1, column 2, empty'));
@@ -438,7 +403,7 @@ describe('Save and resume', () => {
     screen.unmount();
     await open();
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
-    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+    expect(screen.getByLabelText('Level: Medium')).toBeTruthy(); // the picker
   });
 
   it('saves after a move', async () => {
@@ -488,6 +453,21 @@ describe('Save and resume', () => {
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
   });
 
+  it('with a save the prompt shows at once, and no puzzle is picked until a level is', async () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    await settle();
+    screen.unmount();
+    await settle();
+    (pickPuzzle as jest.Mock).mockClear();
+    await open();
+
+    expect(screen.getByLabelText(CONTINUE)).toBeTruthy();
+    expect(screen.getByLabelText(NEW_GAME)).toBeTruthy();
+    expect(screen.queryByLabelText('Level: Medium')).toBeNull();
+    expect(pickPuzzle).not.toHaveBeenCalled();
+  });
+
   it('the picker from the prompt replaces the prompt, and Cancel brings the prompt back', async () => {
     fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
     enter(5);
@@ -514,6 +494,8 @@ describe('Save and resume', () => {
 
     fireEvent.press(screen.getByLabelText(NEW_GAME));
     expect(screen.queryByLabelText(CONTINUE)).toBeNull(); // the picker replaces the prompt; nothing is lost until a level is picked
+    await settle();
+    expect(await saved('sudoku:save')).not.toBeNull();
     level('Hard');
     await settle();
 
@@ -524,12 +506,13 @@ describe('Save and resume', () => {
     expect(await saved('sudoku:save')).toBeNull();
   });
 
-  it('an unusable save is ignored: no prompt, fresh board', async () => {
+  it('an unusable save is ignored: no prompt, the level picker, then a fresh board', async () => {
     screen.unmount();
     await AsyncStorage.setItem('sudoku:save', JSON.stringify({ version: 1, data: { values: [1, 2, 3] } }));
     await open();
 
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
+    level('Medium');
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
   });
 
@@ -593,6 +576,7 @@ describe('Timer', () => {
     });
     screen.unmount();
     await open();
+    level('Medium');
     const appState = (s: string) => act(() => listeners.forEach((l) => l(s)));
 
     await tick(2000);
@@ -650,13 +634,15 @@ describe('Win', () => {
     expect((await saved('sudoku:stats')).data['3']).toEqual({ solved: 3, timedCount: 3, totalMs: 12_000, bestMs: 2000 });
   });
 
-  it('the next visit is a fresh game without a prompt', async () => {
+  it('the next visit shows the level picker, without a prompt', async () => {
     await win();
     screen.unmount();
     await settle();
     await open();
 
     expect(screen.queryByLabelText('Continue saved game')).toBeNull();
+    expect(screen.getByLabelText('Level: Medium')).toBeTruthy();
+    level('Medium');
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
   });
 

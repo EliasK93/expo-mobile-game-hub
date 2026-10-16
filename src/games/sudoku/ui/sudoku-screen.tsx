@@ -13,15 +13,15 @@ import { Grid } from './grid';
 import { NumberPad } from './number-pad';
 import { useSudoku } from './use-sudoku';
 
-// The five levels (names from LEVEL_NAMES); the one used last is marked.
-function LevelPicker({ lastLevel, onPick, onCancel }: { lastLevel: Level; onPick: (l: Level) => void; onCancel: () => void }) {
+// The five levels (names from LEVEL_NAMES); the one used last is marked. Without onCancel there is no game to go back to.
+function LevelPicker({ lastLevel, onPick, onCancel }: { lastLevel: Level; onPick: (l: Level) => void; onCancel?: () => void }) {
   return (
     <ThemedView style={styles.panel}>
       <ThemedText type="subtitle" style={styles.heading}>Pick a level</ThemedText>
       {LEVELS.map((l) => (
         <Button key={l} label={`Level: ${LEVEL_NAMES[l]}`} text={l === lastLevel ? `${LEVEL_NAMES[l]} (last used)` : LEVEL_NAMES[l]} selected={l === lastLevel} onPress={() => onPick(l)} />
       ))}
-      <Button label="Cancel" onPress={onCancel} />
+      {onCancel && <Button label="Cancel" onPress={onCancel} />}
     </ThemedView>
   );
 }
@@ -37,10 +37,10 @@ export function SudokuScreen() {
 
   if (status === 'loading') return <ThemedView style={container} />;
 
-  if (status === 'making') {
+  if (status === 'picker') {
     return (
       <ThemedView style={container}>
-        <ThemedText type="subtitle">Making a puzzle…</ThemedText>
+        <LevelPicker lastLevel={lastLevel} onPick={pickLevel} />
       </ThemedView>
     );
   }

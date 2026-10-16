@@ -25,14 +25,14 @@ import {
   toSave,
   type LevelId,
 } from '../logic/save';
+import { pickPuzzle } from '../logic/pool';
 import type { Level } from '../logic/techniques';
-import { closePuzzleCache, fillPuzzleCache, makePuzzle, openPuzzleCache, takeCached } from './puzzle-cache';
 
-// loading = looking for a saved game, prompt = asking Continue or New game, making = waiting for a puzzle that was
-// not in the cache, playing = the board.
-type Status = 'loading' | 'prompt' | 'making' | 'playing';
+// loading = looking for a saved game, prompt = asking Continue or New game, picker = no game yet, pick a level,
+// playing = the board.
+type Status = 'loading' | 'prompt' | 'picker' | 'playing';
 
-// Shown under the loading and making screens; nothing reads it.
+// Shown under the loading and picker screens; nothing reads it.
 const BLANK = newGame({ puzzle: Array<number>(81).fill(0), solution: Array<number>(81).fill(0) });
 
 // A game without progress is not worth resuming, so its save is deleted instead.
@@ -94,41 +94,34 @@ export function useSudoku() {
     setStatus('playing');
   }, []);
 
-  // Starts a game at the level: from the cache if one is ready, otherwise "making" until it is generated.
+  // Starts a game at the level, at once: the puzzle comes out of the shipped pool.
   const begin = useCallback(
     (lvl: Level) => {
-      setPicking(false);
-      setHint(null);
       setLastLevel(lvl);
       save(SETTINGS_KEY, SETTINGS_VERSION, { level: lvl });
-      const cached = takeCached(lvl);
-      if (cached) return startGame(newGame(cached), lvl);
-      setStatus('making');
-      makePuzzle(lvl).then((p) => p && startGame(newGame(p), lvl)); // null = the screen closed meanwhile
+      startGame(newGame(pickPuzzle(lvl)), lvl);
     },
     [startGame],
   );
 
+  // Opening shows the Continue prompt if there is a game worth resuming, otherwise the level picker. No game starts by itself.
   useEffect(() => {
     let alive = true;
-    Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION), openPuzzleCache()]).then(([data, settings]) => {
+    Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION)]).then(([data, settings]) => {
       if (!alive) return;
-      const last = fromSettings(settings);
-      setLastLevel(last);
+      setLastLevel(fromSettings(settings));
       const saved = fromSave(data);
       if (saved && hasProgress(saved.game)) {
         setPending(saved);
         setStatus('prompt');
-        fillPuzzleCache();
       } else {
-        begin(last);
+        setStatus('picker');
       }
     });
     return () => {
       alive = false;
-      closePuzzleCache();
     };
-  }, [begin]);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {

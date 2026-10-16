@@ -63,20 +63,21 @@ src/
     registry.ts         # list of available games (id, title, route) shown on home
     sudoku/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
+      data/puzzles.json # the shipped puzzle pool (see "Sudoku spec"); read only by logic/pool.ts
       ui/               # components + hooks; only calls into logic/
   components/ hooks/ constants/   # shared UI, hooks, theme (from template)
-  lib/                  # shared non-UI helpers: storage, stats, timer, chunked (sliced generators)
+  lib/                  # shared non-UI helpers: storage, stats, timer
 ```
 
 - Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file + one registry entry. Never edit another game's folder to add a game.
 - Games never import from each other. Shared code goes in `components/`, `hooks/`, `constants/`, `lib/`.
 - `logic/` is plain TypeScript with no framework imports (enforced by an ESLint `no-restricted-imports` block in `eslint.config.js`, so `npx expo lint` and the gate fail on a React/React Native/Expo/`@/components`/`@/hooks` import), so it can be tested without a phone or browser. All rules, solving, generating, undo history and scoring live there; UI holds no game rules.
 - AsyncStorage keys are namespaced per game: `"<game>:<what>"`, e.g. `"sudoku:save"`, `"sudoku:stats"`. Stored JSON includes a `version` field so the format can change later.
-- Heavy work (puzzle generation) must not freeze the UI: it runs in small slices between screen updates through `lib/chunked.ts` (`runChunked`), never as one blocking call (worker threads via worklets are native-only).
+- Heavy work never runs on the device's UI path: Sudoku puzzles are generated here, ahead of time, and ship as data (the pool in "Sudoku spec"). If a later game needs on-device heavy work, it must run in slices between screen updates, never as one blocking call (worker threads via worklets are native-only).
 
 ## Sudoku spec (v1)
 
-- Puzzles generated on device; every puzzle has exactly one solution (verified by a solver that counts up to 2 solutions).
+- Puzzles are generated ahead of time with the real generator and shipped as a pool (M6 decisions); every puzzle has exactly one solution (verified by a solver that counts up to 2 solutions).
 - Difficulty is rated by the human techniques needed, not by number of givens. **Five levels** (user, 2026-10-15); names only from `LEVEL_NAMES` in `logic/techniques.ts`. Each level allows the earlier techniques plus its own:
   1. Very easy: full house, hidden single in a box.
   2. Easy: + naked single, hidden single in a row or column.
@@ -84,7 +85,7 @@ src/
   4. Hard: + naked and hidden triple, X-Wing.
   5. Expert: + Swordfish, XY-Wing, naked and hidden quad.
   - A puzzle that needs more than Expert (or guessing) is discarded, so every puzzle is solvable by logic and a hint always works.
-- A few puzzles per difficulty are pre-generated and cached in the background so "New game" is instant.
+- Puzzles come from a shipped pool, so "New game" is instant (see the pool under M6 decisions).
 - M3 decisions: touch only (no keyboard input). On a win the grid locks and shows "Solved!"; "New game" is always available. Web output is a single-page app (`web.output` removed from `app.json`), so a random puzzle at first render causes no hydration mismatch.
 - M4 decisions: error highlighting marks conflicts only (the same digit twice in a row, column or box; both clashing cells, givens included, turn red; nothing is compared with the solution, so a wrong digit that clashes with nothing stays normal). Notes use a "Notes" toggle button: while on, digits 1-9 add or remove pencil marks (not on givens or filled cells). Placing a digit clears that cell's notes and that digit's notes in its row, column and box. Undo/redo covers digits, notes and erasing; after a win both are disabled (rule lives in `undoGame`/`redoGame`); "New game" clears the history.
 - M5 decisions (user, 2026-10-15):
@@ -93,8 +94,8 @@ src/
   - The timer runs only while the Sudoku screen is focused, the app is in the foreground, the game isn't won and the level picker isn't open (`lib/timer.ts` is a pure clock). It sits above the grid; while the picker is open the time and level are hidden and the time spent there doesn't count. The win banner reads "Solved! in m:ss". The win is recorded exactly once.
   - Home shows a summary under "Sudoku" ("Solved 3 · Best 4:12 · Avg 6:30", or "No puzzles solved yet") through the optional `Summary` component of a registry entry, reloaded whenever home gets focus.
 - M6 decisions (user, 2026-10-15):
-  - Picker: "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked and a Cancel button. The last level is stored in `sudoku:settings` (version 1); the default is Medium. Opening Sudoku without a save starts the last level at once. The current level is shown next to the timer.
-  - Cache: `sudoku:cache` (version 1, up to 3 ready puzzles per level), one shared filler in `ui/puzzle-cache.ts` that tops up the emptiest level in slices. It runs while the Sudoku screen is open. "New game" takes a cached puzzle at once; with none it shows "Making a puzzle…" while that level is generated first.
+  - Picker: "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked and a Cancel button. The last level is stored in `sudoku:settings` (version 1); the default is Medium. Opening Sudoku without a save shows the picker at once (the last level used marked, no Cancel, nothing starts by itself); with a save it shows the Continue / New game prompt at once. The current level is shown next to the timer.
+  - Pool (user, 2026-10-16, replaces the on-device cache and generation): `src/games/sudoku/data/puzzles.json` holds 1000 puzzles per level, as 81-character strings (`0` = empty), no solutions. All come from `generateLevel()` with seeds 1 to 1000 per level, so the file can be rebuilt (`logic/build-puzzles.test.ts`, skipped unless `SUDOKU_BUILD` or `SUDOKU_MERGE` is set; its header says how, and Hard needs several parallel processes). `logic/pool.ts`: `pickPuzzle(level)` takes a random entry, `transform()` applies a random rotation or mirror plus a random relabeling of the digits 1-9 (same solution count, same rating), and `solve()` gives the solution. Every game start is instant and nothing is generated on the device. The old `sudoku:cache` storage key is left as a harmless orphan.
   - Save version 2 adds `level`; a version 1 save still loads, as level `classic`. Stats buckets: the level number as text (`"3"`), plus `classic` for the pre-M6 games.
   - Hint: the "Hint" button highlights the cells involved (theme token `cellHint`) and explains; "Apply" makes the move with `setValue`, so Undo works, and "Close" drops it. A move or New game closes the hint. Hints reason from the real candidates, not the notes. A wrong digit you entered is reported first ("This 4 is wrong.") and Apply erases it; that is the one place the solution is compared. Showing a hint already sets `hinted`: such a win counts as solved but stays out of best and average time.
   - Home: one line per level that has wins, in level order, then Classic ("Easy: 5 · Best 3:10 · Avg 4:02"; a level with only hinted wins shows just its count).
@@ -164,8 +165,7 @@ None right now.
 Things verified only in the web preview that must be tested on the phone (add as they come up, tick when confirmed):
 
 - [ ] Saved games/stats survive closing and reopening the app (web uses browser storage instead).
-- [x] Puzzle generation doesn't freeze the UI (phone CPU is slower than the PC). Confirmed on the first preview APK (2026-10-15) for the M2 generator (32 givens, backtracking only); re-check once M6 adds technique rating.
-- [ ] Measure how long `generateLevel()` takes per level on the phone. PC average over 10 seeds (`measure.test.ts`): Very easy 15 ms, Easy 15 ms, Medium 78 ms, Hard 1.1 s (max 3.3 s), Expert 124 ms; a phone may be 5 to 10 times slower. Also see how long a fresh install takes to fill the cache (3 per level).
+- [ ] New game and opening Sudoku are instant on the phone: the Continue prompt or the level picker shows at once, and every level, Hard and Expert included, starts the moment it is tapped.
 - [x] The hardware back button on the Sudoku screen returns to the home screen.
 - [x] Sudoku cells are big enough to tap accurately on a small screen.
 - [x] The grid, number pad and "New game" fit on the phone screen without scrolling.
@@ -175,8 +175,7 @@ Things verified only in the web preview that must be tested on the phone (add as
 - [ ] A game survives killing the app: reopening Sudoku shows the Continue / New game prompt, and Continue brings back digits, notes and time.
 - [ ] The home summary updates after a win (back button from Sudoku to home).
 - [ ] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
-- [ ] While the background filler works (right after install, or after taking a puzzle), the grid and number pad stay smooth: tapping cells and digits shows no stutter. Generation runs in slices of about 8 ms, but one step can take about 33 ms on the PC (Hard), more on the phone.
 - [ ] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
 - [ ] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
-- [ ] The level picker, which now replaces the grid, fits without scrolling, from the game screen and from the Continue prompt.
-- [ ] "Making a puzzle…" shows and then goes away by itself when a level's cache is empty, and the hint highlight colour is clear in light and dark mode.
+- [ ] The level picker, which now replaces the grid, fits without scrolling, from the game screen, from the Continue prompt and when Sudoku opens without a save.
+- [ ] The hint highlight colour is clear in light and dark mode.
