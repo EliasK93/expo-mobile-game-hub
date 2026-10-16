@@ -516,6 +516,12 @@ describe('Save and resume', () => {
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
   });
 
+  it('opening Sudoku removes the orphaned sudoku:cache key of the old on-device cache', async () => {
+    await reopen(() => seed('sudoku:cache', { version: 1, data: { 3: ['x'] } }));
+
+    expect(await AsyncStorage.getItem('sudoku:cache')).toBeNull();
+  });
+
   it('undoing back to the empty board does not leave a stale save behind', async () => {
     fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
     enter(5);

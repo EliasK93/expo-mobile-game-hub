@@ -107,6 +107,8 @@ export function useSudoku() {
   // Opening shows the Continue prompt if there is a game worth resuming, otherwise the level picker. No game starts by itself.
   useEffect(() => {
     let alive = true;
+    // ponytail: removes the key of the old on-device cache on every open; delete this line once every installed copy has opened Sudoku once.
+    remove('sudoku:cache');
     Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION)]).then(([data, settings]) => {
       if (!alive) return;
       setLastLevel(fromSettings(settings));
