@@ -1,6 +1,6 @@
 import { formatGrid, parseGrid } from './board';
 import { sparsePuzzle } from './sparse-puzzle';
-import { mulberry32 } from './random';
+import { mulberry32 } from '@/lib/random';
 import { rate, solveByLogic } from './rate';
 import { countSolutions, solve } from './solve';
 

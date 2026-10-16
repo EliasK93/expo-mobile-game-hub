@@ -1,16 +1,8 @@
 import { candidateMask, type Grid } from './board';
-import type { Random } from './random';
+import { shuffle, type Random } from '@/lib/random';
 import { rate } from './rate';
 import { countSolutions } from './solve';
 import type { Level } from './techniques';
-
-export function shuffle<T>(items: T[], random: Random): T[] {
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-  return items;
-}
 
 // Fills the grid cell by cell with random legal digits, backtracking on dead ends.
 export function fill(g: number[], random: Random, i = 0): boolean {

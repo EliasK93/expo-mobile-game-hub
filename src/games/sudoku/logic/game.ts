@@ -1,5 +1,5 @@
 import { peers, type Grid } from './board';
-import { redo, undo, type History } from './history';
+import { redo, undo, type History } from '@/lib/history';
 import { conflicts, isSolved } from './validate';
 
 // puzzle = the givens, solution = the answer, values = what is on the board now (givens + entered digits).

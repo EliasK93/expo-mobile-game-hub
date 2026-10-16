@@ -1,6 +1,6 @@
 import type { Grid } from './board';
-import { fill, shuffle } from './generate';
-import type { Random } from './random';
+import { fill } from './generate';
+import { shuffle, type Random } from '@/lib/random';
 import { countSolutions } from './solve';
 
 // Test helper (not used by the app): a unique puzzle dug down to about `givens` givens with no technique rating,

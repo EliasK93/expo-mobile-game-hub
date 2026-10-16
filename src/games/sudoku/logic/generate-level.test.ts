@@ -1,6 +1,6 @@
 import { formatGrid } from './board';
 import { generateLevel } from './generate';
-import { mulberry32 } from './random';
+import { mulberry32 } from '@/lib/random';
 import { rate } from './rate';
 import { countSolutions, solve } from './solve';
 import { LEVELS, type Level } from './techniques';

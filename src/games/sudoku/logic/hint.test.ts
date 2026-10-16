@@ -1,6 +1,6 @@
 import { parseGrid } from './board';
 import { nextHint } from './hint';
-import { mulberry32 } from './random';
+import { mulberry32 } from '@/lib/random';
 import { setValue, type Game } from './game';
 import { candidateGrid, findStep } from './techniques';
 

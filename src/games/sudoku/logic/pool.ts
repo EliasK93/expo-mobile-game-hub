@@ -1,8 +1,7 @@
 import puzzles from '../data/puzzles.json';
 import { parseGrid, type Grid } from './board';
 import type { Puzzle } from './game';
-import { shuffle } from './generate';
-import type { Random } from './random';
+import { shuffle, type Random } from '@/lib/random';
 import { solve } from './solve';
 import type { Level } from './techniques';
 

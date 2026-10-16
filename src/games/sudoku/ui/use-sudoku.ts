@@ -8,7 +8,7 @@ import { newClock, readClock, startClock, stopClock } from '@/lib/timer';
 
 import { isWon, newGame, redoGame, setValue, toggleNote, undoGame, type Game } from '../logic/game';
 import { nextHint, type Hint } from '../logic/hint';
-import { push, start } from '../logic/history';
+import { push, start } from '@/lib/history';
 import {
   bucketOf,
   DEFAULT_LEVEL,

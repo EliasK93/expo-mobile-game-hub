@@ -11,7 +11,7 @@ import {
   undoGame,
   type Game,
 } from './game';
-import { push, start } from './history';
+import { push, start } from '@/lib/history';
 import { isSolved } from './validate';
 
 const SOLUTION = parseGrid('534678912672195348198342567859761423426853791713924856961537284287419635345286179');

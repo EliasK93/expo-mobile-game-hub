@@ -1,6 +1,6 @@
 import { formatGrid } from './board';
 import { generateLevel } from './generate';
-import { mulberry32 } from './random';
+import { mulberry32 } from '@/lib/random';
 import { LEVELS, type Level } from './techniques';
 
 // Builds data/puzzles.json, the pool of puzzles the app ships. Not a check: skipped in the gate, like measure.test.ts.

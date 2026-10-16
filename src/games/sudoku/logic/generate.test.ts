@@ -1,8 +1,8 @@
-import { fill, shuffle } from './generate';
-import { mulberry32 } from './random';
+import { fill } from './generate';
+import { mulberry32 } from '@/lib/random';
 import { isSolved } from './validate';
 
-// generateLevel is tested in generate-level.test.ts; this file covers the two helpers it builds on.
+// generateLevel is tested in generate-level.test.ts; this file covers the grid fill it builds on.
 describe('fill', () => {
   it.each([1, 2, 3])('seed %i: fills an empty grid with a valid solved grid', (seed) => {
     const g = new Array<number>(81).fill(0);
@@ -18,14 +18,5 @@ describe('fill', () => {
     };
     expect(grid(9)).toBe(grid(9));
     expect(grid(1)).not.toBe(grid(2));
-  });
-});
-
-describe('shuffle', () => {
-  it('keeps the same items, in place, and is repeatable for one seed', () => {
-    const items = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    expect(shuffle(items, mulberry32(4))).toBe(items);
-    expect([...items].sort()).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-    expect(shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], mulberry32(4))).toEqual(items);
   });
 });

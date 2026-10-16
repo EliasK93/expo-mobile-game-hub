@@ -69,7 +69,7 @@ src/
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
   components/ hooks/ constants/   # shared UI, hooks, theme (from template)
-  lib/                  # shared non-UI helpers: storage, stats, timer
+  lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle)
 ```
 
 - Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file + one registry entry + a `docs/<id>.md`. Never edit another game's folder to add a game.

@@ -1,5 +1,5 @@
 import { generateLevel } from './generate';
-import { mulberry32 } from './random';
+import { mulberry32 } from '@/lib/random';
 import { applyStep, findStep, LEVELS, LEVEL_NAMES, newState, type Level } from './techniques';
 
 // Measures the generator that builds the pool. Skipped in the gate; run it with
