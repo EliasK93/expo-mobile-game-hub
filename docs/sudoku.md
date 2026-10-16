@@ -137,6 +137,6 @@ Deliberate shortcuts marked with a `ponytail:` comment in `src/games/sudoku/**` 
 
 | File | What was cut | Revisit when |
 |---|---|---|
-| `logic/generate.ts` (`generateLevel`) | No cap on `attempts`: it runs until it succeeds. Hard needed up to about 190 grids on the development PC (`measure.test.ts`), so a runner must be able to cancel by not calling `next()` again | Generation runs anywhere other than the offline pool build, or the build hangs |
+| `logic/generate.ts` (`generateLevel`) | No cap on `attempts`: it runs until it succeeds. Hard needed up to about 190 grids on the development PC (`measure.test.ts`), so a bad seed range can run for long | Generation runs anywhere other than the offline pool build, or the build hangs |
 | `logic/puzzles-data.test.ts` (`SAMPLE_EVERY`) | Rates only every 10th puzzle (100 per level, about 1.6 s) because all 5000 take about 16 s | After a pool rebuild: set `SAMPLE_EVERY` to 1 to check them all |
 | `logic/techniques.ts` (`combinations`) | The subset and fish techniques rebuild their combinations on every scan (many small arrays); fine while a Hard puzzle takes about 1 s on the development PC (`measure.test.ts`) | If the phone is too slow for hints: precompute the candidate cells per unit |

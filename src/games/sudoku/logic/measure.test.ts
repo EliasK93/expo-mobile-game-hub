@@ -2,11 +2,10 @@ import { generateLevel } from './generate';
 import { mulberry32 } from './random';
 import { applyStep, findStep, LEVELS, LEVEL_NAMES, newState, type Level } from './techniques';
 
-// Measurement for the M6 decision on keeping generation off the UI path. Skipped in the gate; run it with
+// Measures the generator that builds the pool. Skipped in the gate; run it with
 //   $env:SUDOKU_MEASURE = '1'; npx jest src/games/sudoku/logic/measure.test.ts
 // (PowerShell). Over 10 seeds per level it prints the time per puzzle, the retries (grids thrown away because the
-// dug puzzle rated below the level), the givens, and the longest stretch between two yields (what a runner that
-// slices at the yields cannot interrupt).
+// dug puzzle rated below the level), the givens, and the longest stretch between two yields.
 const measure = process.env.SUDOKU_MEASURE ? describe : describe.skip;
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 

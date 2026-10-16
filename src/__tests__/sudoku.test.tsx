@@ -181,13 +181,12 @@ describe('Level picker', () => {
     expect(screen.getByLabelText('Level: Medium').props.accessibilityState.selected).toBe(false);
   });
 
-  it('every level starts at once with the pool puzzle, with no waiting state', () => {
+  it('every level starts at once with the pool puzzle', () => {
     makeAll(WIDE);
     for (const [l, name] of [[1, 'Very easy'], [2, 'Easy'], [3, 'Medium'], [4, 'Hard'], [5, 'Expert']] as const) {
       newGame(name);
 
       expect(pickPuzzle).toHaveBeenLastCalledWith(l);
-      expect(screen.queryByText('Making a puzzle…')).toBeNull();
       expect(screen.getByLabelText('Row 1, column 2, empty')).toBeTruthy(); // the picked puzzle, in the same press
       expect(screen.getByText(name)).toBeTruthy();
     }

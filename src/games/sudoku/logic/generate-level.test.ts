@@ -6,7 +6,7 @@ import { countSolutions, solve } from './solve';
 import { LEVELS, type Level } from './techniques';
 import { isSolved } from './validate';
 
-// Runs the generator to the end the way a runner would, one step at a time, and counts the pauses.
+// Runs the generator to the end, one step at a time, and counts the pauses.
 function run(level: Level, seed: number) {
   const gen = generateLevel(level, mulberry32(seed));
   let yields = 0;
