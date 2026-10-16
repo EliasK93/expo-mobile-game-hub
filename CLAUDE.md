@@ -6,6 +6,10 @@ Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versio
 
 **Where a document and the repository disagree, the repository wins.** Check the code before acting on any status claim in a document, including the checklists below and in the game docs.
 
+## Development
+
+- Commit messages start with their area: `Sudoku: ` (or the game's name) for one game, `Hub: ` for app-wide code and config, `Docs: ` for documentation and project rules. One area per commit.
+
 ## Rules
 
 1. **Commit yes, push never.** The main pane may commit work whose plan the user approved (or that the user asked for), once the gate passes and the user has tested any UI change in the web preview. Never commit ideas the user has not agreed to. Never push, never rewrite history (`reset --hard`, rebase, amend, force). Doer panes run no git except `git add`/`git status` for the gate, because parallel agents corrupt each other's index.
