@@ -45,6 +45,7 @@ git status --short       # nothing left unstaged or untracked
 - Typed routes are **off** (`experiments.typedRoutes` removed from `app.json`): their types lived in a gitignored cache that only the dev server regenerated, which broke `tsc` in the gate. Route wiring is covered by `src/__tests__/navigation.test.tsx`, which opens every route in the registry. `Game.route` is a plain string.
 - Jest via `jest-expo`.
 - Persistence: `@react-native-async-storage/async-storage`.
+- App identity (set in `app.json`, images in `assets/images/`): name "Game Hub"; the icon, adaptive-icon foreground and monochrome, favicon and splash image all show the 3×3 Sudoku tile motif in the Pencil & Paper colours. Adaptive icon on a pencil-yellow `backgroundColor` (`#F2C230`, no background image), the tile kept inside the launcher's circle mask; splash on the paper colour (`#FBFAF6`). The PNGs were rendered from SVG with Edge headless (no image library); to change them, redraw the SVG and render again.
 - Release: EAS `preview` profile → APK (`npx eas-cli@latest build -p android --profile preview`, run by the user, see rule 6).
 
 ## Web first, Android later
@@ -162,4 +163,5 @@ Hub-wide things verified only in the web preview that must be tested on the phon
 - [x] Dark/light mode follows the phone's system setting.
 - [x] The hardware back button on a game screen returns to the home screen (confirmed on Sudoku).
 - [ ] Home is a 3-column grid on the phone: tiles are square, the art and names are readable, the sort chips fit in one row, and the chosen sort is still there after closing and reopening the app.
+- [ ] The app is called "Game Hub" under its launcher icon; the icon (yellow background, 3×3 tile) is not cut off in the phone's icon shape and, with themed icons on, the monochrome version looks right; the splash screen shows the tile on the paper colour, not clipped, without a blue flash.
 - [ ] Playtime pauses while the app is in the background and while the phone screen is off, and counts again on return: open Sudoku, send the app to the background for a minute, come back, and check that Playtime sorting only reflects the time the app was in front.
