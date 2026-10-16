@@ -139,7 +139,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 Milestones that belong to one game live in its doc (`docs/<game>.md`, "Milestones"). Hub-wide:
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
-- [ ] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. Repeat after each batch of changes.
+- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. Repeat after each batch of changes. Last passed: 2026-10-16 (Sudoku v1, precalculated pool).
 
 ## Open decisions
 
@@ -151,6 +151,6 @@ None right now.
 
 Hub-wide things verified only in the web preview that must be tested on the phone (add as they come up, tick when confirmed). Game-specific checks are in each game's doc.
 
-- [ ] Saved data (games, stats, settings) survives closing and reopening the app (web uses browser storage instead).
+- [x] Saved data (games, stats, settings) survives closing and reopening the app (web uses browser storage instead).
 - [x] Dark/light mode follows the phone's system setting.
 - [x] The hardware back button on a game screen returns to the home screen (confirmed on Sudoku).

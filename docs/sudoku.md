@@ -112,18 +112,18 @@ The APK build and phone checks are the hub milestone "Release" in `CLAUDE.md`.
 
 Verified only in the web preview so far; test them on the phone (add as they come up, tick when confirmed). Hub-wide checks (saved data survives a restart, dark/light mode, back button returns home) are in `CLAUDE.md`.
 
-- [ ] New game and opening Sudoku are instant on the phone: the Continue prompt or the level picker shows at once, and every level, Hard and Expert included, starts the moment it is tapped.
+- [x] New game and opening Sudoku are instant on the phone: the Continue prompt or the level picker shows at once, and every level, Hard and Expert included, starts the moment it is tapped.
 - [x] Sudoku cells are big enough to tap accurately on a small screen.
 - [x] The grid, number pad and "New game" fit on the phone screen without scrolling.
 - [x] Tapping cells and digits feels responsive.
-- [ ] The timer pauses when the app goes to the background and continues when it returns.
-- [ ] A game survives killing the app: reopening Sudoku shows the Continue / New game prompt, and Continue brings back digits, notes and time.
-- [ ] The home summary updates after a win (back button from Sudoku to home).
-- [ ] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
-- [ ] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
-- [ ] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
-- [ ] The level picker, which now replaces the grid, fits without scrolling, from the game screen, from the Continue prompt and when Sudoku opens without a save.
-- [ ] The hint highlight colour is clear in light and dark mode.
+- [x] The timer pauses when the app goes to the background and continues when it returns.
+- [x] A game survives killing the app: reopening Sudoku shows the Continue / New game prompt, and Continue brings back digits, notes and time.
+- [x] The home summary updates after a win (back button from Sudoku to home).
+- [x] Pencil notes (3x3 mini grid, font about 28% of the cell) are readable on a small screen, and the Undo/Redo/Notes/Erase row fits and is easy to tap.
+- [x] The hint panel (explanation text plus Apply/Close) and the level picker (five levels plus Cancel) fit on a small screen without scrolling, and the longest explanation (e.g. one ending in "To see it, first use ...") is readable.
+- [x] Button labels aren't cut off (the "Very easy" level button shows both words), and nothing sits under Android's navigation bar (the bottom button of every Sudoku state is fully visible).
+- [x] The level picker, which now replaces the grid, fits without scrolling, from the game screen, from the Continue prompt and when Sudoku opens without a save.
+- [x] The hint highlight colour is clear in light and dark mode.
 
 ## Open decisions
 
