@@ -6,7 +6,8 @@ param([Parameter(Mandatory)][string]$Agent, [Parameter(Mandatory)][string]$Marke
 $deadline = (Get-Date).AddMinutes($MaxMinutes)
 while ((Get-Date) -lt $deadline) {
   $text = herdr agent read $Agent --source recent-unwrapped --lines 40 2>$null | Out-String
-  if ($text -match [regex]::Escape($Marker)) { "found '$Marker' at $(Get-Date -Format HH:mm:ss)"; exit 0 }
+  # Whole line only (bullets/spaces before it allowed), so the prompt that names the marker ("... must be: W1 DONE") doesn't match.
+  if ($text -match "(?m)^\W*$([regex]::Escape($Marker))\s*$") { "found '$Marker' at $(Get-Date -Format HH:mm:ss)"; exit 0 }
   Start-Sleep -Seconds $Every
 }
 "timeout after $MaxMinutes min without '$Marker'"; exit 1
