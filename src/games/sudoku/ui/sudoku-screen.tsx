@@ -37,10 +37,12 @@ export function SudokuScreen() {
 
   if (status === 'loading') return <ThemedView style={container} />;
 
-  if (status === 'picker') {
+  // The picker has the screen to itself: no time or level, and the clock is paused (see `running` in use-sudoku.ts).
+  // Opened without a save (status 'picker') there is no game to go back to, so no Cancel.
+  if (status === 'picker' || picking) {
     return (
       <ThemedView style={container}>
-        <LevelPicker lastLevel={lastLevel} onPick={pickLevel} />
+        <LevelPicker lastLevel={lastLevel} onPick={pickLevel} onCancel={status === 'picker' ? undefined : closePicker} />
       </ThemedView>
     );
   }
@@ -48,24 +50,11 @@ export function SudokuScreen() {
   if (status === 'prompt') {
     return (
       <ThemedView style={container}>
-        {picking ? (
-          <LevelPicker lastLevel={lastLevel} onPick={pickLevel} onCancel={closePicker} />
-        ) : (
-          <ThemedView style={styles.panel}>
-            <ThemedText type="subtitle" style={styles.heading}>Continue your game?</ThemedText>
-            <Button label="Continue saved game" text="Continue" onPress={continueSaved} />
-            <Button label="Start new game" text="New game" onPress={openPicker} />
-          </ThemedView>
-        )}
-      </ThemedView>
-    );
-  }
-
-  // The picker has the screen to itself: no time or level, and the clock is paused (see `running` in use-sudoku.ts).
-  if (picking) {
-    return (
-      <ThemedView style={container}>
-        <LevelPicker lastLevel={lastLevel} onPick={pickLevel} onCancel={closePicker} />
+        <ThemedView style={styles.panel}>
+          <ThemedText type="subtitle" style={styles.heading}>Continue your game?</ThemedText>
+          <Button label="Continue saved game" text="Continue" onPress={continueSaved} />
+          <Button label="Start new game" text="New game" onPress={openPicker} />
+        </ThemedView>
       </ThemedView>
     );
   }
