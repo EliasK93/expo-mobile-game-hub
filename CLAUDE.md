@@ -121,6 +121,7 @@ Requires `HERDR_ENV=1`. If it is not set, say so instead of quietly doing the wo
 - **Helpers may work read-only in-pane.** Anything that edits files or has side effects runs in a visible pane.
 - **Limits travel with the work.** The doer passes the brief's limits on to every helper, in that helper's own prompt: which files it owns, no git beyond the gate's `git add`/`git status` (rule 1), no logged-in CLIs.
 - **Files have owners.** Every pane gets an explicit list of files it may edit. If it needs another file, it reports that and does not edit it. Shared files (`registry.ts`, `src/app/_layout.tsx`, `constants/theme.ts`, `package.json`) belong to one pane at a time.
+- **Dispatch routine.** After `herdr agent start`, wait a few seconds before `herdr agent prompt`, then read the pane (`herdr agent read <name> --source recent-unwrapped`) to confirm the agent is working on the brief. A prompt sent too early is lost and the agent sits idle. Only then start the background `herdr agent wait <name> --until idle`. Close a pane only after its wait has returned, so a closed pane never shows up as a failed wait.
 
 ## graphify
 
