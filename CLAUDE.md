@@ -60,22 +60,25 @@ Daily work runs in the web preview; Android is verified with APK builds (Expo Go
 src/
   app/                  # Expo Router routes ONLY — thin files that render a game's screen
     _layout.tsx
-    index.tsx           # home: lists games from the registry
-    <id>.tsx            # one per game, e.g. sudoku.tsx -> games/sudoku/ui
+    index.tsx           # home: sort chips (Recent · Name · Playtime) above a 3-column grid of the registry's tiles
+    <id>.tsx            # one per game, e.g. sudoku.tsx: wraps games/sudoku/ui in <GameRoute id="sudoku">
   games/
-    registry.ts         # list of available games (id, title, route) shown on home
+    registry.ts         # list of available games (id, title, route, Tile) shown on home; Tile = the game's art, drawn in code in theme colours
     <id>/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
-  components/ hooks/ constants/   # shared UI (themed text/view, `button`), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours included; the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
-  lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle)
+  components/ hooks/ constants/   # shared UI (themed text/view, `button` with a `primary` accent variant for a screen's one main action, `game-route`: `GameRoute` records a game's playtime), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours included; the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
+  lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle), playtime, game-sort (home's sort order and its setting)
 ```
 
-- Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file + one registry entry + a `docs/<id>.md`. Never edit another game's folder to add a game.
+- Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file (its screen wrapped in `GameRoute`, which `navigation.test.tsx` checks for every registry game) + one registry entry (with a `Tile`) + a `docs/<id>.md`. Never edit another game's folder to add a game.
 - Games never import from each other. Shared code goes in `components/`, `hooks/`, `constants/`, `lib/`.
 - `logic/` is plain TypeScript with no framework imports (enforced by an ESLint `no-restricted-imports` block in `eslint.config.js`, so `npx expo lint` and the gate fail on a React/React Native/Expo/`@/components`/`@/hooks` import), so it can be tested without a phone or browser. All rules, solving, generating, undo history and scoring live there; UI holds no game rules.
 - AsyncStorage keys are namespaced per game: `"<game>:<what>"`, e.g. `"sudoku:save"`. Stored JSON includes a `version` field so the format can change later. Each game's keys and versions are listed in its doc.
+- Hub keys, `"hub:<what>"`, same `{ version, data }` format:
+  - `hub:playtime` (version 1): `{ [gameId]: { totalMs, lastPlayedAt } }`. Playtime is the time a game's screen is open while the app is in the foreground, menus included; the same for every game, written by `GameRoute` whenever its clock stops (leaving the screen, app to background).
+  - `hub:settings` (version 1): `{ sort }`, `recent` (default), `name` or `playtime`. Recent puts never-played games last, then sorts by name.
 - Heavy work never runs on the device's UI path: a game generates it ahead of time and ships the result as data (its doc says how). If a later game needs on-device heavy work, it must run in slices between screen updates, never as one blocking call (worker threads via worklets are native-only).
 
 ## Games
@@ -158,3 +161,5 @@ Hub-wide things verified only in the web preview that must be tested on the phon
 - [x] Saved data (games, stats, settings) survives closing and reopening the app (web uses browser storage instead).
 - [x] Dark/light mode follows the phone's system setting.
 - [x] The hardware back button on a game screen returns to the home screen (confirmed on Sudoku).
+- [ ] Home is a 3-column grid on the phone: tiles are square, the art and names are readable, the sort chips fit in one row, and the chosen sort is still there after closing and reopening the app.
+- [ ] Playtime pauses while the app is in the background and while the phone screen is off, and counts again on return: open Sudoku, send the app to the background for a minute, come back, and check that Playtime sorting only reflects the time the app was in front.

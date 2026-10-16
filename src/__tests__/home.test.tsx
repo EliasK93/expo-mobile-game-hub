@@ -1,44 +1,153 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, renderRouter, screen } from 'expo-router/testing-library';
+import { router } from 'expo-router';
+import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { AppState, Text } from 'react-native';
+
+import HomeScreen from '@/app/index';
+import { GameRoute } from '@/components/game-route';
+
+// Sorting needs more than one game, so home runs here with three made-up games. The real registry is covered by navigation.test.tsx.
+jest.mock('@/games/registry', () => {
+  function Tile() {
+    return null;
+  }
+  return {
+    games: [
+      { id: 'zeta', title: 'Zeta', route: '/zeta', Tile },
+      { id: 'alpha', title: 'Alpha', route: '/alpha', Tile },
+      { id: 'mid', title: 'Mid', route: '/mid', Tile },
+    ],
+  };
+});
+
+function game(id: string) {
+  return function GameScreen() {
+    return (
+      <GameRoute id={id}>
+        <Text>{`${id} screen`}</Text>
+      </GameRoute>
+    );
+  };
+}
+const open = () => renderRouter({ index: HomeScreen, zeta: game('zeta'), alpha: game('alpha'), mid: game('mid') });
 
 const settle = async () => {
   for (let i = 0; i < 5; i++) await act(async () => {});
 };
-const stats = (data: unknown) => AsyncStorage.setItem('sudoku:stats', JSON.stringify({ version: 1, data }));
+const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+const tiles = () => screen.getAllByText(/^(Zeta|Alpha|Mid)$/).map((n) => n.props.children);
+const seed = (key: string, value: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data: value }));
+const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null')?.data;
+const PLAYED = { zeta: { totalMs: 1000, lastPlayedAt: 300 }, mid: { totalMs: 9000, lastPlayedAt: 100 } };
 
-// Storage is the AsyncStorage mock from jest.setup.js, cleared before each test.
-describe('Home summary', () => {
-  it('shows one line per level that has wins, in level order, then Classic', async () => {
-    await stats({
-      classic: { solved: 3, timedCount: 2, totalMs: 780_000, bestMs: 252_000 },
-      5: { solved: 1, timedCount: 1, totalMs: 600_000, bestMs: 600_000 },
-      2: { solved: 5, timedCount: 4, totalMs: 968_000, bestMs: 190_000 },
-      3: { solved: 0, timedCount: 0, totalMs: 0, bestMs: null },
+beforeEach(() => {
+  jest.useFakeTimers();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+describe('Home grid', () => {
+  it('shows a tile with the name for every game, sorted by Recent: the never-played ones by name', async () => {
+    open();
+    await settle();
+
+    expect(tiles()).toEqual(['Alpha', 'Mid', 'Zeta']);
+    expect(screen.getByLabelText('Sort by Recent').props.accessibilityState.selected).toBe(true);
+  });
+
+  it('sorts by each chip', async () => {
+    await seed('hub:playtime', PLAYED);
+    open();
+    await settle();
+    expect(tiles()).toEqual(['Zeta', 'Mid', 'Alpha']); // Recent
+
+    fireEvent.press(screen.getByLabelText('Sort by Name'));
+    expect(tiles()).toEqual(['Alpha', 'Mid', 'Zeta']);
+    expect(screen.getByLabelText('Sort by Name').props.accessibilityState.selected).toBe(true);
+
+    fireEvent.press(screen.getByLabelText('Sort by Playtime'));
+    expect(tiles()).toEqual(['Mid', 'Zeta', 'Alpha']);
+  });
+
+  it('remembers the sort for the next visit', async () => {
+    await seed('hub:playtime', PLAYED);
+    open();
+    await settle();
+    fireEvent.press(screen.getByLabelText('Sort by Playtime'));
+    await settle();
+    expect(await saved('hub:settings')).toEqual({ sort: 'playtime' });
+
+    screen.unmount();
+    await settle();
+    open();
+    await settle();
+
+    expect(tiles()).toEqual(['Mid', 'Zeta', 'Alpha']);
+    expect(screen.getByLabelText('Sort by Playtime').props.accessibilityState.selected).toBe(true);
+  });
+
+  it('opens a game when its tile is pressed', async () => {
+    open();
+    await settle();
+    fireEvent.press(screen.getByText('Mid'));
+
+    expect(screen.getByText('mid screen')).toBeTruthy();
+  });
+});
+
+describe('Playtime', () => {
+  const play = async (id: string, ms: number) => {
+    fireEvent.press(screen.getByText(id));
+    await tick(ms);
+    await act(async () => router.back());
+    await settle();
+  };
+
+  it('counts the time a game screen is open, not the time on home', async () => {
+    open();
+    await settle();
+    await tick(7000);
+    await play('Alpha', 5000);
+    await tick(4000);
+
+    expect((await saved('hub:playtime')).alpha.totalMs).toBe(5000);
+  });
+
+  it('adds up over visits, and a game played now moves to the front of Recent and counts in Playtime', async () => {
+    open();
+    await settle();
+    await play('Alpha', 2000);
+    await play('Alpha', 3000);
+    await play('Zeta', 1000);
+
+    expect((await saved('hub:playtime')).alpha.totalMs).toBe(5000);
+    expect(tiles()).toEqual(['Zeta', 'Alpha', 'Mid']);
+    fireEvent.press(screen.getByLabelText('Sort by Playtime'));
+    expect(tiles()).toEqual(['Alpha', 'Zeta', 'Mid']);
+  });
+
+  it('pauses while the app is in the background and goes on when it returns', async () => {
+    open();
+    await settle();
+    const listeners: ((s: string) => void)[] = [];
+    // RN's jest mock of AppState is a jest.fn; capture the listener of the next mount only (Once keeps the default for later tests).
+    (AppState.addEventListener as jest.Mock).mockImplementationOnce((_: string, l: (s: string) => void) => {
+      listeners.push(l);
+      return { remove: () => {} };
     });
-    renderRouter('./src/app');
+    fireEvent.press(screen.getByText('Alpha'));
+    const appState = (s: string) => act(() => listeners.forEach((l) => l(s)));
+
+    await tick(2000);
+    await appState('background');
+    await tick(10_000);
+    await appState('active');
+    await tick(1000);
+    await act(async () => router.back());
     await settle();
 
-    const lines = screen.getAllByText(/: \d/).map((n) => n.props.children);
-    expect(lines).toEqual([
-      'Easy: 5 · Best 3:10 · Avg 4:02',
-      'Expert: 1 · Best 10:00 · Avg 10:00',
-      'Classic: 3 · Best 4:12 · Avg 6:30',
-    ]);
-    expect(screen.queryByText('No puzzles solved yet')).toBeNull();
-  });
-
-  it('shows only the count when every win of a level used a hint', async () => {
-    await stats({ 1: { solved: 2, timedCount: 0, totalMs: 0, bestMs: null } });
-    renderRouter('./src/app');
-    await settle();
-
-    expect(screen.getByText('Very easy: 2')).toBeTruthy();
-  });
-
-  it('says so when nothing is solved yet', async () => {
-    renderRouter('./src/app');
-    await settle();
-
-    expect(screen.getByText('No puzzles solved yet')).toBeTruthy();
+    expect((await saved('hub:playtime')).alpha.totalMs).toBe(3000);
   });
 });
