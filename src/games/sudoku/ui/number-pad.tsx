@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
+import { DIGITS } from '../logic/board';
 import { Button } from './button';
 
 type Props = {
@@ -15,8 +16,6 @@ type Props = {
   canRedo: boolean;
   notesMode: boolean;
 };
-
-const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export function NumberPad({ onDigit, onErase, onUndo, onRedo, onToggleNotes, canUndo, canRedo, notesMode }: Props) {
   const pad = { flex: true, background: 'backgroundElement', textType: 'default' } as const;

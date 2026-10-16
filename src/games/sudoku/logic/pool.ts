@@ -1,5 +1,5 @@
 import puzzles from '../data/puzzles.json';
-import { parseGrid, type Grid } from './board';
+import { CELLS, DIGITS, parseGrid, type Grid } from './board';
 import type { Puzzle } from './game';
 import { shuffle, type Random } from '@/lib/random';
 import { solve } from './solve';
@@ -9,8 +9,8 @@ import type { Level } from './techniques';
 // at random. The result is the same puzzle in disguise: still one solution, same rating, same number of givens.
 export function transform(grid: Grid, random: Random): Grid {
   const k = Math.floor(random() * 8);
-  const digits = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], random);
-  return Array.from({ length: 81 }, (_, i) => {
+  const digits = shuffle([...DIGITS], random);
+  return CELLS.map((i) => {
     let r = Math.floor(i / 9);
     let c = i % 9;
     if (k & 4) c = 8 - c; // mirror

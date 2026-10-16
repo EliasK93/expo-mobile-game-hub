@@ -1,4 +1,4 @@
-import { boxOf, candidateMask, colOf, peers, rowOf, type Grid } from './board';
+import { boxOf, candidateMask, CELLS, colOf, DIGITS, peers, rowOf, type Grid } from './board';
 
 // Difficulty levels. A level allows every technique of the levels below it plus its own.
 export type Level = 1 | 2 | 3 | 4 | 5;
@@ -55,7 +55,7 @@ const size = (mask: number) => {
   for (let m = mask; m; m &= m - 1) n++;
   return n;
 };
-const digitsOf = (mask: number) => [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((d) => has(mask, d));
+const digitsOf = (mask: number) => DIGITS.filter((d) => has(mask, d));
 const maskOf = (digits: readonly number[]) => digits.reduce((m, d) => m | (1 << d), 0);
 const NUMBER_WORD = ['', 'one', 'two', 'three', 'four'];
 const list = (digits: number[]) =>
@@ -66,7 +66,7 @@ type Unit = { kind: UnitKind; cells: readonly number[] };
 const unitsOf = (kind: UnitKind, of: (i: number) => number): Unit[] =>
   Array.from({ length: 9 }, (_, u) => ({
     kind,
-    cells: Array.from({ length: 81 }, (_, i) => i).filter((i) => of(i) === u),
+    cells: CELLS.filter((i) => of(i) === u),
   }));
 const ROWS = unitsOf('row', rowOf);
 const COLS = unitsOf('column', colOf);
@@ -264,7 +264,7 @@ const hiddenSubset =
   (n: number) =>
   (_values: Grid, cands: Candidates): Found | null => {
     for (const u of UNITS) {
-      const eligible = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((d) => {
+      const eligible = DIGITS.filter((d) => {
         const k = u.cells.filter((c) => has(cands[c], d)).length;
         return k >= 2 && k <= n;
       });

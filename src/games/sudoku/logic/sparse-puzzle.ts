@@ -1,4 +1,4 @@
-import type { Grid } from './board';
+import { CELLS, type Grid } from './board';
 import { fill } from './generate';
 import { shuffle, type Random } from '@/lib/random';
 import { countSolutions } from './solve';
@@ -11,7 +11,7 @@ export function sparsePuzzle(givens: number, random: Random): { puzzle: Grid; so
   fill(solution, random);
   const puzzle = [...solution];
   let remaining = 81;
-  for (const i of shuffle(Array.from({ length: 81 }, (_, k) => k), random)) {
+  for (const i of shuffle([...CELLS], random)) {
     if (remaining <= givens) break;
     const keep = puzzle[i];
     puzzle[i] = 0;

@@ -1,4 +1,4 @@
-import { candidateMask, type Grid } from './board';
+import { candidateMask, CELLS, DIGITS, type Grid } from './board';
 import { shuffle, type Random } from '@/lib/random';
 import { rate } from './rate';
 import { countSolutions } from './solve';
@@ -8,7 +8,7 @@ import type { Level } from './techniques';
 export function fill(g: number[], random: Random, i = 0): boolean {
   if (i === 81) return true;
   const mask = candidateMask(g, i);
-  for (const v of shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9], random)) {
+  for (const v of shuffle([...DIGITS], random)) {
     if (!(mask & (1 << v))) continue;
     g[i] = v;
     if (fill(g, random, i + 1)) return true;
@@ -29,7 +29,7 @@ export function generateLevel(level: Level, random: Random): { puzzle: Grid; sol
 
     const puzzle = [...solution];
     let rated: Level = 1;
-    for (const i of shuffle(Array.from({ length: 81 }, (_, k) => k), random)) {
+    for (const i of shuffle([...CELLS], random)) {
       const keep = puzzle[i];
       puzzle[i] = 0;
       const r = countSolutions(puzzle, 2) === 1 ? rate(puzzle, level) : null;

@@ -4,13 +4,12 @@ import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-import { colOf, rowOf } from '../logic/board';
+import { colOf, DIGITS, rowOf } from '../logic/board';
 import { highlights, isGiven, notesOf, type Game } from '../logic/game';
 
 const OUTER = 2; // outer frame width
 const THIN = 1;
 const THICK = 2; // box edges
-const DIGITS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 // hintCells: the cells a shown hint points at.
 type Props = { game: Game; selected: number | null; onSelect: (i: number) => void; hintCells?: readonly number[] };

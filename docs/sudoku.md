@@ -53,7 +53,7 @@ src/lib/stats.ts, storage.ts, timer.ts, history.ts, random.ts   # shared helpers
 
 | File | What it does |
 |---|---|
-| `board.ts` | `Grid` (81 cells, row-major, 0 = empty), `rowOf`/`colOf`/`boxOf`, `peers`, `candidateMask`, `parseGrid`/`formatGrid` |
+| `board.ts` | `Grid` (81 cells, row-major, 0 = empty), `DIGITS` (1-9) and `CELLS` (0-80), the shared lists (copy before `shuffle`, it works in place), `rowOf`/`colOf`/`boxOf`, `peers`, `candidateMask`, `parseGrid`/`formatGrid` |
 | `validate.ts` | `conflicts` (cells repeated among their peers), `isComplete`, `isSolved` |
 | `solve.ts` | Backtracking solver (fewest-candidates cell first): `solve`, `countSolutions` (stops at a limit, default 2, for the uniqueness check) |
 | `techniques.ts` | `Level`/`LEVELS`/`LEVEL_NAMES`, the technique `LADDER`, `findStep`, `applyStep`, candidate state |

@@ -1,4 +1,4 @@
-import { peers, type Grid } from './board';
+import { DIGITS, peers, type Grid } from './board';
 import { redo, undo, type History } from '@/lib/history';
 import { conflicts, isSolved } from './validate';
 
@@ -28,7 +28,7 @@ export function setValue(game: Game, i: number, v: number): Game {
   return { ...game, values, notes };
 }
 
-export const notesOf = (game: Game, i: number) => [1, 2, 3, 4, 5, 6, 7, 8, 9].filter((d) => game.notes[i] & (1 << d));
+export const notesOf = (game: Game, i: number) => DIGITS.filter((d) => game.notes[i] & (1 << d));
 
 // Adds the note v to an empty cell, or removes it if present. Returns the same game on givens, filled cells and a won game.
 export function toggleNote(game: Game, i: number, v: number): Game {
