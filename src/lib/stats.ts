@@ -1,4 +1,4 @@
-// Per bucket (a game's difficulty, or 'classic' until games have levels).
+// Per bucket (a game's own key, e.g. a difficulty).
 // Only solved games count. A hinted win raises `solved` but stays out of best and average time.
 export type StatsEntry = { solved: number; timedCount: number; totalMs: number; bestMs: number | null };
 export type Stats = Record<string, StatsEntry>;

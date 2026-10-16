@@ -47,10 +47,7 @@
     ],
     "testMatch": [
       "**/*.test.[jt]s?(x)"
-    ],
-    "moduleNameMapper": {
-      "\\.css$": "<rootDir>/src/__tests__/stubs/empty.js"
-    }
+    ]
   },
   "private": true
 }
