@@ -70,7 +70,7 @@ src/
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
   components/ hooks/ constants/   # shared UI (themed text/view, `button` with a `primary` accent variant for a screen's one main action and a `compact` slim variant (36 px high) for secondary actions, `game-route`: `GameRoute` records a game's playtime, `glyph-style`: the shared style for digits on tiles and cells), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours included; the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
-  lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle), playtime, game-sort (home's sort order and its setting)
+  lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle), guards (shape checks for loaded saves, e.g. isCount), playtime, game-sort (home's sort order and its setting)
 ```
 
 - Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file (its screen wrapped in `GameRoute`, which `navigation.test.tsx` checks for every registry game) + one registry entry (with a `Tile`) + a `docs/<id>.md`. Never edit another game's folder to add a game.
@@ -85,7 +85,7 @@ src/
 ## Games
 
 - [Sudoku](docs/sudoku.md)
-- [2048](docs/2048.md): concept agreed 2026-10-17, not built yet (start with T1)
+- [2048](docs/2048.md): in progress, T1 (logic) done 2026-10-17, next T2
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
