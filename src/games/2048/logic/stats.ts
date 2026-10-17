@@ -1,11 +1,16 @@
 import type { Size } from './board';
-import type { Result } from './game';
+import type { Game, Result } from './game';
 
 export type SizeStats = { played: number; wins: number; bestScore: number | null; bestTile: number | null };
 export type Stats = Record<Size, SizeStats>;
 
 const EMPTY_SIZE: SizeStats = { played: 0, wins: 0, bestScore: null, bestTile: null };
 export const EMPTY_STATS: Stats = { 4: EMPTY_SIZE, 5: EMPTY_SIZE, 6: EMPTY_SIZE, 7: EMPTY_SIZE };
+
+// The Best box while a game runs: the stored best of the size, or the score once that is higher. A game with undo stays
+// out of the bests (see recordGame), so there only the stored best shows.
+export const liveBest = (stored: number | null, game: Game): number =>
+  game.undoUsed ? (stored ?? 0) : Math.max(stored ?? 0, game.score);
 
 // Game over and abandoning a started game both come here. Every game counts as played, and as a win when it reached the
 // win tile; a game with undo stays out of the bests, and a score of 0 is no best score.

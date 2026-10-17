@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 
+import { Game2048Tile } from './2048/ui/tile';
 import { SudokuTile } from './sudoku/ui/tile';
 
 // route is a plain string: typed routes are off, so Href adds nothing (navigation.test.tsx checks every route).
@@ -7,4 +8,7 @@ import { SudokuTile } from './sudoku/ui/tile';
 // A game's route file wraps its screen in GameRoute with the same id, which records its playtime (navigation.test.tsx checks that too).
 export type Game = { id: string; title: string; route: string; Tile: ComponentType };
 
-export const games: Game[] = [{ id: 'sudoku', title: 'Sudoku', route: '/sudoku', Tile: SudokuTile }];
+export const games: Game[] = [
+  { id: 'sudoku', title: 'Sudoku', route: '/sudoku', Tile: SudokuTile },
+  { id: '2048', title: '2048', route: '/2048', Tile: Game2048Tile },
+];

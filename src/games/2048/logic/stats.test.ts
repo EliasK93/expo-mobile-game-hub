@@ -1,6 +1,6 @@
 import { SIZES, fromValues, winTile } from './board';
 import { newGame, resultOf, type Game } from './game';
-import { EMPTY_STATS, recordGame, type Stats } from './stats';
+import { EMPTY_STATS, liveBest, recordGame, type Stats } from './stats';
 
 const result = (score: number, bestTile: number, extra: { won?: boolean; undoUsed?: boolean } = {}) => ({
   score,
@@ -72,6 +72,26 @@ describe('recordGame', () => {
     recordGame(EMPTY_STATS, 4, result(10, 8));
     recordGame(EMPTY_STATS, 4, result(10, 8, { undoUsed: true }));
     expect(JSON.stringify(EMPTY_STATS)).toBe(before);
+  });
+});
+
+describe('liveBest', () => {
+  const at = (score: number, undoUsed = false): Game => ({ ...newGame(4, () => 0), score, undoUsed });
+
+  it('is the stored best until the score passes it', () => {
+    expect(liveBest(1000, at(400))).toBe(1000);
+    expect(liveBest(1000, at(1000))).toBe(1000);
+    expect(liveBest(1000, at(1200))).toBe(1200);
+  });
+
+  it('is the score of the running game when nothing is stored yet', () => {
+    expect(liveBest(null, at(0))).toBe(0);
+    expect(liveBest(null, at(36))).toBe(36);
+  });
+
+  it('in a game with undo it is the stored best only, however high the score', () => {
+    expect(liveBest(1000, at(5000, true))).toBe(1000);
+    expect(liveBest(null, at(5000, true))).toBe(0);
   });
 });
 
