@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { average, recordWin, recordWinStored, statsLine, type Stats } from './stats';
+import { recordWin, recordWinStored, statsLine, type Stats } from './stats';
 import { load, save } from './storage';
 
 describe('stats', () => {
@@ -31,11 +31,6 @@ describe('stats', () => {
     expect(before.hard).toBeUndefined();
     expect(after.hard.solved).toBe(1);
     expect(after.classic).toEqual(before.classic);
-  });
-
-  it('average is totalMs / timedCount, or null with no timed wins', () => {
-    expect(average({ solved: 2, timedCount: 2, totalMs: 10000, bestMs: 4000 })).toBe(5000);
-    expect(average({ solved: 1, timedCount: 0, totalMs: 0, bestMs: null })).toBeNull();
   });
 
   describe('recordWinStored', () => {

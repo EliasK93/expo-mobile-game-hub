@@ -21,8 +21,6 @@ export function recordWin(stats: Stats, bucket: string, ms: number, hinted: bool
   return { ...stats, [bucket]: next };
 }
 
-export const average = (e: StatsEntry): number | null => (e.timedCount === 0 ? null : e.totalMs / e.timedCount);
-
 // "5 solved · Best 3:10". An entry with only hinted wins shows just the count.
 export const statsLine = (e: StatsEntry): string =>
   e.bestMs === null ? `${e.solved} solved` : `${e.solved} solved · Best ${formatTime(e.bestMs)}`;
