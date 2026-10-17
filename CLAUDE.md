@@ -155,6 +155,12 @@ Ask the user when the milestone comes up; move the answer into the spec above an
 
 None right now.
 
+## Known shortcuts (hub)
+
+The `ponytail:` comments in hub code (`src/components`, `src/hooks`, `src/lib`, `src/constants`, `tools`): file, what was cut, when to revisit. Game-specific ones are in the game's doc. Re-check for all of them: `Get-ChildItem src/components,src/hooks,src/lib,src/constants,tools -Recurse -File | Select-String -Pattern 'ponytail:'`.
+
+- `src/components/button.tsx`: the `compact` variant is 36 px high, below the 48 px touch target, because the user asked for a slim row (Make 24's Hint · Give up row). Revisit if taps miss on the phone. Re-check: `Select-String -Path src/components/button.tsx -Pattern 'ponytail:'`.
+
 ## Android checks
 
 Hub-wide things verified only in the web preview that must be tested on the phone (add as they come up, tick when confirmed). Game-specific checks are in each game's doc.
