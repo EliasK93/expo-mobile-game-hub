@@ -85,7 +85,7 @@ src/
 ## Games
 
 - [Sudoku](docs/sudoku.md)
-- [2048](docs/2048.md): in progress, T1 (logic) and T2 (playable) done 2026-10-17, next T3
+- [2048](docs/2048.md): in progress, T1-T3 done 2026-10-17, next T4 (polish)
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
