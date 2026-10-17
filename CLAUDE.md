@@ -85,7 +85,7 @@ src/
 ## Games
 
 - [Sudoku](docs/sudoku.md)
-- [2048](docs/2048.md): complete in the web preview (T1-T4, 2026-10-17), APK test pending
+- [2048](docs/2048.md): complete (T1-T4, 2026-10-17); APK tested, swipe sensitivity re-test pending
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
