@@ -1,7 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { fromValues, type Dir, type Size } from '@/games/2048/logic/board';
 import { newGame } from '@/games/2048/logic/game';
+import { EMPTY_STATS, type SizeStats } from '@/games/2048/logic/stats';
 
 // newGame is replaced so each test starts from a board built by hand; play and the rest stay real.
 jest.mock('@/games/2048/logic/game', () => ({ ...jest.requireActual('@/games/2048/logic/game'), newGame: jest.fn() }));
@@ -23,6 +25,30 @@ const open = async () => {
   renderRouter('./src/app', { initialUrl: '/2048' });
   await settle();
 };
+
+const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
+const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
+// An unfinished game in storage, as a move would have left it.
+const seedSave = (vals: number[], extra: Record<string, unknown> = {}) =>
+  seed('2048:save', {
+    size: Math.round(Math.sqrt(vals.length)),
+    values: vals,
+    score: 0,
+    won: false,
+    keptGoing: false,
+    undoUsed: false,
+    moves: 3,
+    ...extra,
+  });
+const seedStats = (size: Size, stats: SizeStats) => seed('2048:stats', { ...EMPTY_STATS, [size]: stats });
+// The screen reads storage when it opens, so a seed needs a reopen.
+const reopen = async () => {
+  screen.unmount();
+  await settle();
+  await open();
+};
+const useRealNewGame = () => (newGame as jest.Mock).mockReset().mockImplementation(realNewGame);
+const disabled = (label: string) => screen.getByLabelText(label).props.accessibilityState.disabled;
 
 // Every cell's value in reading order, 0 for an empty one, read from the board's accessibility value
 // ("2, empty, 4, empty; ..." row by row).
@@ -66,8 +92,10 @@ beforeEach(async () => {
   await open();
 });
 
-// The testing library unmounts the screen after each test; T2 saves nothing, so there is no late write to wait for.
-afterEach(() => {
+// The testing library has unmounted the screen by now; let the last writes land before the next test clears storage
+// (a late save would leak into it).
+afterEach(async () => {
+  await settle();
   jest.restoreAllMocks();
 });
 
@@ -178,6 +206,7 @@ describe('2048 screen', () => {
     expect(screen.queryByText('Game over')).toBeNull();
 
     swipe('right');
+    fireEvent.press(screen.getByLabelText('Close')); // the stats panel opens by itself; Close shows the finished board
 
     expect(screen.getByText('Game over')).toBeTruthy();
     const final = values();
@@ -187,5 +216,343 @@ describe('2048 screen', () => {
     drag(60, 0);
 
     expect(values()).toEqual(final);
+  });
+});
+
+// A board one swipe left from ending the game: the last row's 2 2 merge, and the 2 that spawns fills the last gap.
+const ENDING = [4, 8, 4, 8, 8, 4, 8, 4, 16, 8, 4, 8, 2, 2, 16, 32];
+// Two halves of the win tile side by side: a swipe left reaches it.
+const NEARLY_WON = withTiles({ 0: 1024, 1: 1024 });
+
+const toGame = async (board: number[], extra?: Record<string, unknown>) => {
+  await seedSave(board, extra);
+  await reopen();
+};
+
+describe('undo', () => {
+  it('restores the board and the score, and the spawned tile goes too', async () => {
+    start(withTiles({ 0: 2, 1: 2 }));
+    await reopen();
+    const before = values();
+
+    swipe('left');
+    expect(values()[0]).toBe(4);
+    expect(screen.getByLabelText('Score 4')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Undo'));
+
+    expect(values()).toEqual(before);
+    expect(screen.getByLabelText('Score 0')).toBeTruthy();
+  });
+
+  it('is disabled at the start, right after an undo and after a resume', async () => {
+    expect(disabled('Undo')).toBe(true);
+
+    swipe('left');
+    expect(disabled('Undo')).toBeFalsy();
+    fireEvent.press(screen.getByLabelText('Undo'));
+    expect(disabled('Undo')).toBe(true);
+
+    swipe('left');
+    await settle();
+    await reopen();
+    expect(disabled('Undo')).toBe(true);
+  });
+
+  it('is saved, with the undo mark', async () => {
+    swipe('left');
+    fireEvent.press(screen.getByLabelText('Undo'));
+    await settle();
+
+    expect((await saved('2048:save')).data).toMatchObject({ undoUsed: true, score: 0 });
+  });
+});
+
+describe('win', () => {
+  beforeEach(async () => {
+    start(NEARLY_WON);
+    await reopen();
+    swipe('left');
+  });
+
+  it('shows the overlay when the win tile is reached, and hides Undo while it is open', () => {
+    expect(screen.getByText('You win!')).toBeTruthy();
+    expect(screen.getByLabelText('Keep going')).toBeTruthy();
+    expect(screen.queryByLabelText('Undo')).toBeNull();
+  });
+
+  it('ignores swipes while it is open', () => {
+    const before = values();
+
+    swipe('right');
+    drag(60, 0);
+
+    expect(values()).toEqual(before);
+    expect(screen.getByText('You win!')).toBeTruthy();
+  });
+
+  it('Keep going closes it for good, brings Undo back and survives a reopen', async () => {
+    fireEvent.press(screen.getByLabelText('Keep going'));
+    await settle();
+
+    expect(screen.queryByText('You win!')).toBeNull();
+    expect(disabled('Undo')).toBeFalsy();
+    swipe('right'); // the game carries on
+    expect(values()[3]).not.toBe(0);
+
+    await settle();
+    await reopen();
+    expect(screen.queryByText('You win!')).toBeNull();
+    expect(screen.getByLabelText('Score 2,048')).toBeTruthy();
+  });
+
+  it('comes back on a reopen if Keep going was never pressed', async () => {
+    await settle();
+    await reopen();
+
+    expect(screen.getByText('You win!')).toBeTruthy();
+  });
+
+  it('New game on it opens the size picker', () => {
+    fireEvent.press(screen.getByLabelText('New game after win'));
+
+    expect(screen.getByText('Pick a size')).toBeTruthy();
+  });
+});
+
+describe('resume', () => {
+  it('opens a saved game directly, at the same board and score', async () => {
+    await toGame(withTiles({ 0: 8, 5: 64 }), { score: 1234 });
+
+    expect(values()).toEqual(withTiles({ 0: 8, 5: 64 }));
+    expect(screen.getByLabelText('Score 1,234')).toBeTruthy();
+    expect(screen.queryByText('Pick a size')).toBeNull();
+  });
+
+  it('saves after every move', async () => {
+    swipe('left');
+    await settle();
+
+    expect((await saved('2048:save')).data).toEqual({
+      size: 4,
+      values: values(),
+      score: 0,
+      won: false,
+      keptGoing: false,
+      undoUsed: false,
+      moves: 1,
+    });
+  });
+
+  it('without a save starts a new game of the stored size, 4×4 the first time', async () => {
+    useRealNewGame();
+    await reopen();
+    expect(screen.getByLabelText('Board 4 by 4', { exact: false })).toBeTruthy();
+
+    await seed('2048:settings', { size: 5 });
+    await reopen();
+    expect(screen.getByLabelText('Board 5 by 5', { exact: false })).toBeTruthy();
+    expect(tiles()).toHaveLength(2);
+  });
+
+  it('ignores a save from a finished game', async () => {
+    await toGame([4, 8, 4, 8, 8, 4, 8, 4, 4, 8, 4, 8, 8, 4, 8, 4]);
+
+    expect(values()).toEqual(withTiles({ 3: 2 })); // the new game from start() in beforeEach
+    expect(screen.queryByText('Game over')).toBeNull();
+  });
+
+  it('Best starts from the stored best score', async () => {
+    await seedStats(4, { played: 2, wins: 0, bestScore: 500, bestTile: 64 });
+    await reopen();
+
+    expect(screen.getByLabelText('Best 500')).toBeTruthy();
+  });
+});
+
+describe('size picker', () => {
+  it('marks the last used size from the setting, not the running game, and shows the bests', async () => {
+    await seedSave(Array(36).fill(0).map((v, i) => (i === 0 ? 2 : v)));
+    await seed('2048:settings', { size: 5 });
+    await seedStats(6, { played: 1, wins: 0, bestScore: 4321, bestTile: 256 });
+    await reopen();
+    expect(screen.getByLabelText('Board 6 by 6', { exact: false })).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('New game'));
+
+    expect(screen.getByLabelText('Size 5×5').props.accessibilityState.selected).toBe(true);
+    expect(screen.getByLabelText('Size 6×6').props.accessibilityState.selected).toBeFalsy();
+    expect(screen.getByText('Best 4,321')).toBeTruthy();
+    expect(screen.queryByText(/^Best 0/)).toBeNull();
+  });
+
+  it('stores the picked size as the setting', async () => {
+    useRealNewGame();
+    fireEvent.press(screen.getByLabelText('New game'));
+    fireEvent.press(screen.getByLabelText('Size 6×6'));
+    await settle();
+
+    expect((await saved('2048:settings')).data).toEqual({ size: 6 });
+  });
+});
+
+describe('abandoning', () => {
+  it('a started game becomes a played game in the stats, and its save goes', async () => {
+    start(withTiles({ 0: 2, 1: 2 }));
+    await reopen();
+    swipe('left'); // score 4, best tile 4
+    await settle();
+    expect(await saved('2048:save')).not.toBeNull();
+
+    useRealNewGame();
+    fireEvent.press(screen.getByLabelText('New game'));
+    fireEvent.press(screen.getByLabelText('Size 5×5'));
+    await settle();
+
+    expect((await saved('2048:stats')).data['4']).toEqual({ played: 1, wins: 0, bestScore: 4, bestTile: 4 });
+    expect(await saved('2048:save')).toBeNull();
+    expect(screen.getByLabelText('Board 5 by 5', { exact: false })).toBeTruthy();
+  });
+
+  it('a game that reached the win tile is recorded as a win', async () => {
+    await toGame(NEARLY_WON);
+    swipe('left');
+    fireEvent.press(screen.getByLabelText('Keep going'));
+
+    useRealNewGame();
+    fireEvent.press(screen.getByLabelText('New game'));
+    fireEvent.press(screen.getByLabelText('Size 5×5'));
+    await settle();
+
+    expect((await saved('2048:stats')).data['4']).toEqual({ played: 1, wins: 1, bestScore: 2048, bestTile: 2048 });
+  });
+
+  it('an unstarted game is not recorded', async () => {
+    useRealNewGame();
+    fireEvent.press(screen.getByLabelText('New game'));
+    fireEvent.press(screen.getByLabelText('Size 5×5'));
+    await settle();
+
+    expect(await saved('2048:stats')).toBeNull();
+  });
+
+  it('Cancel records nothing and keeps the save', async () => {
+    swipe('left');
+    await settle();
+
+    fireEvent.press(screen.getByLabelText('New game'));
+    fireEvent.press(screen.getByLabelText('Cancel'));
+    await settle();
+
+    expect(await saved('2048:stats')).toBeNull();
+    expect(await saved('2048:save')).not.toBeNull();
+  });
+});
+
+describe('game over', () => {
+  beforeEach(async () => {
+    await seedSave(ENDING, { moves: 5 });
+    await reopen();
+    swipe('left');
+    await settle();
+  });
+
+  it('opens the stats panel with the result line, a new best', () => {
+    expect(screen.getByText('Score 4 · best tile 32 · New best!')).toBeTruthy();
+    expect(screen.queryByLabelText(/^Board/)).toBeNull();
+    expect(screen.getByLabelText('Play again')).toBeTruthy();
+  });
+
+  it('deletes the save and writes the stats', async () => {
+    expect(await saved('2048:save')).toBeNull();
+    expect((await saved('2048:stats')).data['4']).toEqual({ played: 1, wins: 0, bestScore: 4, bestTile: 32 });
+  });
+
+  it('Play again starts a new game of the same size', () => {
+    useRealNewGame();
+    fireEvent.press(screen.getByLabelText('Play again'));
+
+    expect(screen.getByLabelText('Board 4 by 4', { exact: false })).toBeTruthy();
+    expect(tiles()).toHaveLength(2);
+    expect(screen.queryByText('Game over')).toBeNull();
+  });
+
+  it('Close shows the dimmed finished board, with Undo disabled', () => {
+    fireEvent.press(screen.getByLabelText('Close'));
+
+    expect(screen.getByText('Game over')).toBeTruthy();
+    expect(values().every((v) => v > 0)).toBe(true);
+    expect(disabled('Undo')).toBe(true);
+  });
+
+  it('a swipe on the finished board counts no second game', async () => {
+    fireEvent.press(screen.getByLabelText('Close'));
+
+    swipe('left');
+    drag(60, 0);
+    await settle();
+
+    expect((await saved('2048:stats')).data['4'].played).toBe(1);
+  });
+
+  it('Change size opens the picker; picking one does not count the finished game again', async () => {
+    useRealNewGame();
+    fireEvent.press(screen.getByLabelText('Change size'));
+    expect(screen.getByText('Pick a size')).toBeTruthy();
+    fireEvent.press(screen.getByLabelText('Size 5×5'));
+    await settle();
+
+    expect(screen.getByLabelText('Board 5 by 5', { exact: false })).toBeTruthy();
+    expect((await saved('2048:stats')).data['4'].played).toBe(1);
+  });
+});
+
+describe('the undo rule', () => {
+  it('a won game with undo counts as a win but leaves the bests alone', async () => {
+    const won = [2048, 8, 4, 8, 8, 4, 8, 4, 4, 8, 4, 8, 4, 8, 4, 0];
+    await seedStats(4, { played: 1, wins: 0, bestScore: 100, bestTile: 64 });
+    await toGame(won, { score: 5000, won: true, keptGoing: true, undoUsed: true });
+    expect(screen.getByLabelText('Best 100')).toBeTruthy(); // the score is higher, the Best box still shows the stored best
+
+    swipe('right');
+    await settle();
+
+    expect(screen.getByText('Score 5,000 · best tile 2048 · with undo')).toBeTruthy();
+    expect((await saved('2048:stats')).data['4']).toEqual({ played: 2, wins: 1, bestScore: 100, bestTile: 64 });
+  });
+});
+
+describe('header Stats', () => {
+  it('opens the panel with no result line and no new-game buttons, and Close returns to the game', () => {
+    swipe('left');
+    const board = values();
+
+    fireEvent.press(screen.getByLabelText('Stats'));
+
+    expect(screen.getByLabelText('Played: 0')).toBeTruthy();
+    expect(screen.queryByText(/^Score /)).toBeNull();
+    expect(screen.queryByLabelText('Play again')).toBeNull();
+    expect(screen.queryByLabelText('Change size')).toBeNull();
+    expect(screen.queryByLabelText(/^Board/)).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Close'));
+
+    expect(values()).toEqual(board);
+  });
+
+  it('the size switch opens on the current size and changes the numbers', async () => {
+    await seedStats(5, { played: 3, wins: 1, bestScore: 12_345, bestTile: 512 });
+    await reopen();
+
+    fireEvent.press(screen.getByLabelText('Stats'));
+    expect(screen.getByLabelText('4×4 stats').props.accessibilityState.selected).toBe(true);
+    expect(screen.getByLabelText('Best score: —')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('5×5 stats'));
+
+    expect(screen.getByLabelText('Played: 3')).toBeTruthy();
+    expect(screen.getByLabelText('Wins: 1')).toBeTruthy();
+    expect(screen.getByLabelText('Best score: 12,345')).toBeTruthy();
+    expect(screen.getByLabelText('Best tile: 512')).toBeTruthy();
   });
 });

@@ -68,6 +68,10 @@ export function undo(game: Game): Game {
 // Dismisses the win overlay. Returns the same game when there is none.
 export const keepGoing = (game: Game): Game => (game.won && !game.keptGoing ? { ...game, keptGoing: true } : game);
 
+// The win overlay is open: the win tile was reached, Keep going not pressed yet, and the game is not over (a game that
+// ends on the winning move shows Game over alone). play does not block moves then, so the UI ignores swipes and hides Undo.
+export const winOpen = (game: Game) => game.won && !game.keptGoing && game.status === 'playing';
+
 // Started = at least one move; only a started game is recorded when abandoned.
 export const isStarted = (game: Game) => game.moves > 0;
 

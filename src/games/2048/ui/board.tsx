@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { PanResponder, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { glyphStyle } from '@/components/glyph-style';
@@ -8,6 +8,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 import { sizeOf, type Dir } from '../logic/board';
 import type { Game } from '../logic/game';
+import { Dim } from './dim';
 import { rampColors } from './ramp';
 
 const GAP = 4;
@@ -27,9 +28,10 @@ const numberSize = (tile: number, value: number) => Math.floor(Math.min(tile * 0
 
 // available = the height the board may use (the screen's measured area minus everything else), null until measured:
 // then the board is sized by the width alone. onSwipe must be a stable function: the PanResponder is built from it once.
-type Props = { game: Game; available: number | null; onSwipe: (dir: Dir) => void };
+// overlay = the win overlay, drawn over the cells.
+type Props = { game: Game; available: number | null; onSwipe: (dir: Dir) => void; overlay?: ReactNode };
 
-export function Game2048Board({ game, available, onSwipe }: Props) {
+export function Game2048Board({ game, available, onSwipe, overlay }: Props) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const n = sizeOf(game.board);
@@ -89,11 +91,11 @@ export function Game2048Board({ game, available, onSwipe }: Props) {
           </View>
         ))}
         {over && (
-          <View style={[StyleSheet.absoluteFill, styles.overlay]}>
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.background, opacity: 0.75 }]} />
+          <Dim>
             <ThemedText type="subtitle">Game over</ThemedText>
-          </View>
+          </Dim>
         )}
+        {overlay}
       </View>
     </View>
   );
@@ -103,5 +105,4 @@ const styles = StyleSheet.create({
   board: { padding: GAP, gap: GAP, borderRadius: Spacing.two, userSelect: 'none' },
   row: { flexDirection: 'row', gap: GAP },
   cell: { borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  overlay: { alignItems: 'center', justifyContent: 'center', borderRadius: Spacing.two },
 });

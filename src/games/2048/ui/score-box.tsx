@@ -4,8 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-// 12,345: one regex instead of toLocaleString, so Android and the web print the same.
-const formatScore = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+import { formatScore } from './format';
 
 export const SCORE_BOX_HEIGHT = 56;
 

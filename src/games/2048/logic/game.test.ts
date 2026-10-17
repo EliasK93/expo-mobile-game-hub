@@ -1,6 +1,6 @@
 import { mulberry32 } from '@/lib/random';
 import { SIZES, fromValues, toValues, winTile, type Dir, type Size } from './board';
-import { isStarted, keepGoing, newGame, play, resultOf, undo, type Game } from './game';
+import { isStarted, keepGoing, newGame, play, resultOf, undo, winOpen, type Game } from './game';
 
 const first = () => 0; // spawns a 2 on the first empty cell
 const sequence = (...numbers: number[]) => () => numbers.shift() as number;
@@ -185,6 +185,20 @@ describe('keepGoing', () => {
     expect(keepGoing(fresh)).toBe(fresh);
     const kept = keepGoing(play(nearlyWon(4), 'left', first).game);
     expect(keepGoing(kept)).toBe(kept);
+  });
+});
+
+describe('winOpen', () => {
+  it('is true from the win until Keep going, and false for a game that never won', () => {
+    expect(winOpen(newGame(4, mulberry32(1)))).toBe(false);
+    const won = play(nearlyWon(4), 'left', first).game;
+    expect(winOpen(won)).toBe(true);
+    expect(winOpen(keepGoing(won))).toBe(false);
+  });
+
+  it('is false once the game is over, so the finished board shows Game over alone', () => {
+    const won = play(nearlyWon(4), 'left', first).game;
+    expect(winOpen({ ...won, status: 'over' })).toBe(false);
   });
 });
 

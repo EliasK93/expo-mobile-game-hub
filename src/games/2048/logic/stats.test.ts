@@ -1,6 +1,6 @@
 import { SIZES, fromValues, winTile } from './board';
 import { newGame, resultOf, type Game } from './game';
-import { EMPTY_STATS, liveBest, recordGame, type Stats } from './stats';
+import { EMPTY_STATS, isNewBest, liveBest, recordGame, type Stats } from './stats';
 
 const result = (score: number, bestTile: number, extra: { won?: boolean; undoUsed?: boolean } = {}) => ({
   score,
@@ -92,6 +92,28 @@ describe('liveBest', () => {
   it('in a game with undo it is the stored best only, however high the score', () => {
     expect(liveBest(1000, at(5000, true))).toBe(1000);
     expect(liveBest(null, at(5000, true))).toBe(0);
+  });
+});
+
+describe('isNewBest', () => {
+  const before = recordGame(EMPTY_STATS, 4, result(1000, 128))[4];
+
+  it('is true for a score above the stored best score', () => {
+    expect(isNewBest(before, result(1200, 64))).toBe(true);
+  });
+
+  it('is false for a score equal to or below it', () => {
+    expect(isNewBest(before, result(1000, 256))).toBe(false);
+    expect(isNewBest(before, result(900, 256))).toBe(false);
+  });
+
+  it('is true for the first scoring game, false for a score of 0', () => {
+    expect(isNewBest(EMPTY_STATS[4], result(36, 8))).toBe(true);
+    expect(isNewBest(EMPTY_STATS[4], result(0, 4))).toBe(false);
+  });
+
+  it('is false for a game with undo, however high the score', () => {
+    expect(isNewBest(before, result(5000, 512, { undoUsed: true }))).toBe(false);
   });
 });
 

@@ -12,6 +12,10 @@ export const EMPTY_STATS: Stats = { 4: EMPTY_SIZE, 5: EMPTY_SIZE, 6: EMPTY_SIZE,
 export const liveBest = (stored: number | null, game: Game): number =>
   game.undoUsed ? (stored ?? 0) : Math.max(stored ?? 0, game.score);
 
+// "New best!": the game's score beats the stored best score of its size. Asked before recordGame, which overwrites it.
+export const isNewBest = (before: SizeStats, { score, undoUsed }: Result): boolean =>
+  !undoUsed && score > (before.bestScore ?? 0);
+
 // Game over and abandoning a started game both come here. Every game counts as played, and as a win when it reached the
 // win tile; a game with undo stays out of the bests, and a score of 0 is no best score.
 export function recordGame(stats: Stats, size: Size, { score, bestTile, won, undoUsed }: Result): Stats {
