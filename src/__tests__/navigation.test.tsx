@@ -19,6 +19,18 @@ describe('navigation', () => {
     await act(async () => {}); // let the game's storage loads finish inside act
   });
 
+  // A reload or a deep link rebuilds the stack from the URL alone; the layout's anchor keeps home underneath, so Back works.
+  it.each(games)('goes back to home from $title after opening its route directly', async (game) => {
+    const { getPathname } = renderRouter('./src/app', { initialUrl: game.route });
+    await act(async () => {});
+
+    expect(getPathname()).toBe(game.route);
+    await act(async () => router.back());
+    await act(async () => {});
+
+    expect(getPathname()).toBe('/');
+  });
+
   // A game that forgets to wrap its route in GameRoute would never get playtime; this catches it for every future game.
   it.each(games)('records playtime for $title', async (game) => {
     jest.useFakeTimers();

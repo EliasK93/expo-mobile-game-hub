@@ -4,6 +4,9 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { games } from '@/games/registry';
 
+// After a reload or a deep link the stack is rebuilt from the URL alone: home stays underneath, so the header has a back arrow.
+export const unstable_settings = { anchor: 'index' };
+
 export default function RootLayout() {
   const colors = useTheme();
   // React Navigation's header, screens and back button take their colours from our tokens; only the fonts come from its default theme.
