@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { load, remove, save } from '@/lib/storage';
+import { load, replaceSaveWithStats, save } from '@/lib/storage';
 
 import type { Dir, Size } from '../logic/board';
 import type { Motion } from './board';
@@ -50,15 +50,14 @@ export function useGame2048() {
     if (g.status === 'playing') save(SAVE_KEY, SAVE_VERSION, toSave(g));
   }, []);
 
-  // The end of a game, by game over or by abandoning it. The save goes first, so a crash between the two writes can't
-  // count the game twice (Sudoku's order).
+  // The end of a game, by game over or by abandoning it.
   const finish = useCallback((g: Game) => {
     const result = resultOf(g);
     const next = recordGame(statsRef.current, g.size, result);
     setNewBest(isNewBest(statsRef.current[g.size], result));
     statsRef.current = next;
     setStats(next);
-    remove(SAVE_KEY).then(() => save(STATS_KEY, STATS_VERSION, next));
+    replaceSaveWithStats(SAVE_KEY, STATS_KEY, STATS_VERSION, next);
   }, []);
 
   // A fresh game on the board, with the panel and the picker closed.

@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { isRecord } from './guards';
+
 // Everything is stored as JSON { version, data } so a later format change can reject old data instead of misreading it.
 export async function save(key: string, version: number, data: unknown): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify({ version, data }));
@@ -11,7 +13,7 @@ export async function load<T>(key: string, version: number): Promise<T | null> {
   if (text === null) return null;
   try {
     const parsed = JSON.parse(text);
-    if (parsed === null || typeof parsed !== 'object' || parsed.version !== version || !('data' in parsed)) return null;
+    if (!isRecord(parsed) || parsed.version !== version || !('data' in parsed)) return null;
     return parsed.data as T;
   } catch {
     return null;
@@ -19,3 +21,10 @@ export async function load<T>(key: string, version: number): Promise<T | null> {
 }
 
 export const remove = (key: string): Promise<void> => AsyncStorage.removeItem(key);
+
+// The end of a game: delete the save first, then write the stats. If the app dies in between, the game is lost
+// rather than counted twice on resume.
+export async function replaceSaveWithStats(saveKey: string, statsKey: string, version: number, stats: unknown): Promise<void> {
+  await remove(saveKey);
+  await save(statsKey, version, stats);
+}

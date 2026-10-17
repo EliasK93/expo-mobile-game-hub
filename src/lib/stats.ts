@@ -1,4 +1,4 @@
-import { load, remove, save } from './storage';
+import { load, replaceSaveWithStats } from './storage';
 import { formatTime } from './timer';
 
 // Per bucket (a game's own key, e.g. a difficulty).
@@ -27,9 +27,7 @@ export const average = (e: StatsEntry): number | null => (e.timedCount === 0 ? n
 export const statsLine = (e: StatsEntry): string =>
   e.bestMs === null ? `${e.solved} solved` : `${e.solved} solved · Best ${formatTime(e.bestMs)}`;
 
-// Delete the save first: if the app dies in between, the win is lost rather than counted twice on resume.
 export async function recordWinStored(o: { saveKey: string; statsKey: string; version: number; bucket: string; ms: number; hinted: boolean }) {
-  await remove(o.saveKey);
   const stats = (await load<Stats>(o.statsKey, o.version)) ?? {};
-  await save(o.statsKey, o.version, recordWin(stats, o.bucket, o.ms, o.hinted));
+  await replaceSaveWithStats(o.saveKey, o.statsKey, o.version, recordWin(stats, o.bucket, o.ms, o.hinted));
 }

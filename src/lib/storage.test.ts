@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { load, remove, save } from './storage';
+import { load, remove, replaceSaveWithStats, save } from './storage';
 
 describe('storage', () => {
   it('round-trips data under the same version', async () => {
@@ -30,6 +30,14 @@ describe('storage', () => {
   it('returns null for JSON without the { version, data } shape', async () => {
     await AsyncStorage.setItem('test:key', '42');
     expect(await load('test:key', 1)).toBeNull();
+  });
+
+  it('replaceSaveWithStats deletes the save and stores the stats', async () => {
+    await save('test:save', 1, 'game');
+    await replaceSaveWithStats('test:save', 'test:stats', 2, { won: 1 });
+    expect(await load('test:save', 1)).toBeNull();
+    expect(await AsyncStorage.getItem('test:save')).toBeNull();
+    expect(await load('test:stats', 2)).toEqual({ won: 1 });
   });
 
   it('remove deletes the key', async () => {

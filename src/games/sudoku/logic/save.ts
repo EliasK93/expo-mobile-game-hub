@@ -1,5 +1,6 @@
 import type { Grid } from './board';
 import type { Game } from './game';
+import { isMs, isRecord } from '@/lib/guards';
 import { LEVEL_NAMES, LEVELS, type Level } from './techniques';
 
 // The level of a game: one of the five, or 'classic' for games saved before M6 had levels.
@@ -35,8 +36,7 @@ const isLevel = (v: unknown): v is Level => LEVELS.includes(v as Level);
 
 // The last level used ("sudoku:settings"). Anything unusable falls back to the default.
 export function fromSettings(data: unknown): Level {
-  const level = data !== null && typeof data === 'object' ? (data as { level?: unknown }).level : undefined;
-  return isLevel(level) ? level : DEFAULT_LEVEL;
+  return isRecord(data) && isLevel(data.level) ? data.level : DEFAULT_LEVEL;
 }
 
 // Any entered digit or note. Fresh games are not worth a "Continue?" prompt.
@@ -58,10 +58,10 @@ export const isCells = (a: unknown, max: number): a is number[] =>
 
 // Storage holds whatever was written, so check the shape before the UI trusts it. null = unusable save.
 export function fromSave(data: unknown): { game: Game; elapsedMs: number; hinted: boolean; level: LevelId } | null {
-  if (data === null || typeof data !== 'object') return null;
+  if (!isRecord(data)) return null;
   const d = data as Partial<SaveData>;
   if (!isCells(d.puzzle, 9) || !isCells(d.solution, 9) || !isCells(d.values, 9) || !isCells(d.notes, 0b1111111110)) return null;
-  if (typeof d.elapsedMs !== 'number' || !(d.elapsedMs >= 0) || typeof d.hinted !== 'boolean') return null;
+  if (!isMs(d.elapsedMs) || typeof d.hinted !== 'boolean') return null;
   const level = d.level === undefined ? 'classic' : d.level;
   if (level !== 'classic' && !isLevel(level)) return null;
   return {

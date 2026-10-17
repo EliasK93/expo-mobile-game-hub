@@ -1,7 +1,7 @@
 import { SIZES, fromValues, isOver, toValues, type Size } from './board';
 import type { Game } from './game';
 import { EMPTY_STATS, type SizeStats, type Stats } from './stats';
-import { isCount } from '@/lib/guards';
+import { isCount, isRecord } from '@/lib/guards';
 
 export const SAVE_KEY = '2048:save';
 export const SAVE_VERSION = 1;
@@ -42,7 +42,7 @@ const isValue = (v: unknown): v is number =>
 // Storage holds whatever was written, so check the shape before the UI trusts it. null = unusable save.
 // Only an unfinished game is ever saved, so a board with no move left is unusable too, and so is an empty one (it could never move).
 export function fromSave(data: unknown): Game | null {
-  if (data === null || typeof data !== 'object') return null;
+  if (!isRecord(data)) return null;
   const d = data as Partial<SaveData>;
   const { size, values, score, moves, won, keptGoing, undoUsed } = d;
   if (!isSize(size) || !Array.isArray(values) || values.length !== size * size || !values.every(isValue)) return null;
@@ -56,15 +56,15 @@ export function fromSave(data: unknown): Game | null {
 }
 
 const isSizeStats = (m: unknown): m is SizeStats => {
-  if (m === null || typeof m !== 'object') return false;
+  if (!isRecord(m)) return false;
   const s = m as Partial<SizeStats>;
   return isCount(s.played) && isCount(s.wins) && (s.bestScore === null || isCount(s.bestScore)) && (s.bestTile === null || isCount(s.bestTile));
 };
 
 // ponytail: stats with any bad field fall back to empty whole; keep the good sizes if a format change ever needs it.
 export function fromStats(data: unknown): Stats {
-  const d = data as Partial<Stats> | null;
-  if (d === null || typeof d !== 'object' || !SIZES.every((size) => isSizeStats(d[size]))) return EMPTY_STATS;
+  const d = data as Partial<Stats>;
+  if (!isRecord(data) || !SIZES.every((size) => isSizeStats(d[size]))) return EMPTY_STATS;
   return Object.fromEntries(SIZES.map((size) => [size, d[size]])) as Stats; // only the sizes, no stray keys
 }
 
