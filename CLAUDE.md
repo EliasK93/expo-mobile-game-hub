@@ -85,6 +85,7 @@ src/
 ## Games
 
 - [Sudoku](docs/sudoku.md)
+- [2048](docs/2048.md): concept agreed 2026-10-17, not built yet (start with T1)
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
@@ -121,6 +122,11 @@ Requires `HERDR_ENV=1`. If it is not set, say so instead of quietly doing the wo
 - **Limits travel with the work.** The doer passes the brief's limits on to every helper, in that helper's own prompt: which files it owns, no git beyond the gate's `git add`/`git status` (rule 1), no logged-in CLIs.
 - **Files have owners.** Every pane gets an explicit list of files it may edit. If it needs another file, it reports that and does not edit it. Shared files (`registry.ts`, `src/app/_layout.tsx`, `constants/theme.ts`, `package.json`) belong to one pane at a time.
 - **Dispatch routine.** After `herdr agent start`, wait a few seconds before `herdr agent prompt`, then read the pane (`herdr agent read <name> --source recent-unwrapped`) to confirm the agent is working on the brief. A prompt sent too early is lost and the agent sits idle. Every brief ends with a fixed reply line (e.g. `A4 DONE`). Watch for it by polling the pane text every 30 s in a background command (`herdr agent read`, match the reply line). Don't use `herdr agent wait --until idle`: the status sometimes stays "working" after the agent has finished, and the wait never returns. Close a pane only after its watcher has returned. Helper scripts: `tools/wait-done.ps1` (this watcher) and `tools/commit.ps1` (commit with a retry on a known shell crash, optionally only given paths).
+- **Briefs live in files.** Write the brief to a file in the scratchpad and send only `Read and follow the brief in <path>` with `herdr agent prompt`. Long prompts with quotes break on some shells and the agent never gets the work. Follow-up tasks for an open doer go the same way.
+- **Never hide a dispatch failure.** Don't pipe `herdr agent start`/`prompt` to `Out-Null`; filter their output for `agent_started`/`agent_prompted`/`error`. Report a doer as running only after reading its pane and seeing it work (rule 9). The user watches the panes and notices empty ones.
+- **At most two doer panes side by side.** Narrower panes failed to start an agent. Close finished panes before opening new ones.
+- **Parallel doers don't stage.** When two doers run at the same time, neither runs `git add`; the main pane stages both sets of files and runs the gate once (two `git add` at once can collide on the index).
+- **Extraction and review agents run in visible panes too,** including graphify's semantic extraction and ponytail reviews: an in-session subagent can't be seen and its progress can't be checked.
 
 ## graphify
 
