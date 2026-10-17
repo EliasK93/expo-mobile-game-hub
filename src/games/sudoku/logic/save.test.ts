@@ -6,7 +6,6 @@ import {
   fromSave,
   fromSettings,
   hasProgress,
-  levelName,
   SAVE_VERSION,
   toSave,
 } from './save';
@@ -50,11 +49,6 @@ describe('toSave / fromSave', () => {
     );
   });
 
-  it('loads a version 1 save, which has no level, as classic', () => {
-    const { level: _level, ...v1 } = toSave(fresh, 1500, false, 3);
-    expect(fromSave(v1)).toEqual({ game: fresh, elapsedMs: 1500, hinted: false, level: 'classic' });
-  });
-
   it.each([
     ['null', null],
     ['a string', 'x'],
@@ -63,21 +57,16 @@ describe('toSave / fromSave', () => {
     ['a bad time', { ...toSave(fresh, 0, false, 3), elapsedMs: 'soon' }],
     ['a digit above 9', { ...toSave(fresh, 0, false, 3), values: [...fresh.values.slice(0, 80), 10] }],
     ['an unknown level', { ...toSave(fresh, 0, false, 3), level: 6 }],
+    ['no level (a version 1 save)', { ...toSave(fresh, 0, false, 3), level: undefined }],
+    ['the old classic level', { ...toSave(fresh, 0, false, 3), level: 'classic' }],
   ])('rejects %s', (_name, data) => {
     expect(fromSave(data)).toBeNull();
   });
 });
 
 describe('levels', () => {
-  it('uses the level as the stats bucket, and classic for old games', () => {
+  it('uses the level as the stats bucket', () => {
     expect(bucketOf(3)).toBe('3');
-    expect(bucketOf('classic')).toBe('classic');
-  });
-
-  it('names a level from LEVEL_NAMES, and classic as Classic', () => {
-    expect(levelName(1)).toBe('Very easy');
-    expect(levelName(5)).toBe('Expert');
-    expect(levelName('classic')).toBe('Classic');
   });
 
   it('starts at Medium, and reads the last level from the settings', () => {

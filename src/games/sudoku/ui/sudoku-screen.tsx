@@ -8,16 +8,15 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { statsLine, type Stats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
 
-import { bucketOf, levelName } from '../logic/save';
+import { bucketOf } from '../logic/save';
 import { LEVEL_NAMES, LEVELS, type Level } from '../logic/techniques';
 import { Grid } from './grid';
 import { NumberPad } from './number-pad';
 import { useSudoku } from './use-sudoku';
 
 // The five levels (names from LEVEL_NAMES); the one used last is marked, and each shows its solved count and best time
-// once it has wins. Wins from before levels existed are one small line under the levels. Without onCancel there is no game to go back to.
+// once it has wins. Without onCancel there is no game to go back to.
 function LevelPicker({ lastLevel, stats, onPick, onCancel }: { lastLevel: Level; stats: Stats; onPick: (l: Level) => void; onCancel?: () => void }) {
-  const classic = stats[bucketOf('classic')];
   return (
     <ThemedView style={styles.panel}>
       <ThemedText type="subtitle" style={styles.heading}>Pick a level</ThemedText>
@@ -34,9 +33,6 @@ function LevelPicker({ lastLevel, stats, onPick, onCancel }: { lastLevel: Level;
           />
         );
       })}
-      {classic && classic.solved > 0 && (
-        <ThemedText type="small" themeColor="textSecondary" style={styles.heading}>{`Classic: ${statsLine(classic)}`}</ThemedText>
-      )}
       {onCancel && <Button label="Cancel" onPress={onCancel} />}
     </ThemedView>
   );
@@ -81,7 +77,7 @@ export function SudokuScreen() {
       <ThemedView style={styles.status}>
         {won && <ThemedText type="subtitle">{`Solved! in ${time}`}</ThemedText>}
         <ThemedView style={styles.timeRow}>
-          <ThemedText type="small">{levelName(level)}</ThemedText>
+          <ThemedText type="small">{LEVEL_NAMES[level]}</ThemedText>
           <ThemedText type="smallBold" style={styles.time}>{time}</ThemedText>
         </ThemedView>
       </ThemedView>

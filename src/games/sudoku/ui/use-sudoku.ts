@@ -13,7 +13,6 @@ import {
   fromSave,
   fromSettings,
   hasProgress,
-  LEGACY_SAVE_VERSION,
   SAVE_KEY,
   SAVE_VERSION,
   SETTINGS_KEY,
@@ -21,7 +20,6 @@ import {
   STATS_KEY,
   STATS_VERSION,
   toSave,
-  type LevelId,
 } from '../logic/save';
 import { pickPuzzle } from '../logic/pool';
 import type { Level } from '../logic/techniques';
@@ -34,17 +32,12 @@ type Status = 'loading' | 'prompt' | 'picker' | 'playing';
 const BLANK = newGame({ puzzle: Array<number>(81).fill(0), solution: Array<number>(81).fill(0) });
 
 // A game without progress is not worth resuming, so its save is deleted instead.
-const writeSave = (game: Game, ms: number, hinted: boolean, level: LevelId) =>
+const writeSave = (game: Game, ms: number, hinted: boolean, level: Level) =>
   hasProgress(game) ? save(SAVE_KEY, SAVE_VERSION, toSave(game, ms, hinted, level)) : remove(SAVE_KEY);
-
-// Version 2 first; a version 1 save (made before levels) is read as the same data without a level.
-async function loadSave() {
-  return (await load(SAVE_KEY, SAVE_VERSION)) ?? (await load(SAVE_KEY, LEGACY_SAVE_VERSION));
-}
 
 export function useSudoku() {
   const [history, setHistory] = useState(() => start(BLANK));
-  const [level, setLevel] = useState<LevelId>(DEFAULT_LEVEL); // of the game on the board
+  const [level, setLevel] = useState<Level>(DEFAULT_LEVEL); // of the game on the board
   const [lastLevel, setLastLevel] = useState<Level>(DEFAULT_LEVEL); // marked in the picker
   const [picking, setPicking] = useState(false);
   const [hint, setHint] = useState<Hint | null>(null);
@@ -75,7 +68,7 @@ export function useSudoku() {
 
   // Puts a game on the board with the clock at ms.
   const startGame = useCallback(
-    (g: Game, lvl: LevelId, ms = 0, wasHinted = false) => {
+    (g: Game, lvl: Level, ms = 0, wasHinted = false) => {
       setHistory(start(g));
       setSelected(null);
       setNotesMode(false);
@@ -103,9 +96,7 @@ export function useSudoku() {
   // Opening shows the Continue prompt if there is a game worth resuming, otherwise the level picker. No game starts by itself.
   useEffect(() => {
     let alive = true;
-    // ponytail: removes the key of the old on-device cache on every open; delete this line once every installed copy has opened Sudoku once.
-    remove('sudoku:cache');
-    Promise.all([loadSave(), load(SETTINGS_KEY, SETTINGS_VERSION), load<Stats>(STATS_KEY, STATS_VERSION)]).then(([data, settings, stored]) => {
+    Promise.all([load(SAVE_KEY, SAVE_VERSION),load(SETTINGS_KEY, SETTINGS_VERSION), load<Stats>(STATS_KEY, STATS_VERSION)]).then(([data, settings, stored]) => {
       if (!alive) return;
       setLastLevel(fromSettings(settings));
       setStats(stored ?? {});

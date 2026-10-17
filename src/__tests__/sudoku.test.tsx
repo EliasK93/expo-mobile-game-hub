@@ -208,10 +208,12 @@ describe('Level picker', () => {
       expect(detail('Easy').getByText('5 solved · Best 3:10')).toBeTruthy();
     });
 
-    it('shows wins from before levels existed as one small line under the levels, only if there are any', async () => {
-      await reopen(() => seed('sudoku:stats', { version: 1, data: { classic: { solved: 3, timedCount: 2, totalMs: 780_000, bestMs: 252_000 } } }));
+    it('ignores a leftover classic entry in the stored stats: no line for it, the levels still show', async () => {
+      const classic = { solved: 3, timedCount: 2, totalMs: 780_000, bestMs: 252_000 };
+      await reopen(() => seed('sudoku:stats', { version: 1, data: { ...STATS, classic } }));
 
-      expect(screen.getByText('Classic: 3 solved · Best 4:12')).toBeTruthy();
+      expect(screen.queryByText(/^Classic/)).toBeNull();
+      expect(detail('Easy').getByText('5 solved · Best 3:10')).toBeTruthy();
     });
 
     it('does not show an average time', async () => {
@@ -471,18 +473,14 @@ describe('Save and resume', () => {
     expect(save.data.level).toBe(3);
   });
 
-  it('a version 1 save resumes as Classic, and its win counts as Classic', async () => {
+  it('a version 1 save is rejected: no prompt, the level picker, then a fresh board', async () => {
     const v1 = { puzzle: PUZZLE, solution: SOLUTION, values: PUZZLE.map((v, i) => (i === 0 ? 5 : v)), notes: Array(81).fill(0), elapsedMs: 4000, hinted: false };
     await reopen(() => seed('sudoku:save', { version: 1, data: v1 }));
 
-    fireEvent.press(screen.getByLabelText(CONTINUE));
-    expect(screen.getByText('Classic')).toBeTruthy();
-    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
-
-    fireEvent.press(screen.getByLabelText(LAST_EMPTY));
-    enter(9);
-    await settle();
-    expect((await saved('sudoku:stats')).data.classic.solved).toBe(1);
+    expect(screen.queryByLabelText(CONTINUE)).toBeNull();
+    level('Medium');
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+    expect(screen.getByText('0:00')).toBeTruthy();
   });
 
   it('asks to continue, and Continue brings back the digit, the notes and the time', async () => {
@@ -568,12 +566,6 @@ describe('Save and resume', () => {
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
     level('Medium');
     expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
-  });
-
-  it('opening Sudoku removes the orphaned sudoku:cache key of the old on-device cache', async () => {
-    await reopen(() => seed('sudoku:cache', { version: 1, data: { 3: ['x'] } }));
-
-    expect(await AsyncStorage.getItem('sudoku:cache')).toBeNull();
   });
 
   it('undoing back to the empty board does not leave a stale save behind', async () => {
