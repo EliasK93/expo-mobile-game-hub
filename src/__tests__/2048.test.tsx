@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import { fromValues, type Dir, type Size } from '@/games/2048/logic/board';
 import { newGame } from '@/games/2048/logic/game';
 import { EMPTY_STATS, type SizeStats } from '@/games/2048/logic/stats';
+import { SLIDE_MS } from '@/games/2048/ui/animated-tile';
 
 // newGame is replaced so each test starts from a board built by hand; play and the rest stay real.
 jest.mock('@/games/2048/logic/game', () => ({ ...jest.requireActual('@/games/2048/logic/game'), newGame: jest.fn() }));
@@ -12,7 +14,9 @@ const realNewGame = jest.requireActual<typeof import('@/games/2048/logic/game')>
 // A fresh 4×4 (or n×n) game with these values, 0 = empty cell, in reading order.
 const start = (values: number[]) => {
   const size = Math.round(Math.sqrt(values.length)) as Size;
-  (newGame as jest.Mock).mockReset().mockReturnValue({ ...realNewGame(size, () => 0), board: fromValues(values) });
+  // The tiles get the ids 1..k, so the next one is k + 1 (a spawn must not reuse an id: the board keys its tiles by it).
+  const nextId = values.filter((v) => v > 0).length + 1;
+  (newGame as jest.Mock).mockReset().mockReturnValue({ ...realNewGame(size, () => 0), board: fromValues(values), nextId });
 };
 const EMPTY = Array(16).fill(0);
 const withTiles = (tiles: Record<number, number>) => EMPTY.map((v, i) => tiles[i] ?? v);
@@ -88,6 +92,8 @@ const drag = (dx: number, dy: number) => {
 beforeEach(async () => {
   // Spawns are predictable: the middle empty cell, a 2.
   jest.spyOn(Math, 'random').mockReturnValue(0.5);
+  // Reduced motion on: no animation, so every test below sees the board change at once. The Animations tests switch it off.
+  jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
   start(withTiles({ 3: 2 }));
   await open();
 });
@@ -145,6 +151,7 @@ describe('2048 screen', () => {
     expect(values()[0]).toBe(4);
     expect(screen.getByLabelText('Score 4')).toBeTruthy();
     expect(screen.getByLabelText('Best 4')).toBeTruthy();
+    expect(screen.queryByTestId('ghost')).toBeNull(); // reduced motion: the merged-away tile is not drawn sliding
   });
 
   it('a swipe that changes nothing spawns no tile and leaves the score', async () => {
@@ -519,6 +526,65 @@ describe('the undo rule', () => {
 
     expect(screen.getByText('Score 5,000 · best tile 2048 · with undo')).toBeTruthy();
     expect((await saved('2048:stats')).data['4']).toEqual({ played: 2, wins: 1, bestScore: 100, bestTile: 64 });
+  });
+});
+
+describe('Animations', () => {
+  const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
+
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
+    start(withTiles({ 0: 2, 1: 2 }));
+    await reopen(); // the screen reads the setting when it opens
+  });
+
+  afterEach(() => jest.useRealTimers());
+
+  it('draws the merged-away tile sliding for one slide, then drops it', () => {
+    swipe('left');
+
+    expect(screen.getByTestId('ghost')).toBeTruthy();
+    expect(values()[0]).toBe(4); // the board is final at once, the ghost is only drawn
+
+    tick(SLIDE_MS - 1);
+    expect(screen.getByTestId('ghost')).toBeTruthy();
+
+    tick(1);
+    expect(screen.queryByTestId('ghost')).toBeNull();
+  });
+
+  it('has the spawned tile on the board, and it is still there once the animation is over', () => {
+    swipe('left');
+    expect(screen.getByTestId('tile-3')).toBeTruthy(); // the new tile: the start() game's next id is 3
+
+    tick(5 * SLIDE_MS);
+
+    expect(screen.getByTestId('tile-3')).toBeTruthy();
+    expect(tiles()).toHaveLength(2);
+  });
+
+  it('a swipe in the middle of an animation still applies: both moves are on the board and the ghost is gone', () => {
+    swipe('left');
+    tick(SLIDE_MS / 2);
+    swipe('down');
+
+    expect(screen.queryByTestId('ghost')).toBeNull();
+    expect(values()[0]).toBe(0); // the 4 has moved down
+    expect([...tiles()].sort((a, b) => a - b)).toEqual([2, 2, 4]); // the 4, the first spawn, the second spawn
+    expect(screen.getByLabelText('Score 4')).toBeTruthy();
+
+    tick(5 * SLIDE_MS);
+
+    expect(tiles()).toHaveLength(3);
+  });
+
+  it('keeps a tile at least one pixel wide on a very short area', async () => {
+    await toGame(Array(49).fill(0).map((v, i) => (i === 0 ? 2 : v)));
+
+    fireEvent(screen.getByTestId('game-area'), 'layout', { nativeEvent: { layout: { height: 50 } } });
+
+    expect(StyleSheet.flatten(screen.getByTestId('tile-1').props.style).width).toBeGreaterThanOrEqual(1);
   });
 });
 

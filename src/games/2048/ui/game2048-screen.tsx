@@ -18,7 +18,7 @@ const STATS_BUTTON_WIDTH = 72; // the header gives a button no width of its own,
 
 export function Game2048Screen() {
   const {
-    loaded, game, stats, best, lastSize, newBest, picking, panel, canUndo, winOpen,
+    loaded, game, motion, stats, best, lastSize, newBest, picking, panel, canUndo, winOpen,
     swipe, undo, keepGoing, openPicker, closePicker, pickSize, openPanel, closePanel,
   } = useGame2048();
   const insets = useSafeAreaInsets();
@@ -68,7 +68,7 @@ export function Game2048Screen() {
   // Padding top and bottom, two gaps (boxes, button row, board).
   const reserved = insets.bottom + SCORE_BOX_HEIGHT + COMPACT_HEIGHT + 4 * Spacing.two;
   return (
-    <ThemedView style={container} onLayout={onLayout}>
+    <ThemedView testID="game-area" style={container} onLayout={onLayout}>
       {header}
       <ThemedView style={styles.row}>
         <ScoreBox title="Score" value={game.score} />
@@ -80,6 +80,7 @@ export function Game2048Screen() {
       </ThemedView>
       <Game2048Board
         game={game}
+        motion={motion}
         available={areaHeight === null ? null : areaHeight - reserved}
         onSwipe={swipe}
         overlay={winOpen ? <WinOverlay onKeepGoing={keepGoing} onNewGame={openPicker} /> : undefined}

@@ -1,17 +1,19 @@
 import { type ReactNode, useMemo } from 'react';
 import { PanResponder, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { glyphStyle } from '@/components/glyph-style';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { sizeOf, type Dir } from '../logic/board';
 import type { Game } from '../logic/game';
+import type { Merge, Slide } from '../logic/move';
+import type { Spawned } from '../logic/spawn';
+import { AnimatedTile } from './animated-tile';
 import { Dim } from './dim';
-import { rampColors } from './ramp';
 
 const GAP = 4;
+const MIN_TILE = 8; // a very short area gets small tiles and an overflowing board, never a zero or negative tile
 const MOVE_START = 10; // px of movement before the board takes the gesture
 const SWIPE_MIN = 20; // px a drag needs to count as a swipe
 const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
@@ -23,22 +25,31 @@ function swipeDir(dx: number, dy: number): Dir | null {
   return dy < 0 ? 'up' : 'down';
 }
 
-// The font size of a number from the tile size and its digit count: half a tile, less once the digits would not fit.
-const numberSize = (tile: number, value: number) => Math.floor(Math.min(tile * 0.5, (tile * 1.4) / String(value).length));
+// What the last move did, for the animations (the hook keeps it next to the game). seq tells one move from the next.
+export type Motion = { seq: number; slides: Slide[]; merges: Merge[]; spawned: Spawned | null };
 
 // available = the height the board may use (the screen's measured area minus everything else), null until measured:
 // then the board is sized by the width alone. onSwipe must be a stable function: the PanResponder is built from it once.
-// overlay = the win overlay, drawn over the cells.
-type Props = { game: Game; available: number | null; onSwipe: (dir: Dir) => void; overlay?: ReactNode };
+// motion = the last move, null when the board did not change by a move (start, undo, resume) or with reduced motion: then
+// the board just changes, no slides and no ghosts. overlay = the win overlay, drawn over the cells.
+type Props = { game: Game; available: number | null; motion: Motion | null; onSwipe: (dir: Dir) => void; overlay?: ReactNode };
 
-export function Game2048Board({ game, available, onSwipe, overlay }: Props) {
+export function Game2048Board({ game, available, motion, onSwipe, overlay }: Props) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const n = sizeOf(game.board);
   const boardSize = Math.floor(Math.min(width, MaxContentWidth) - 2 * Spacing.two);
-  const side = available === null ? boardSize : Math.min(boardSize, Math.floor(available));
-  const tile = Math.floor((side - (n + 1) * GAP) / n);
+  const limit = available === null ? boardSize : Math.min(boardSize, Math.floor(available));
+  const tile = Math.max(MIN_TILE, Math.floor((limit - (n + 1) * GAP) / n));
+  const side = n * tile + (n + 1) * GAP;
   const over = game.status === 'over';
+
+  // Where a cell's tile sits (px from the board's corner), and how far from there a tile starts when it slides in.
+  const px = (cell: number) => ({ x: GAP + (cell % n) * (tile + GAP), y: GAP + Math.floor(cell / n) * (tile + GAP) });
+  const from = (id: number, to: number) => {
+    const slide = motion?.slides.find((s) => s.id === id);
+    return slide ? { dx: px(slide.from).x - px(to).x, dy: px(slide.from).y - px(to).y } : { dx: 0, dy: 0 };
+  };
 
   // Touch (and a mouse drag on the web): the board takes the gesture after MOVE_START px and the screen may not take it back.
   const pan = useMemo(
@@ -72,24 +83,41 @@ export function Game2048Board({ game, available, onSwipe, overlay }: Props) {
         testID="board-pan"
         {...pan.panHandlers}
         style={[styles.board, { width: side, height: side, backgroundColor: theme.rampBoard }]}>
+        {/* The empty cells stay put; the tiles are laid over them. Every move gives the tiles new keys (they are remade in
+            their end state), which is also what finishes a running animation when the next swipe comes. */}
         {rows.map((row, r) => (
           <View key={r} style={styles.row}>
-            {row.map((t, c) => {
-              const colors = t ? rampColors(t.value) : null;
-              return (
-                <View
-                  key={c}
-                  style={[styles.cell, { width: tile, height: tile, backgroundColor: theme[colors?.background ?? 'rampEmpty'] }]}>
-                  {t && (
-                    <ThemedText themeColor={colors!.text} style={glyphStyle(numberSize(tile, t.value), 700)}>
-                      {t.value}
-                    </ThemedText>
-                  )}
-                </View>
-              );
-            })}
+            {row.map((_, c) => (
+              <View key={c} style={[styles.cell, { width: tile, height: tile, backgroundColor: theme.rampEmpty }]} />
+            ))}
           </View>
         ))}
+        {/* ponytail: the merged tile shows its new value from the start of the slide, the ghost slides under it; a swap at the end of the slide needs a second layer per tile. Revisit if it looks wrong on the phone. */}
+        {motion?.merges.map((m) => (
+          <AnimatedTile
+            key={`ghost-${m.removedId}:${motion.seq}`}
+            ghost
+            id={m.removedId}
+            value={m.value / 2}
+            size={tile}
+            {...px(m.at)}
+            {...from(m.removedId, m.at)}
+            effect={null}
+          />
+        ))}
+        {game.board.map((t, cell) =>
+          t && (
+            <AnimatedTile
+              key={`${t.id}:${motion?.seq ?? 0}`}
+              id={t.id}
+              value={t.value}
+              size={tile}
+              {...px(cell)}
+              {...from(t.id, cell)}
+              effect={motion?.spawned?.id === t.id ? 'spawn' : motion?.merges.some((m) => m.id === t.id) ? 'pop' : null}
+            />
+          ),
+        )}
         {over && (
           <Dim>
             <ThemedText type="subtitle">Game over</ThemedText>

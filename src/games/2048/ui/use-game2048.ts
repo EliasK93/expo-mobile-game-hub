@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { load, remove, save } from '@/lib/storage';
 
 import type { Dir, Size } from '../logic/board';
+import type { Motion } from './board';
 import { isStarted, keepGoing, newGame, play, resultOf, undo, winOpen, type Game } from '../logic/game';
 import {
   fromSave,
@@ -30,12 +32,17 @@ export function useGame2048() {
   const [newBest, setNewBest] = useState(false); // the game that just ended set a new best score
   const [picking, setPicking] = useState(false);
   const [panel, setPanel] = useState(false); // the stats panel covers the game
+  const [motion, setMotion] = useState<Motion | null>(null); // the last move, for the board's animations
   const gameRef = useRef(game);
   const statsRef = useRef(stats);
+  const seqRef = useRef(0);
+  const reduceMotion = useReducedMotion();
 
-  const put = useCallback((g: Game) => {
+  // m = the move that led here; anything else that changes the board (start, resume, undo) passes none.
+  const put = useCallback((g: Game, m: Motion | null = null) => {
     gameRef.current = g;
     setGame(g);
+    setMotion(m);
   }, []);
 
   // Every move, undo and Keep going: an unfinished game is the one thing saved.
@@ -88,9 +95,10 @@ export function useGame2048() {
     (dir: Dir) => {
       const g = gameRef.current;
       if (winOpen(g)) return; // play doesn't block moves behind the overlay, so the UI does
-      const next = play(g, dir, Math.random).game;
+      const { game: next, ...moved } = play(g, dir, Math.random);
       if (next === g) return;
-      put(next);
+      // A game that ends opens the stats panel at once, so there is nothing to animate.
+      put(next, next.status === 'over' ? null : { seq: ++seqRef.current, ...moved });
       if (next.status === 'over') {
         finish(next);
         setPanel(true);
@@ -122,9 +130,14 @@ export function useGame2048() {
     [finish, startGame],
   );
 
-  const openPicker = useCallback(() => setPicking(true), []);
+  // The picker and the panel replace the board; it comes back as it stands, without playing the last move again.
+  const openPicker = useCallback(() => {
+    setMotion(null);
+    setPicking(true);
+  }, []);
   const closePicker = useCallback(() => setPicking(false), []);
   const openPanel = useCallback(() => {
+    setMotion(null);
     setPicking(false);
     setPanel(true);
   }, []);
@@ -133,6 +146,7 @@ export function useGame2048() {
   return {
     loaded,
     game,
+    motion: reduceMotion ? null : motion,
     stats,
     best: liveBest(stats[game.size].bestScore, game),
     lastSize,
