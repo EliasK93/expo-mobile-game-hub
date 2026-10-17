@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
 import { fromValues, type Dir, type Size } from '@/games/2048/logic/board';
@@ -66,10 +66,13 @@ const tiles = () => values().filter((v) => v > 0);
 const swipe = (dir: Dir) =>
   fireEvent(screen.getByLabelText(/^Board \d+ by \d+/), 'accessibilityAction', { nativeEvent: { actionName: dir } });
 
-// A real drag through the board's PanResponder handlers: touch down at (100, 100), move by (dx, dy), lift.
+// A real drag through the swipe area's PanResponder handlers: touch down at (100, 100), move by (dx, dy), lift.
 // The handlers are called directly: the testing library does not fire touch events at an element whose should-set handlers say no.
+// A move too short for the area to take the gesture (onMoveShouldSet says no) ends the drag there, as on a device.
+// The order is the device's: the area is asked at the move, is granted the gesture at that same move (which resets the
+// distance PanResponder reports to 0) and the finger lifts; the pixels before the grant must still count.
 const drag = (dx: number, dy: number) => {
-  const pan = screen.getByTestId('board-pan').props;
+  const pan = screen.getByTestId('swipe-area').props;
   const event = (x: number, y: number, t: number) => ({
     nativeEvent: { touches: [{}] },
     touchHistory: {
@@ -83,7 +86,9 @@ const drag = (dx: number, dy: number) => {
   });
   act(() => {
     pan.onStartShouldSetResponderCapture(event(100, 100, 1));
-    pan.onResponderGrant(event(100, 100, 1));
+    pan.onMoveShouldSetResponderCapture(event(100 + dx, 100 + dy, 2)); // this one updates PanResponder's distance
+    if (!pan.onMoveShouldSetResponder(event(100 + dx, 100 + dy, 2))) return;
+    pan.onResponderGrant(event(100 + dx, 100 + dy, 2));
     pan.onResponderMove(event(100 + dx, 100 + dy, 2));
     pan.onResponderRelease(event(100 + dx, 100 + dy, 2));
   });
@@ -174,6 +179,27 @@ describe('2048 screen', () => {
     expect(values()[0]).toBe(2);
     expect(values()[3]).toBe(0);
     expect(tiles()).toHaveLength(2);
+  });
+
+  it('counts a small drag: 10 px moves the tiles, 6 px does not', () => {
+    drag(-6, 0);
+    expect(values()[3]).toBe(2);
+
+    drag(-10, 0);
+    expect(values()[0]).toBe(2);
+    expect(values()[3]).toBe(0);
+  });
+
+  it('takes swipes on a wrapper around the board and the free area below it, not on the board itself', () => {
+    const area = screen.getByTestId('swipe-area');
+    const board = screen.getByLabelText(/^Board \d+ by \d+/);
+
+    expect(within(area).getByLabelText(/^Board \d+ by \d+/)).toBe(board);
+    expect(board.props.onMoveShouldSetResponder).toBeUndefined();
+    expect(area.props.onMoveShouldSetResponder).toBeDefined();
+
+    drag(0, 40); // a drag that starts under the board reaches the same handlers
+    expect(values()[15]).toBe(2);
   });
 
   it('a drag decides by its longer axis', () => {
