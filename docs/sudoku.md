@@ -128,7 +128,7 @@ Verified only in the web preview so far; test them on the phone (add as they com
 - [x] The hint highlight colour is clear in light and dark mode.
 - [x] With the Pencil & Paper palette (2026-10-16), the selected cell (yellow), same-digit cells, hint cells (blue), conflicts (red) and entered digits (blue ink) are clearly different from each other in light and dark mode on the phone.
 
-- [x] Digits in the home tile, the grid and the pencil notes are vertically centred in their cells (not sitting low). Shared style: `digitStyle` in `src/games/sudoku/ui/digit-style.ts`.
+- [x] Digits in the home tile, the grid and the pencil notes are vertically centred in their cells (not sitting low). Shared style: `glyphStyle` in `src/components/glyph-style.ts`.
 
 ## Open decisions
 
