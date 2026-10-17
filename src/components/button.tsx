@@ -4,6 +4,8 @@ import { ThemedText, type ThemedTextProps } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing, type ThemeColor } from '@/constants/theme';
 
+export const COMPACT_HEIGHT = 36;
+
 type Props = {
   label: string; // accessibility label; also the text unless `text` is given
   text?: string;
@@ -43,7 +45,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   button: { minHeight: 48, borderRadius: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   // ponytail: 36 is below the 48 px touch target, by the user's request for a slim row; revisit if taps miss on the phone (Android check).
-  compact: { minHeight: 36 },
+  compact: { minHeight: COMPACT_HEIGHT },
   text: { alignSelf: 'stretch', textAlign: 'center' },
   dimmed: { opacity: 0.4 },
 });
