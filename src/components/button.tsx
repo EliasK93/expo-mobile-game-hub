@@ -23,7 +23,20 @@ type Props = {
 
 // The hub's one text button. A disabled one is dimmed.
 // The label stretches to the full width of the button: a shrink-wrapped, centred Text gets its last word cut off on some Android fonts.
-export function Button({ label, text = label, detail, onPress, selected, disabled, flex, primary, compact, muted, background = 'backgroundSelected', textType = 'smallBold' }: Props) {
+export function Button({
+  label,
+  text = label,
+  detail,
+  onPress,
+  selected,
+  disabled,
+  flex,
+  primary,
+  compact,
+  muted,
+  background = 'backgroundSelected',
+  textType = 'smallBold',
+}: Props) {
   const accent = primary || selected;
   return (
     <Pressable
@@ -33,10 +46,19 @@ export function Button({ label, text = label, detail, onPress, selected, disable
       disabled={disabled}
       onPress={onPress}
       style={[flex && styles.flex, disabled && styles.dimmed]}>
-      <ThemedView type={accent ? 'accent' : muted ? 'backgroundElement' : background} style={[styles.button, compact && styles.compact]}>
-        <ThemedText type={textType} themeColor={accent ? 'onAccent' : muted ? 'textSecondary' : undefined} style={styles.text}>{text}</ThemedText>
+      <ThemedView
+        type={accent ? 'accent' : muted ? 'backgroundElement' : background}
+        style={[styles.button, compact && styles.compact]}>
+        <ThemedText
+          type={textType}
+          themeColor={accent ? 'onAccent' : muted ? 'textSecondary' : undefined}
+          style={styles.text}>
+          {text}
+        </ThemedText>
         {detail && (
-          <ThemedText type="small" themeColor={accent ? 'onAccent' : 'textSecondary'} style={styles.text}>{detail}</ThemedText>
+          <ThemedText type="small" themeColor={accent ? 'onAccent' : 'textSecondary'} style={styles.text}>
+            {detail}
+          </ThemedText>
         )}
       </ThemedView>
     </Pressable>

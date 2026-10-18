@@ -9,12 +9,19 @@ import { PANEL_DELAY_MS } from '@/games/minesweeper/ui/use-minesweeper';
 import { buttonLook } from '@/test-utils/button-look';
 
 // placeMines is replaced so each test starts from a mine layout built by hand; open and the rest stay real.
-jest.mock('@/games/minesweeper/logic/generate', () => ({ ...jest.requireActual('@/games/minesweeper/logic/generate'), placeMines: jest.fn() }));
-const realPlaceMines = jest.requireActual<typeof import('@/games/minesweeper/logic/generate')>('@/games/minesweeper/logic/generate').placeMines;
+jest.mock('@/games/minesweeper/logic/generate', () => ({
+  ...jest.requireActual('@/games/minesweeper/logic/generate'),
+  placeMines: jest.fn(),
+}));
+const realPlaceMines = jest.requireActual<typeof import('@/games/minesweeper/logic/generate')>(
+  '@/games/minesweeper/logic/generate',
+).placeMines;
 
 // The next first tap gets these cells as mines, whatever the level and the tapped cell.
 const layout = (indices: number[]) =>
-  (placeMines as jest.Mock).mockReset().mockImplementation((level: Level) => Array.from({ length: cellCount(level) }, (_, i) => indices.includes(i)));
+  (placeMines as jest.Mock)
+    .mockReset()
+    .mockImplementation((level: Level) => Array.from({ length: cellCount(level) }, (_, i) => indices.includes(i)));
 const useRealPlaceMines = () => (placeMines as jest.Mock).mockReset().mockImplementation(realPlaceMines);
 
 // Beginner is 8 columns: a wall of mines down column 4 (opening the left side floods columns 0-3), and exactly the
@@ -37,7 +44,8 @@ const open = async () => {
 };
 
 // A cell by its index in reading order, found by its label "Row r, column c, <state>" (rows and columns count from 1).
-const cell = (i: number, cols = COLS) => screen.getByLabelText(new RegExp(`^Row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}, `));
+const cell = (i: number, cols = COLS) =>
+  screen.getByLabelText(new RegExp(`^Row ${Math.floor(i / cols) + 1}, column ${(i % cols) + 1}, `));
 const stateOf = (i: number, cols = COLS) => cell(i, cols).props.accessibilityLabel.split(', ').slice(2).join(', ');
 const tap = (i: number, cols = COLS) => fireEvent.press(cell(i, cols));
 const hold = (i: number, cols = COLS) => fireEvent(cell(i, cols), 'longPress');
@@ -392,7 +400,13 @@ const range = (from: number, to: number) => Array.from({ length: to - from }, (_
 const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
 
 // An unfinished Beginner game as the wall layout leaves it after a tap on cell 0, with a flag on the wall mine 44.
-const WALL_SAVE = { level: 'beginner', mines: WALL, opened: range(0, CELLS).filter((i) => i % COLS < 4), flagged: [44], elapsedMs: 65_000 };
+const WALL_SAVE = {
+  level: 'beginner',
+  mines: WALL,
+  opened: range(0, CELLS).filter((i) => i % COLS < 4),
+  flagged: [44],
+  elapsedMs: 65_000,
+};
 // A game one tap from the win: the mines are the first cells, every other cell but the last is open, so a tap on the
 // last cell wins and a tap on cell 0 (a mine) loses.
 const nearlyWon = (level: Level, elapsedMs: number) => {
@@ -519,7 +533,13 @@ describe('after a win', () => {
   it('counts the game, the streak and the best time, and deletes the save', async () => {
     await settle();
 
-    expect((await saved('minesweeper:stats')).data.beginner).toEqual({ played: 1, wins: 1, currentStreak: 1, bestStreak: 1, bestMs: 83_000 });
+    expect((await saved('minesweeper:stats')).data.beginner).toEqual({
+      played: 1,
+      wins: 1,
+      currentStreak: 1,
+      bestStreak: 1,
+      bestMs: 83_000,
+    });
     expect((await saved('minesweeper:stats')).data.expert).toEqual(NO_GAMES);
     expect(await saved('minesweeper:save')).toBeNull();
   });
@@ -551,7 +571,13 @@ describe('after a win', () => {
     expect(screen.getByTestId('face-normal')).toBeTruthy();
     expect(covered()).toBe(CELLS);
     expect(screen.getByLabelText('Time 0 seconds')).toBeTruthy();
-    expect((await saved('minesweeper:save')).data).toMatchObject({ level: 'beginner', mines: [], opened: [], flagged: [], elapsedMs: 0 });
+    expect((await saved('minesweeper:save')).data).toMatchObject({
+      level: 'beginner',
+      mines: [],
+      opened: [],
+      flagged: [],
+      elapsedMs: 0,
+    });
   });
 
   it('Close shows the finished board', () => {
@@ -563,7 +589,6 @@ describe('after a win', () => {
     expect(covered()).toBe(0);
     expect(screen.queryByLabelText('Played: 1')).toBeNull();
   });
-
 
   it('the face during the second opens the picker, and the panel never opens behind it', () => {
     press('New game');
@@ -644,7 +669,12 @@ describe('after a win that is no best', () => {
     expect(screen.getByText('Won in 1:23')).toBeTruthy();
     expect(screen.getByLabelText('Played: 2')).toBeTruthy();
     expect(screen.getByLabelText('Best time: 0:50')).toBeTruthy();
-    expect((await saved('minesweeper:stats')).data.beginner).toMatchObject({ played: 2, wins: 2, currentStreak: 2, bestMs: 50_000 });
+    expect((await saved('minesweeper:stats')).data.beginner).toMatchObject({
+      played: 2,
+      wins: 2,
+      currentStreak: 2,
+      bestMs: 50_000,
+    });
   });
 });
 
@@ -668,7 +698,13 @@ describe('after a loss', () => {
     expect(screen.getByLabelText('Current streak: 0')).toBeTruthy();
     expect(screen.getByLabelText('Best streak: 2')).toBeTruthy();
     expect(screen.getByLabelText('Best time: 1:40')).toBeTruthy();
-    expect((await saved('minesweeper:stats')).data.beginner).toEqual({ played: 3, wins: 2, currentStreak: 0, bestStreak: 2, bestMs: 100_000 });
+    expect((await saved('minesweeper:stats')).data.beginner).toEqual({
+      played: 3,
+      wins: 2,
+      currentStreak: 0,
+      bestStreak: 2,
+      bestMs: 100_000,
+    });
     expect(await saved('minesweeper:save')).toBeNull();
   });
 
@@ -693,7 +729,13 @@ describe('abandoning', () => {
     press('Intermediate');
     await settle();
 
-    expect((await saved('minesweeper:stats')).data.beginner).toEqual({ played: 1, wins: 0, currentStreak: 0, bestStreak: 0, bestMs: null });
+    expect((await saved('minesweeper:stats')).data.beginner).toEqual({
+      played: 1,
+      wins: 0,
+      currentStreak: 0,
+      bestStreak: 0,
+      bestMs: null,
+    });
     expect((await saved('minesweeper:save')).data).toMatchObject({ level: 'intermediate', mines: [], opened: [] }); // the old save is gone
     expect(covered()).toBe(cellCount('intermediate'));
     expect((await saved('minesweeper:settings')).data).toEqual({ level: 'intermediate' });
@@ -759,7 +801,7 @@ describe('header Stats', () => {
     expect(screen.getByLabelText('Time 3 seconds')).toBeTruthy();
   });
 
-  it('the level switch opens on the board\'s level and shows each level\'s numbers', async () => {
+  it("the level switch opens on the board's level and shows each level's numbers", async () => {
     await seedStats('intermediate', { played: 3, wins: 1, currentStreak: 1, bestStreak: 1, bestMs: 83_000 });
     await reopen();
 
@@ -861,7 +903,8 @@ describe('screen reader', () => {
   });
 
   // TalkBack's double-tap-and-hold arrives as the `longpress` accessibility action (a double tap stays the press).
-  const action = (i: number, actionName: string) => fireEvent(cell(i), 'accessibilityAction', { nativeEvent: { actionName } });
+  const action = (i: number, actionName: string) =>
+    fireEvent(cell(i), 'accessibilityAction', { nativeEvent: { actionName } });
 
   it('the longpress action flags in Dig mode', () => {
     action(44, 'longpress');

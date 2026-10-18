@@ -67,7 +67,13 @@ export function fromSave(data: unknown): { game: Game; elapsedMs: number } | nul
 const isLevelStats = (m: unknown): m is LevelStats => {
   if (!isRecord(m)) return false;
   const s = m as Partial<LevelStats>;
-  return isCount(s.played) && isCount(s.wins) && isCount(s.currentStreak) && isCount(s.bestStreak) && (s.bestMs === null || isMs(s.bestMs));
+  return (
+    isCount(s.played) &&
+    isCount(s.wins) &&
+    isCount(s.currentStreak) &&
+    isCount(s.bestStreak) &&
+    (s.bestMs === null || isMs(s.bestMs))
+  );
 };
 
 // ponytail: stats with any bad field fall back to empty whole; keep the good levels if a format change ever needs it.

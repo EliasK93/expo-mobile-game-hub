@@ -19,7 +19,14 @@ export type Hint = {
 export function nextHint(values: Grid, solution: Grid): Hint | null {
   const wrong = values.findIndex((v, i) => v !== 0 && v !== solution[i]);
   if (wrong !== -1) {
-    return { technique: 'wrong-digit', label: 'Wrong digit', cell: wrong, digit: 0, cells: [wrong], explanation: `This ${values[wrong]} is wrong.` };
+    return {
+      technique: 'wrong-digit',
+      label: 'Wrong digit',
+      cell: wrong,
+      digit: 0,
+      cells: [wrong],
+      explanation: `This ${values[wrong]} is wrong.`,
+    };
   }
   if (!values.includes(0)) return null;
 
@@ -35,7 +42,8 @@ export function nextHint(values: Grid, solution: Grid): Hint | null {
         cell,
         digit,
         cells: [...new Set([...prep.flatMap((s) => s.cells), ...step.cells])],
-        explanation: labels.length > 0 ? `${step.explanation} To see it, first use ${labels.join(', ')}.` : step.explanation,
+        explanation:
+          labels.length > 0 ? `${step.explanation} To see it, first use ${labels.join(', ')}.` : step.explanation,
       };
     }
     prep.push(step);

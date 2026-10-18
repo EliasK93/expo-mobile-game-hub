@@ -19,7 +19,11 @@ export function SudokuTile() {
         {TILE_DIGITS.map((d, i) => (
           <ThemedView
             key={i}
-            style={[styles.cell, { borderColor: theme.gridLine }, i === SELECTED && { backgroundColor: theme.cellSelected }]}>
+            style={[
+              styles.cell,
+              { borderColor: theme.gridLine },
+              i === SELECTED && { backgroundColor: theme.cellSelected },
+            ]}>
             {d !== 0 && (
               <ThemedText themeColor={ENTERED.includes(i) ? 'accent' : 'text'} style={styles.digit}>
                 {d}
@@ -35,7 +39,13 @@ export function SudokuTile() {
 const styles = StyleSheet.create({
   tile: { flex: 1, padding: '12%', justifyContent: 'center' },
   grid: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', borderWidth: 2 },
-  cell: { width: '33.333%', height: '33.333%', borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  cell: {
+    width: '33.333%',
+    height: '33.333%',
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // ponytail: fixed digit size, not measured from the tile; measure with onLayout if a tile looks cramped or empty at some width.
   digit: glyphStyle(22, 700),
 });

@@ -19,7 +19,11 @@ describe('navigation theme', () => {
   it.each(['light', 'dark'] as const)('takes the %s colours from the theme tokens', async (scheme) => {
     mockScheme = scheme;
     // The layout declares a screen per game, so the games need a (blank) route too.
-    renderRouter({ _layout: RootLayout, index: Probe, ...Object.fromEntries(games.map((g) => [g.route.slice(1), () => null])) });
+    renderRouter({
+      _layout: RootLayout,
+      index: Probe,
+      ...Object.fromEntries(games.map((g) => [g.route.slice(1), () => null])),
+    });
     await act(async () => {});
 
     const t = Colors[scheme];

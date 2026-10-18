@@ -16,7 +16,9 @@ type Props = { last: Level; stats: Stats; onPick: (level: Level) => void; onCanc
 export function LevelPicker({ last, stats, onPick, onCancel }: Props) {
   return (
     <ThemedView style={styles.panel}>
-      <ThemedText type="subtitle" style={styles.heading}>Pick a level</ThemedText>
+      <ThemedText type="subtitle" style={styles.heading}>
+        Pick a level
+      </ThemedText>
       {LEVEL_IDS.map((level) => {
         const { cols, rows, mines } = LEVELS[level];
         const name = levelName(level);

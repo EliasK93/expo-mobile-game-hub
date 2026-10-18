@@ -229,7 +229,7 @@ describe('toggleFlag', () => {
 });
 
 describe('minesLeft', () => {
-  it.each(LEVEL_IDS)('%s: starts as the level\'s mines and drops with every flag', (level) => {
+  it.each(LEVEL_IDS)("%s: starts as the level's mines and drops with every flag", (level) => {
     const g = newGame(level);
     expect(minesLeft(g)).toBe(LEVELS[level].mines);
     expect(minesLeft(toggleFlag(g, 0))).toBe(LEVELS[level].mines - 1);

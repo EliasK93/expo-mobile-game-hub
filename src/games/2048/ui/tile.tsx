@@ -22,7 +22,10 @@ export function Game2048Tile() {
         {GRID.map((row, r) => (
           <View key={r} style={styles.row}>
             {row.map((value, c) => (
-              <View key={c} style={[styles.cell, { backgroundColor: theme[value ? rampColors(value).background : 'rampEmpty'] }]} />
+              <View
+                key={c}
+                style={[styles.cell, { backgroundColor: theme[value ? rampColors(value).background : 'rampEmpty'] }]}
+              />
             ))}
           </View>
         ))}

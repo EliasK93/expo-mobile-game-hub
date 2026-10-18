@@ -19,9 +19,12 @@ describe('LEVELS', () => {
     expect(LEVEL_IDS.map(cellCount)).toEqual([96, 150, 216]);
   });
 
-  it.each(LEVEL_IDS)('%s: after the first tap there are more candidate cells than mines (the tapped cell and its 8 neighbours stay clear)', (level) => {
-    expect(cellCount(level) - 9).toBeGreaterThanOrEqual(LEVELS[level].mines);
-  });
+  it.each(LEVEL_IDS)(
+    '%s: after the first tap there are more candidate cells than mines (the tapped cell and its 8 neighbours stay clear)',
+    (level) => {
+      expect(cellCount(level) - 9).toBeGreaterThanOrEqual(LEVELS[level].mines);
+    },
+  );
 });
 
 describe('neighbours', () => {
@@ -45,21 +48,24 @@ describe('neighbours', () => {
     expect(around('intermediate', 10)).toEqual([0, 1, 11, 20, 21]);
   });
 
-  it.each(LEVEL_IDS)('%s: every cell has 3, 5 or 8 distinct neighbours next to it, never itself, and the relation is symmetric', (level) => {
-    const { cols, rows } = LEVELS[level];
-    for (let i = 0; i < cellCount(level); i++) {
-      const list = neighbours(level, i);
-      const edges = Number(i % cols === 0 || i % cols === cols - 1) + Number(i < cols || i >= cols * (rows - 1));
-      expect(list).toHaveLength([8, 5, 3][edges]);
-      expect(new Set(list).size).toBe(list.length);
-      for (const n of list) {
-        expect(n).not.toBe(i);
-        expect(Math.abs(Math.floor(n / cols) - Math.floor(i / cols))).toBeLessThanOrEqual(1);
-        expect(Math.abs((n % cols) - (i % cols))).toBeLessThanOrEqual(1);
-        expect(neighbours(level, n)).toContain(i);
+  it.each(LEVEL_IDS)(
+    '%s: every cell has 3, 5 or 8 distinct neighbours next to it, never itself, and the relation is symmetric',
+    (level) => {
+      const { cols, rows } = LEVELS[level];
+      for (let i = 0; i < cellCount(level); i++) {
+        const list = neighbours(level, i);
+        const edges = Number(i % cols === 0 || i % cols === cols - 1) + Number(i < cols || i >= cols * (rows - 1));
+        expect(list).toHaveLength([8, 5, 3][edges]);
+        expect(new Set(list).size).toBe(list.length);
+        for (const n of list) {
+          expect(n).not.toBe(i);
+          expect(Math.abs(Math.floor(n / cols) - Math.floor(i / cols))).toBeLessThanOrEqual(1);
+          expect(Math.abs((n % cols) - (i % cols))).toBeLessThanOrEqual(1);
+          expect(neighbours(level, n)).toContain(i);
+        }
       }
-    }
-  });
+    },
+  );
 });
 
 describe('counts', () => {

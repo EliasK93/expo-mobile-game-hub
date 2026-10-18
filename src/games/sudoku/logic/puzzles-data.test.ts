@@ -25,12 +25,16 @@ describe('puzzle pool data', () => {
     expect(new Set(LEVELS.flatMap((l) => pool[l])).size).toBe(LEVELS.length * POOL_SIZE);
   });
 
-  it.each(LEVELS)('level %i: every 10th puzzle has one solution and rates exactly the level', (level) => {
-    for (let i = 0; i < POOL_SIZE; i += SAMPLE_EVERY) {
-      const grid = parseGrid(pool[level][i]);
-      expect(countSolutions(grid, 2)).toBe(1);
-      expect(rate(grid)).toBe(level);
-      if (level > 1) expect(rate(grid, (level - 1) as Level)).toBeNull(); // and it really needs the level
-    }
-  }, 60000);
+  it.each(LEVELS)(
+    'level %i: every 10th puzzle has one solution and rates exactly the level',
+    (level) => {
+      for (let i = 0; i < POOL_SIZE; i += SAMPLE_EVERY) {
+        const grid = parseGrid(pool[level][i]);
+        expect(countSolutions(grid, 2)).toBe(1);
+        expect(rate(grid)).toBe(level);
+        if (level > 1) expect(rate(grid, (level - 1) as Level)).toBeNull(); // and it really needs the level
+      }
+    },
+    60000,
+  );
 });

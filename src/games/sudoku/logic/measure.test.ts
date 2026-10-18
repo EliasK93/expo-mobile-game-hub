@@ -32,13 +32,15 @@ measure('generateLevel measurement', () => {
         }
       }
       const avg = times.reduce((a, b) => a + b, 0) / times.length;
-      const used = Object.entries(hardest).map(([k, v]) => `${k} x${v}`).join(', ');
+      const used = Object.entries(hardest)
+        .map(([k, v]) => `${k} x${v}`)
+        .join(', ');
       rows.push(
         `| ${level} ${LEVEL_NAMES[level]} | ${avg.toFixed(0)} | ${Math.max(...times).toFixed(0)} | ${retries.reduce((a, b) => a + b, 0)} (max ${Math.max(...retries)}) | ${Math.min(...givens)} / ${Math.max(...givens)} | ${used} |`,
       );
     }
     process.stdout.write(
-      '\n| level | avg ms | max ms | retries over 10 seeds | givens min / max | steps at the level\'s own level (all 10 puzzles) |\n|---|---|---|---|---|---|\n' +
+      "\n| level | avg ms | max ms | retries over 10 seeds | givens min / max | steps at the level's own level (all 10 puzzles) |\n|---|---|---|---|---|---|\n" +
         rows.join('\n') +
         '\n',
     );

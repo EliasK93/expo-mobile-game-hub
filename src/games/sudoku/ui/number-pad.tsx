@@ -23,7 +23,14 @@ export function NumberPad({ onDigit, onErase, onUndo, onRedo, onToggleNotes, can
     <ThemedView style={styles.pad}>
       <ThemedView style={styles.row}>
         {DIGITS.map((d) => (
-          <Button key={d} {...pad} textType="subtitle" label={`Enter ${d}`} text={String(d)} onPress={() => onDigit(d)} />
+          <Button
+            key={d}
+            {...pad}
+            textType="subtitle"
+            label={`Enter ${d}`}
+            text={String(d)}
+            onPress={() => onDigit(d)}
+          />
         ))}
       </ThemedView>
       <ThemedView style={styles.row}>

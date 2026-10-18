@@ -23,7 +23,14 @@ type Props = {
 };
 
 // memo: the screen re-renders on every clock tick, and the props (game, available, the handlers) stay the same between ticks.
-export const MinesweeperBoard = memo(function MinesweeperBoard({ game, available, onTap, onHold, onHoldStart, onHoldEnd }: Props) {
+export const MinesweeperBoard = memo(function MinesweeperBoard({
+  game,
+  available,
+  onTap,
+  onHold,
+  onHoldStart,
+  onHoldEnd,
+}: Props) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const { cols, rows } = LEVELS[game.level];

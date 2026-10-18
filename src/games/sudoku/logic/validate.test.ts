@@ -1,8 +1,7 @@
 import { parseGrid } from './board';
 import { conflicts, isComplete, isSolved } from './validate';
 
-const SOLVED =
-  '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+const SOLVED = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
 
 // Returns SOLVED with cell `i` overwritten by `v`.
 const withCell = (i: number, v: number) => {

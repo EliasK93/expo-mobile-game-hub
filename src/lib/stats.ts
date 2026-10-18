@@ -28,7 +28,14 @@ export const winPercent = (played: number, wins: number) => (played === 0 ? 0 : 
 export const statsLine = (e: StatsEntry): string =>
   e.bestMs === null ? `${e.solved} solved` : `${e.solved} solved · Best ${formatTime(e.bestMs)}`;
 
-export async function recordWinStored(o: { saveKey: string; statsKey: string; version: number; bucket: string; ms: number; hinted: boolean }) {
+export async function recordWinStored(o: {
+  saveKey: string;
+  statsKey: string;
+  version: number;
+  bucket: string;
+  ms: number;
+  hinted: boolean;
+}) {
   const stats = (await load<Stats>(o.statsKey, o.version)) ?? {};
   await replaceSaveWithStats(o.saveKey, o.statsKey, o.version, recordWin(stats, o.bucket, o.ms, o.hinted));
 }

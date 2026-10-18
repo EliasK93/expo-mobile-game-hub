@@ -5,5 +5,8 @@ import { StyleSheet } from 'react-native';
 export function buttonLook(text: string) {
   let node = screen.getByText(text).parent;
   while (node && !StyleSheet.flatten(node.props.style)?.backgroundColor) node = node.parent;
-  return { background: StyleSheet.flatten(node?.props.style).backgroundColor, text: StyleSheet.flatten(screen.getByText(text).props.style).color };
+  return {
+    background: StyleSheet.flatten(node?.props.style).backgroundColor,
+    text: StyleSheet.flatten(screen.getByText(text).props.style).color,
+  };
 }

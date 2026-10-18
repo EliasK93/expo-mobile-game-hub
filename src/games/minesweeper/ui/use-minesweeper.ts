@@ -82,19 +82,21 @@ export function useMinesweeper() {
   // Opening resumes the saved game directly, or starts an unmined board of the last used level.
   useEffect(() => {
     let alive = true;
-    Promise.all([load(SAVE_KEY, SAVE_VERSION), load(STATS_KEY, STATS_VERSION), load(SETTINGS_KEY, SETTINGS_VERSION)]).then(
-      ([data, storedStats, storedSettings]) => {
-        if (!alive) return;
-        const { level } = fromSettings(storedSettings);
-        const saved = fromSave(data);
-        statsRef.current = fromStats(storedStats);
-        setStats(statsRef.current);
-        setLastLevel(level);
-        put(saved?.game ?? newGame(level));
-        reset(saved?.elapsedMs);
-        setLoaded(true);
-      },
-    );
+    Promise.all([
+      load(SAVE_KEY, SAVE_VERSION),
+      load(STATS_KEY, STATS_VERSION),
+      load(SETTINGS_KEY, SETTINGS_VERSION),
+    ]).then(([data, storedStats, storedSettings]) => {
+      if (!alive) return;
+      const { level } = fromSettings(storedSettings);
+      const saved = fromSave(data);
+      statsRef.current = fromStats(storedStats);
+      setStats(statsRef.current);
+      setLastLevel(level);
+      put(saved?.game ?? newGame(level));
+      reset(saved?.elapsedMs);
+      setLoaded(true);
+    });
     return () => {
       alive = false;
     };

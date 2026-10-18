@@ -14,8 +14,12 @@ export function StatsNumbers({ numbers }: { numbers: [name: string, value: strin
     <ThemedView style={[styles.row, narrow && styles.tightRow]}>
       {numbers.map(([name, value]) => (
         <ThemedView key={name} accessible accessibilityLabel={`${name}: ${value}`} style={styles.number}>
-          <ThemedText type="subtitle" style={[styles.value, narrow && styles.narrowValue]}>{value}</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>{name}</ThemedText>
+          <ThemedText type="subtitle" style={[styles.value, narrow && styles.narrowValue]}>
+            {value}
+          </ThemedText>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>
+            {name}
+          </ThemedText>
         </ThemedView>
       ))}
     </ThemedView>

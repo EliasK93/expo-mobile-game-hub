@@ -1,20 +1,10 @@
 import { parseGrid } from './board';
 import { sparsePuzzle } from './sparse-puzzle';
 import { mulberry32 } from '@/lib/random';
-import {
-  LADDER,
-  LEVEL_NAMES,
-  applyStep,
-  candidateGrid,
-  findStep,
-  type Move,
-  type TechniqueName,
-} from './techniques';
+import { LADDER, LEVEL_NAMES, applyStep, candidateGrid, findStep, type Move, type TechniqueName } from './techniques';
 
-const SOLUTION =
-  '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
-const PUZZLE =
-  '530070000600195000098000060800060003400803001700020006060000280000419005000080079';
+const SOLUTION = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+const PUZZLE = '530070000600195000098000060800060003400803001700020006060000280000419005000080079';
 
 const ALL = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const without = (...drop: number[]) => ALL.filter((d) => !drop.includes(d));
@@ -31,8 +21,7 @@ function board(narrow: Record<number, number[]> = {}): { values: number[]; cands
     cands: Array.from({ length: 81 }, (_, i) => mask(narrow[i] ?? ALL)),
   };
 }
-const narrowAll = (cells: number[], digits: number[]) =>
-  Object.fromEntries(cells.map((c) => [c, digits]));
+const narrowAll = (cells: number[], digits: number[]) => Object.fromEntries(cells.map((c) => [c, digits]));
 
 type Case = {
   id: TechniqueName;

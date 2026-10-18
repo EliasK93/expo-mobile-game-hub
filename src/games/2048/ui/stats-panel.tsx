@@ -29,7 +29,12 @@ export function StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChang
   const over = game.status === 'over';
   const { score, bestTile, undoUsed } = resultOf(game);
   const result = over
-    ? [`Score ${formatScore(score)}`, `best tile ${bestTile}`, ...(newBest ? ['New best!'] : []), ...(undoUsed ? ['with undo'] : [])].join(' · ')
+    ? [
+        `Score ${formatScore(score)}`,
+        `best tile ${bestTile}`,
+        ...(newBest ? ['New best!'] : []),
+        ...(undoUsed ? ['with undo'] : []),
+      ].join(' · ')
     : null;
   const numbers: [string, string][] = [
     ['Played', String(s.played)],
@@ -40,10 +45,23 @@ export function StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChang
 
   return (
     <ThemedView style={styles.panel}>
-      {result && <ThemedText type="smallBold" style={styles.centered}>{result}</ThemedText>}
+      {result && (
+        <ThemedText type="smallBold" style={styles.centered}>
+          {result}
+        </ThemedText>
+      )}
       <ThemedView style={styles.row}>
         {SIZES.map((n) => (
-          <Button key={n} compact flex label={`${n}×${n} stats`} text={String(n)} selected={n === size} muted={n !== size} onPress={() => setSize(n)} />
+          <Button
+            key={n}
+            compact
+            flex
+            label={`${n}×${n} stats`}
+            text={String(n)}
+            selected={n === size}
+            muted={n !== size}
+            onPress={() => setSize(n)}
+          />
         ))}
       </ThemedView>
       <StatsNumbers numbers={numbers} />

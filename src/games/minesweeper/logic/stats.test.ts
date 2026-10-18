@@ -60,7 +60,8 @@ describe('recordGame', () => {
 
   it('the best streak keeps its maximum over a shorter streak that follows', () => {
     let stats: Stats = EMPTY_STATS;
-    for (const result of [win(1), win(1), win(1), loss(1), win(1), win(1)]) stats = recordGame(stats, 'intermediate', result);
+    for (const result of [win(1), win(1), win(1), loss(1), win(1), win(1)])
+      stats = recordGame(stats, 'intermediate', result);
     expect(stats.intermediate).toMatchObject({ played: 6, wins: 5, currentStreak: 2, bestStreak: 3 });
   });
 

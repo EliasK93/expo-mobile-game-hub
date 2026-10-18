@@ -127,8 +127,7 @@ function make(
 }
 
 // The candidates of every empty cell, from the digits on the board alone (no pencil notes, no eliminations).
-export const candidateGrid = (values: Grid): number[] =>
-  values.map((v, i) => (v === 0 ? candidateMask(values, i) : 0));
+export const candidateGrid = (values: Grid): number[] => values.map((v, i) => (v === 0 ? candidateMask(values, i) : 0));
 
 export function newState(grid: Grid): State {
   return { values: [...grid], cands: candidateGrid(grid) };
@@ -168,7 +167,11 @@ const hiddenSingle =
       for (let d = 1; d <= 9; d++) {
         const at = u.cells.filter((c) => has(cands[c], d));
         if (at.length === 1) {
-          return { placements: [{ cell: at[0], digit: d }], cells: at, text: `${d} can only go here in this ${u.kind}.` };
+          return {
+            placements: [{ cell: at[0], digit: d }],
+            cells: at,
+            text: `${d} can only go here in this ${u.kind}.`,
+          };
         }
       }
     }
@@ -195,7 +198,10 @@ function pointing(_values: Grid, cands: Candidates): Found | null {
     for (let d = 1; d <= 9; d++) {
       const at = box.cells.filter((c) => has(cands[c], d));
       if (at.length < 2) continue;
-      for (const [lines, of] of [[ROWS, rowOf], [COLS, colOf]] as const) {
+      for (const [lines, of] of [
+        [ROWS, rowOf],
+        [COLS, colOf],
+      ] as const) {
         if (!at.every((c) => of(c) === of(at[0]))) continue;
         const line = lines[of(at[0])];
         const elsewhere = line.cells.filter((c) => boxOf(c) !== boxOf(at[0]) && has(cands[c], d));
@@ -292,7 +298,10 @@ const fish =
   (n: number) =>
   (_values: Grid, cands: Candidates): Found | null => {
     for (let d = 1; d <= 9; d++) {
-      for (const [bases, coverOf, covers] of [[ROWS, colOf, COLS], [COLS, rowOf, ROWS]] as const) {
+      for (const [bases, coverOf, covers] of [
+        [ROWS, colOf, COLS],
+        [COLS, rowOf, ROWS],
+      ] as const) {
         const lines = bases
           .map((u) => ({ u, at: u.cells.filter((c) => has(cands[c], d)) }))
           .filter((l) => l.at.length >= 2 && l.at.length <= n);

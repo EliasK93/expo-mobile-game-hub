@@ -13,8 +13,12 @@ export function ScoreBox({ title, value }: { title: string; value: number }) {
   const text = formatScore(value);
   return (
     <ThemedView type="backgroundElement" accessible accessibilityLabel={`${title} ${text}`} style={styles.box}>
-      <ThemedText type="small" themeColor="textSecondary">{title}</ThemedText>
-      <ThemedText type="smallBold" style={styles.value}>{text}</ThemedText>
+      <ThemedText type="small" themeColor="textSecondary">
+        {title}
+      </ThemedText>
+      <ThemedText type="smallBold" style={styles.value}>
+        {text}
+      </ThemedText>
     </ThemedView>
   );
 }

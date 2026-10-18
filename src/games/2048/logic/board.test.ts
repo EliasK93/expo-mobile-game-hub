@@ -13,7 +13,17 @@ describe('SIZES and winTile', () => {
 describe('fromValues and toValues', () => {
   it('0 is an empty cell, tiles get the ids 1..k in reading order', () => {
     const board = fromValues([0, 2, 0, 4, 8, 0, 0, 0, 0]);
-    expect(board).toEqual([null, { id: 1, value: 2 }, null, { id: 2, value: 4 }, { id: 3, value: 8 }, null, null, null, null]);
+    expect(board).toEqual([
+      null,
+      { id: 1, value: 2 },
+      null,
+      { id: 2, value: 4 },
+      { id: 3, value: 8 },
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   it('toValues is the way back', () => {
@@ -38,16 +48,44 @@ describe('isOver', () => {
   const full = (rows: number[][]) => fromValues(rows.flat());
 
   it('is false while a cell is empty', () => {
-    expect(isOver(full([[2, 4], [4, 0]]))).toBe(false);
+    expect(
+      isOver(
+        full([
+          [2, 4],
+          [4, 0],
+        ]),
+      ),
+    ).toBe(false);
   });
 
   it('is false on a full board with equal neighbours, side by side or on top of each other', () => {
-    expect(isOver(full([[2, 2], [4, 8]]))).toBe(false);
-    expect(isOver(full([[2, 4], [2, 8]]))).toBe(false);
+    expect(
+      isOver(
+        full([
+          [2, 2],
+          [4, 8],
+        ]),
+      ),
+    ).toBe(false);
+    expect(
+      isOver(
+        full([
+          [2, 4],
+          [2, 8],
+        ]),
+      ),
+    ).toBe(false);
   });
 
   it('is true on a full board without equal neighbours', () => {
-    expect(isOver(full([[2, 4], [4, 2]]))).toBe(true);
+    expect(
+      isOver(
+        full([
+          [2, 4],
+          [4, 2],
+        ]),
+      ),
+    ).toBe(true);
   });
 
   it('does not treat the end of one row and the start of the next as neighbours', () => {

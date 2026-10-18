@@ -54,7 +54,8 @@ export const isCells = (a: unknown, max: number): a is number[] =>
 export function fromSave(data: unknown): { game: Game; elapsedMs: number; hinted: boolean; level: Level } | null {
   if (!isRecord(data)) return null;
   const d = data as Partial<SaveData>;
-  if (!isCells(d.puzzle, 9) || !isCells(d.solution, 9) || !isCells(d.values, 9) || !isCells(d.notes, 0b1111111110)) return null;
+  if (!isCells(d.puzzle, 9) || !isCells(d.solution, 9) || !isCells(d.values, 9) || !isCells(d.notes, 0b1111111110))
+    return null;
   if (!isMs(d.elapsedMs) || typeof d.hinted !== 'boolean') return null;
   if (!isLevel(d.level)) return null;
   return {

@@ -31,7 +31,9 @@ export function StatsPanel({ stats, game, ms, newBest, onClose, onPlayAgain, onC
   const s = stats[level];
   const over = game.status !== 'playing';
   const won = game.status === 'won';
-  const result = over ? (won ? [`Won in ${formatTime(ms)}`, ...(newBest ? ['New best!'] : [])] : ['Boom!']).join(' · ') : null;
+  const result = over
+    ? (won ? [`Won in ${formatTime(ms)}`, ...(newBest ? ['New best!'] : [])] : ['Boom!']).join(' · ')
+    : null;
   const numbers: [string, string][] = [
     ['Played', String(s.played)],
     ['Win %', String(winPercent(s.played, s.wins))],
@@ -42,10 +44,23 @@ export function StatsPanel({ stats, game, ms, newBest, onClose, onPlayAgain, onC
 
   return (
     <ThemedView style={styles.panel}>
-      {result && <ThemedText type="smallBold" style={styles.centered}>{result}</ThemedText>}
+      {result && (
+        <ThemedText type="smallBold" style={styles.centered}>
+          {result}
+        </ThemedText>
+      )}
       <ThemedView style={styles.row}>
         {LEVEL_IDS.map((id) => (
-          <Button key={id} compact flex label={`${levelName(id)} stats`} text={levelName(id)} selected={id === level} muted={id !== level} onPress={() => setLevel(id)} />
+          <Button
+            key={id}
+            compact
+            flex
+            label={`${levelName(id)} stats`}
+            text={levelName(id)}
+            selected={id === level}
+            muted={id !== level}
+            onPress={() => setLevel(id)}
+          />
         ))}
       </ThemedView>
       <StatsNumbers numbers={numbers} />

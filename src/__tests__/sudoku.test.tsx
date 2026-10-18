@@ -26,7 +26,8 @@ const newGame = (name = 'Medium') => {
 };
 
 // Every level hands out this puzzle.
-const makeAll = (puzzle = PUZZLE) => (pickPuzzle as jest.Mock).mockReset().mockReturnValue({ puzzle, solution: SOLUTION });
+const makeAll = (puzzle = PUZZLE) =>
+  (pickPuzzle as jest.Mock).mockReset().mockReturnValue({ puzzle, solution: SOLUTION });
 
 // Fake timers so the clock is exact. Storage is the AsyncStorage mock (jest.setup.js), cleared before each test.
 // settle() lets the pending storage promises finish; they need no timers.
@@ -112,7 +113,8 @@ describe('Sudoku screen', () => {
 
     expect(pickPuzzle).not.toHaveBeenCalled();
     expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
-    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert']) expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
+    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert'])
+      expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
     expect(screen.getByLabelText('Level: Medium').props.accessibilityState.selected).toBe(true); // the first game is Medium
     expect(screen.queryByLabelText('Cancel')).toBeNull();
 
@@ -161,7 +163,8 @@ describe('Level picker', () => {
     expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
     expect(screen.queryByLabelText('Enter 1')).toBeNull();
     expect(screen.queryByLabelText('Hint')).toBeNull();
-    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert']) expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
+    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert'])
+      expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
     expect(screen.getByLabelText('Cancel')).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Cancel'));
@@ -225,7 +228,13 @@ describe('Level picker', () => {
 
   it('every level starts at once with the pool puzzle', () => {
     makeAll(WIDE);
-    for (const [l, name] of [[1, 'Very easy'], [2, 'Easy'], [3, 'Medium'], [4, 'Hard'], [5, 'Expert']] as const) {
+    for (const [l, name] of [
+      [1, 'Very easy'],
+      [2, 'Easy'],
+      [3, 'Medium'],
+      [4, 'Hard'],
+      [5, 'Expert'],
+    ] as const) {
       newGame(name);
 
       expect(pickPuzzle).toHaveBeenLastCalledWith(l);
@@ -302,7 +311,10 @@ describe('Hint', () => {
   });
 
   it('a win after a hint counts as solved but leaves best and average time alone', async () => {
-    await seed('sudoku:stats', { version: 1, data: { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } } });
+    await seed('sudoku:stats', {
+      version: 1,
+      data: { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } },
+    });
     press('Hint');
     press('Apply hint');
     await tick(1000);
@@ -311,7 +323,12 @@ describe('Hint', () => {
     await settle();
 
     expect(screen.getByText(/^Solved!/)).toBeTruthy();
-    expect((await saved('sudoku:stats')).data['3']).toEqual({ solved: 3, timedCount: 2, totalMs: 10_000, bestMs: 4000 });
+    expect((await saved('sudoku:stats')).data['3']).toEqual({
+      solved: 3,
+      timedCount: 2,
+      totalMs: 10_000,
+      bestMs: 4000,
+    });
   });
 
   it('showing a hint is saved as hinted, with the level', async () => {
@@ -474,7 +491,14 @@ describe('Save and resume', () => {
   });
 
   it('a version 1 save is rejected: no prompt, the level picker, then a fresh board', async () => {
-    const v1 = { puzzle: PUZZLE, solution: SOLUTION, values: PUZZLE.map((v, i) => (i === 0 ? 5 : v)), notes: Array(81).fill(0), elapsedMs: 4000, hinted: false };
+    const v1 = {
+      puzzle: PUZZLE,
+      solution: SOLUTION,
+      values: PUZZLE.map((v, i) => (i === 0 ? 5 : v)),
+      notes: Array(81).fill(0),
+      elapsedMs: 4000,
+      hinted: false,
+    };
     await reopen(() => seed('sudoku:save', { version: 1, data: v1 }));
 
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
@@ -530,14 +554,15 @@ describe('Save and resume', () => {
     fireEvent.press(screen.getByLabelText(NEW_GAME));
     expect(screen.queryByLabelText(NEW_GAME)).toBeNull();
     expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
-    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert']) expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
+    for (const name of ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert'])
+      expect(screen.getByLabelText(`Level: ${name}`)).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Cancel'));
     fireEvent.press(screen.getByLabelText(CONTINUE));
     expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
   });
 
-  it('the prompt\'s New game opens the picker; a level gives a fresh board and deletes the save', async () => {
+  it("the prompt's New game opens the picker; a level gives a fresh board and deletes the save", async () => {
     fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
     enter(5);
     screen.unmount();
@@ -583,7 +608,8 @@ describe('Save and resume', () => {
 });
 
 describe('Primary buttons', () => {
-  const textColor = (label: string, text: string) => StyleSheet.flatten(within(screen.getByLabelText(label)).getByText(text).props.style).color;
+  const textColor = (label: string, text: string) =>
+    StyleSheet.flatten(within(screen.getByLabelText(label)).getByText(text).props.style).color;
 
   it('New game on the game screen is the accent button; the other buttons are not', () => {
     expect(textColor('New game', 'New game')).toBe(Colors.light.onAccent);
@@ -687,7 +713,8 @@ describe('Win', () => {
 
   it('extra presses, rerenders and time after the win change nothing', async () => {
     await win();
-    const statsWrites = () => (AsyncStorage.setItem as jest.Mock).mock.calls.filter(([k]) => k === 'sudoku:stats').length;
+    const statsWrites = () =>
+      (AsyncStorage.setItem as jest.Mock).mock.calls.filter(([k]) => k === 'sudoku:stats').length;
     expect(statsWrites()).toBe(1);
 
     fireEvent.press(screen.getByLabelText('Row 1, column 1, 5'));
@@ -703,10 +730,18 @@ describe('Win', () => {
   });
 
   it('adds to the stats of earlier wins', async () => {
-    await seed('sudoku:stats', { version: 1, data: { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } } });
+    await seed('sudoku:stats', {
+      version: 1,
+      data: { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } },
+    });
     await win();
 
-    expect((await saved('sudoku:stats')).data['3']).toEqual({ solved: 3, timedCount: 3, totalMs: 12_000, bestMs: 2000 });
+    expect((await saved('sudoku:stats')).data['3']).toEqual({
+      solved: 3,
+      timedCount: 3,
+      totalMs: 12_000,
+      bestMs: 2000,
+    });
   });
 
   it('the next visit shows the level picker, without a prompt', async () => {

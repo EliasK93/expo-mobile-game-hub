@@ -74,17 +74,19 @@ export function useGame2048() {
   // Opening resumes the saved game directly, or starts a new one of the last used size.
   useEffect(() => {
     let alive = true;
-    Promise.all([load(SAVE_KEY, SAVE_VERSION), load(STATS_KEY, STATS_VERSION), load(SETTINGS_KEY, SETTINGS_VERSION)]).then(
-      ([data, storedStats, storedSettings]) => {
-        if (!alive) return;
-        const { size } = fromSettings(storedSettings);
-        statsRef.current = fromStats(storedStats);
-        setStats(statsRef.current);
-        setLastSize(size);
-        put(fromSave(data) ?? newGame(size, Math.random));
-        setLoaded(true);
-      },
-    );
+    Promise.all([
+      load(SAVE_KEY, SAVE_VERSION),
+      load(STATS_KEY, STATS_VERSION),
+      load(SETTINGS_KEY, SETTINGS_VERSION),
+    ]).then(([data, storedStats, storedSettings]) => {
+      if (!alive) return;
+      const { size } = fromSettings(storedSettings);
+      statsRef.current = fromStats(storedStats);
+      setStats(statsRef.current);
+      setLastSize(size);
+      put(fromSave(data) ?? newGame(size, Math.random));
+      setLoaded(true);
+    });
     return () => {
       alive = false;
     };

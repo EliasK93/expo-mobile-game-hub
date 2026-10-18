@@ -24,7 +24,12 @@ export const remove = (key: string): Promise<void> => AsyncStorage.removeItem(ke
 
 // The end of a game: delete the save first, then write the stats. If the app dies in between, the game is lost
 // rather than counted twice on resume.
-export async function replaceSaveWithStats(saveKey: string, statsKey: string, version: number, stats: unknown): Promise<void> {
+export async function replaceSaveWithStats(
+  saveKey: string,
+  statsKey: string,
+  version: number,
+  stats: unknown,
+): Promise<void> {
   await remove(saveKey);
   await save(statsKey, version, stats);
 }

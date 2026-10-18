@@ -61,7 +61,8 @@ export function AnimatedTile({ id, value, size, x, y, dx, dy, effect, ghost }: P
 
   if (gone) return null;
   const colors = rampColors(value);
-  const scale = effect === 'pop' ? pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, POP_SCALE, 1] }) : pulse;
+  const scale =
+    effect === 'pop' ? pulse.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, POP_SCALE, 1] }) : pulse;
 
   return (
     <Animated.View

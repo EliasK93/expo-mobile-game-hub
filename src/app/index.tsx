@@ -56,7 +56,9 @@ export default function HomeScreen() {
                 <ThemedView style={styles.art}>
                   <game.Tile />
                 </ThemedView>
-                <ThemedText type="small" style={styles.name}>{game.title}</ThemedText>
+                <ThemedText type="small" style={styles.name}>
+                  {game.title}
+                </ThemedText>
               </Pressable>
             </Link>
           ))}

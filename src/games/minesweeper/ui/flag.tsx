@@ -26,7 +26,16 @@ export function Flag({ size }: { size: number }) {
           borderRightColor: theme.mineFlag,
         }}
       />
-      <View style={{ position: 'absolute', left: poleX, top: size * 0.08, width: pole, height: size * 0.74, backgroundColor: theme.mineBomb }} />
+      <View
+        style={{
+          position: 'absolute',
+          left: poleX,
+          top: size * 0.08,
+          width: pole,
+          height: size * 0.74,
+          backgroundColor: theme.mineBomb,
+        }}
+      />
       <View
         style={{
           position: 'absolute',

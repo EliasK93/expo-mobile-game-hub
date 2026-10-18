@@ -29,18 +29,40 @@ export function Face({ mood, size }: { mood: Mood; size: number }) {
       {(mood === 'normal' || mood === 'surprised') &&
         eyeXs.map((x) => {
           const d = mood === 'surprised' ? dot * 1.5 : dot; // wide eyes
-          return <View key={x} style={[bar, { left: x - d / 2 - stroke, top: eyeY - d / 2 - stroke, width: d, height: d, borderRadius: d / 2 }]} />;
+          return (
+            <View
+              key={x}
+              style={[
+                bar,
+                { left: x - d / 2 - stroke, top: eyeY - d / 2 - stroke, width: d, height: d, borderRadius: d / 2 },
+              ]}
+            />
+          );
         })}
       {mood === 'cool' && (
         // sunglasses: one dark bar across both eyes
-        <View style={[bar, { left: size * 0.14 - stroke, top: eyeY - size * 0.08 - stroke, width: size * 0.72, height: size * 0.16 }]} />
+        <View
+          style={[
+            bar,
+            { left: size * 0.14 - stroke, top: eyeY - size * 0.08 - stroke, width: size * 0.72, height: size * 0.16 },
+          ]}
+        />
       )}
       {mood === 'dizzy' &&
         eyeXs.flatMap((x) =>
           [45, -45].map((deg) => (
             <View
               key={`${x}:${deg}`}
-              style={[bar, { left: x - arm / 2 - stroke, top: eyeY - stroke / 2 - stroke, width: arm, height: stroke, transform: [{ rotate: `${deg}deg` }] }]}
+              style={[
+                bar,
+                {
+                  left: x - arm / 2 - stroke,
+                  top: eyeY - stroke / 2 - stroke,
+                  width: arm,
+                  height: stroke,
+                  transform: [{ rotate: `${deg}deg` }],
+                },
+              ]}
             />
           )),
         )}

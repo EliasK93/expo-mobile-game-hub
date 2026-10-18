@@ -24,11 +24,7 @@ export function Grid({ game, selected, onSelect, hintCells = [] }: Props) {
   const slot = Math.floor((cell - THICK) / 3); // one note position in the 3x3 mini grid
 
   return (
-    <View
-      style={[
-        styles.grid,
-        { width: cell * 9 + 2 * OUTER, borderColor: theme.gridLineBold, borderWidth: OUTER },
-      ]}>
+    <View style={[styles.grid, { width: cell * 9 + 2 * OUTER, borderColor: theme.gridLineBold, borderWidth: OUTER }]}>
       {game.values.map((v, i) => {
         const r = rowOf(i);
         const c = colOf(i);

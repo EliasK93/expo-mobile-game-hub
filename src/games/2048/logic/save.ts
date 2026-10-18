@@ -58,7 +58,12 @@ export function fromSave(data: unknown): Game | null {
 const isSizeStats = (m: unknown): m is SizeStats => {
   if (!isRecord(m)) return false;
   const s = m as Partial<SizeStats>;
-  return isCount(s.played) && isCount(s.wins) && (s.bestScore === null || isCount(s.bestScore)) && (s.bestTile === null || isCount(s.bestTile));
+  return (
+    isCount(s.played) &&
+    isCount(s.wins) &&
+    (s.bestScore === null || isCount(s.bestScore)) &&
+    (s.bestTile === null || isCount(s.bestTile))
+  );
 };
 
 // ponytail: stats with any bad field fall back to empty whole; keep the good sizes if a format change ever needs it.

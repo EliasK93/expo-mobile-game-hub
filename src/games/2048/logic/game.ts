@@ -29,7 +29,18 @@ export type Played = { game: Game; slides: Slide[]; merges: Merge[]; spawned: Sp
 export function newGame(size: Size, random: Random): Game {
   const empty: Board = Array(size * size).fill(null);
   const board = spawn(spawn(empty, random, 1).board, random, 2).board;
-  return { size, board, score: 0, won: false, keptGoing: false, undoUsed: false, prev: null, nextId: 3, moves: 0, status: 'playing' };
+  return {
+    size,
+    board,
+    score: 0,
+    won: false,
+    keptGoing: false,
+    undoUsed: false,
+    prev: null,
+    nextId: 3,
+    moves: 0,
+    status: 'playing',
+  };
 }
 
 const unchanged = (game: Game): Played => ({ game, slides: [], merges: [], spawned: null });

@@ -16,10 +16,22 @@ import { useSudoku } from './use-sudoku';
 
 // The five levels (names from LEVEL_NAMES); the one used last is marked, and each shows its solved count and best time
 // once it has wins. Without onCancel there is no game to go back to.
-function LevelPicker({ lastLevel, stats, onPick, onCancel }: { lastLevel: Level; stats: Stats; onPick: (l: Level) => void; onCancel?: () => void }) {
+function LevelPicker({
+  lastLevel,
+  stats,
+  onPick,
+  onCancel,
+}: {
+  lastLevel: Level;
+  stats: Stats;
+  onPick: (l: Level) => void;
+  onCancel?: () => void;
+}) {
   return (
     <ThemedView style={styles.panel}>
-      <ThemedText type="subtitle" style={styles.heading}>Pick a level</ThemedText>
+      <ThemedText type="subtitle" style={styles.heading}>
+        Pick a level
+      </ThemedText>
       {LEVELS.map((l) => {
         const e = stats[bucketOf(l)];
         return (
@@ -40,9 +52,32 @@ function LevelPicker({ lastLevel, stats, onPick, onCancel }: { lastLevel: Level;
 
 export function SudokuScreen() {
   const {
-    game, level, lastLevel, stats, picking, hint, selected, notesMode, won, status, elapsedMs, canUndo, canRedo,
-    select, enter, erase, undo, redo, toggleNotes, openPicker, closePicker, pickLevel,
-    showHint, applyHint, closeHint, continueSaved,
+    game,
+    level,
+    lastLevel,
+    stats,
+    picking,
+    hint,
+    selected,
+    notesMode,
+    won,
+    status,
+    elapsedMs,
+    canUndo,
+    canRedo,
+    select,
+    enter,
+    erase,
+    undo,
+    redo,
+    toggleNotes,
+    openPicker,
+    closePicker,
+    pickLevel,
+    showHint,
+    applyHint,
+    closeHint,
+    continueSaved,
   } = useSudoku();
   // The app draws edge to edge: keep the bottom free of Android's navigation bar. The Stack header covers the top.
   const container = [styles.container, { paddingBottom: Spacing.three + useSafeAreaInsets().bottom }];
@@ -54,7 +89,12 @@ export function SudokuScreen() {
   if (status === 'picker' || picking) {
     return (
       <ThemedView style={container}>
-        <LevelPicker lastLevel={lastLevel} stats={stats} onPick={pickLevel} onCancel={status === 'picker' ? undefined : closePicker} />
+        <LevelPicker
+          lastLevel={lastLevel}
+          stats={stats}
+          onPick={pickLevel}
+          onCancel={status === 'picker' ? undefined : closePicker}
+        />
       </ThemedView>
     );
   }
@@ -63,7 +103,9 @@ export function SudokuScreen() {
     return (
       <ThemedView style={container}>
         <ThemedView style={styles.panel}>
-          <ThemedText type="subtitle" style={styles.heading}>Continue your game?</ThemedText>
+          <ThemedText type="subtitle" style={styles.heading}>
+            Continue your game?
+          </ThemedText>
           <Button label="Continue saved game" text="Continue" primary onPress={continueSaved} />
           <Button label="Start new game" text="New game" onPress={openPicker} />
         </ThemedView>
@@ -78,7 +120,9 @@ export function SudokuScreen() {
         {won && <ThemedText type="subtitle">{`Solved! in ${time}`}</ThemedText>}
         <ThemedView style={styles.timeRow}>
           <ThemedText type="small">{LEVEL_NAMES[level]}</ThemedText>
-          <ThemedText type="smallBold" style={styles.time}>{time}</ThemedText>
+          <ThemedText type="smallBold" style={styles.time}>
+            {time}
+          </ThemedText>
         </ThemedView>
       </ThemedView>
       <Grid game={game} selected={selected} onSelect={select} hintCells={hint?.cells} />

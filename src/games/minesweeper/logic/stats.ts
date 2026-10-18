@@ -1,6 +1,12 @@
 import type { Level } from './board';
 
-export type LevelStats = { played: number; wins: number; currentStreak: number; bestStreak: number; bestMs: number | null };
+export type LevelStats = {
+  played: number;
+  wins: number;
+  currentStreak: number;
+  bestStreak: number;
+  bestMs: number | null;
+};
 export type Stats = Record<Level, LevelStats>;
 
 const EMPTY_LEVEL: LevelStats = { played: 0, wins: 0, currentStreak: 0, bestStreak: 0, bestMs: null };

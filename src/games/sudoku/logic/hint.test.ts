@@ -4,18 +4,31 @@ import { mulberry32 } from '@/lib/random';
 import { setValue, type Game } from './game';
 import { candidateGrid, findStep } from './techniques';
 
-const PUZZLE =
-  '530070000600195000098000060800060003400803001700020006060000280000419005000080079';
-const SOLUTION =
-  '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+const PUZZLE = '530070000600195000098000060800060003400803001700020006060000280000419005000080079';
+const SOLUTION = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
 
 // [puzzle, solution] from the rate tests, levels 1 to 5.
 const KNOWN: [string, string][] = [
-  ['009400500020500097300280000000360005000070900003002001060000000000000208001900003', '619437582428516397375289416197364825286175934543892761862743159934651278751928643'],
-  ['700000000000208036040003000010040080306000500000002000407100600080000100001387020', '723614895159278436648953217215746389376891542894532761437129658982465173561387924'],
-  ['200004006000900280600000070050010020900400000700620530070003108000001000300200000', '237184956145967283698352471853719624926435817714628539472593168569871342381246795'],
-  ['300008204900002036000030901009070500000824009080091060012005000700610000030040000', '371968254948152736256437981129376548563824179487591362612785493794613825835249617'],
-  ['080079100000004602000100050300050700060300500005000009009003000006000090510000806', '682579143951834672743162958398251764467398521125746389279683415836415297514927836'],
+  [
+    '009400500020500097300280000000360005000070900003002001060000000000000208001900003',
+    '619437582428516397375289416197364825286175934543892761862743159934651278751928643',
+  ],
+  [
+    '700000000000208036040003000010040080306000500000002000407100600080000100001387020',
+    '723614895159278436648953217215746389376891542894532761437129658982465173561387924',
+  ],
+  [
+    '200004006000900280600000070050010020900400000700620530070003108000001000300200000',
+    '237184956145967283698352471853719624926435817714628539472593168569871342381246795',
+  ],
+  [
+    '300008204900002036000030901009070500000824009080091060012005000700610000030040000',
+    '371968254948152736256437981129376548563824179487591362612785493794613825835249617',
+  ],
+  [
+    '080079100000004602000100050300050700060300500005000009009003000006000090510000806',
+    '682579143951834672743162958398251764467398521125746389279683415836415297514927836',
+  ],
 ];
 
 // Mid-solve states (values, solution) where no single is left, so the hint has to cross out candidates first.
@@ -84,7 +97,13 @@ describe('nextHint', () => {
     const values = [...parseGrid(PUZZLE)];
     values[2] = 1; // should be 4; clashes with nothing, so only the solution shows it is wrong
     const hint = nextHint(values, parseGrid(SOLUTION))!;
-    expect(hint).toMatchObject({ technique: 'wrong-digit', cell: 2, digit: 0, cells: [2], explanation: 'This 1 is wrong.' });
+    expect(hint).toMatchObject({
+      technique: 'wrong-digit',
+      cell: 2,
+      digit: 0,
+      cells: [2],
+      explanation: 'This 1 is wrong.',
+    });
 
     const game: Game = { puzzle: parseGrid(PUZZLE), solution: parseGrid(SOLUTION), values, notes: Array(81).fill(0) };
     const after = setValue(game, hint.cell, hint.digit);
@@ -113,34 +132,45 @@ describe('nextHint', () => {
   });
 
   // Apply must always work: following the hints (and erasing wrong digits) solves every puzzle, one setValue at a time.
-  it.each(KNOWN.map(([p, s], i) => [i + 1, p, s] as const))('level %i puzzle: applying every hint solves it', (_level, puzzle, solution) => {
-    let game: Game = { puzzle: parseGrid(puzzle), solution: parseGrid(solution), values: parseGrid(puzzle), notes: Array(81).fill(0) };
-    for (let n = 0; n < 81; n++) {
-      if (game.values.every((v) => v !== 0)) break;
-      if (n === 3) game = setValue(game, game.values.indexOf(0), (game.solution[game.values.indexOf(0)] % 9) + 1); // a wrong entry
-      const hint = nextHint(game.values, game.solution);
-      expect(hint).not.toBeNull();
-      const next = setValue(game, hint!.cell, hint!.digit);
-      expect(next).not.toBe(game); // the hint always changes the board
-      game = next;
-    }
-    expect([...game.values]).toEqual([...game.solution]);
-  });
+  it.each(KNOWN.map(([p, s], i) => [i + 1, p, s] as const))(
+    'level %i puzzle: applying every hint solves it',
+    (_level, puzzle, solution) => {
+      let game: Game = {
+        puzzle: parseGrid(puzzle),
+        solution: parseGrid(solution),
+        values: parseGrid(puzzle),
+        notes: Array(81).fill(0),
+      };
+      for (let n = 0; n < 81; n++) {
+        if (game.values.every((v) => v !== 0)) break;
+        if (n === 3) game = setValue(game, game.values.indexOf(0), (game.solution[game.values.indexOf(0)] % 9) + 1); // a wrong entry
+        const hint = nextHint(game.values, game.solution);
+        expect(hint).not.toBeNull();
+        const next = setValue(game, hint!.cell, hint!.digit);
+        expect(next).not.toBe(game); // the hint always changes the board
+        game = next;
+      }
+      expect([...game.values]).toEqual([...game.solution]);
+    },
+  );
 
   // The player may fill in any correct digits before asking: a hint must still exist.
-  it.each(KNOWN.map(([p, s], i) => [i + 1, p, s] as const))('level %i puzzle: a hint exists after any correct progress', (_level, puzzle, solution) => {
-    const random = mulberry32(42);
-    const sol = parseGrid(solution);
-    for (let trial = 0; trial < 6; trial++) {
-      const values = [...parseGrid(puzzle)];
-      values.forEach((v, i) => {
-        if (v === 0 && random() < 0.1 * trial) values[i] = sol[i];
-      });
-      if (values.every((v) => v !== 0)) continue;
-      const hint = nextHint(values, sol);
-      expect(hint).not.toBeNull();
-      expect(hint!.digit).toBe(sol[hint!.cell]);
-      expect(values[hint!.cell]).toBe(0);
-    }
-  });
+  it.each(KNOWN.map(([p, s], i) => [i + 1, p, s] as const))(
+    'level %i puzzle: a hint exists after any correct progress',
+    (_level, puzzle, solution) => {
+      const random = mulberry32(42);
+      const sol = parseGrid(solution);
+      for (let trial = 0; trial < 6; trial++) {
+        const values = [...parseGrid(puzzle)];
+        values.forEach((v, i) => {
+          if (v === 0 && random() < 0.1 * trial) values[i] = sol[i];
+        });
+        if (values.every((v) => v !== 0)) continue;
+        const hint = nextHint(values, sol);
+        expect(hint).not.toBeNull();
+        expect(hint!.digit).toBe(sol[hint!.cell]);
+        expect(values[hint!.cell]).toBe(0);
+      }
+    },
+  );
 });

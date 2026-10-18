@@ -96,7 +96,11 @@ export function useSudoku() {
   // Opening shows the Continue prompt if there is a game worth resuming, otherwise the level picker. No game starts by itself.
   useEffect(() => {
     let alive = true;
-    Promise.all([load(SAVE_KEY, SAVE_VERSION),load(SETTINGS_KEY, SETTINGS_VERSION), load<Stats>(STATS_KEY, STATS_VERSION)]).then(([data, settings, stored]) => {
+    Promise.all([
+      load(SAVE_KEY, SAVE_VERSION),
+      load(SETTINGS_KEY, SETTINGS_VERSION),
+      load<Stats>(STATS_KEY, STATS_VERSION),
+    ]).then(([data, settings, stored]) => {
       if (!alive) return;
       setLastLevel(fromSettings(settings));
       setStats(stored ?? {});
@@ -127,14 +131,23 @@ export function useSudoku() {
     const ms = stop();
     const bucket = bucketOf(level);
     setStats((s) => recordWin(s, bucket, ms, hinted.current));
-    recordWinStored({ saveKey: SAVE_KEY, statsKey: STATS_KEY, version: STATS_VERSION, bucket, ms, hinted: hinted.current });
+    recordWinStored({
+      saveKey: SAVE_KEY,
+      statsKey: STATS_KEY,
+      version: STATS_VERSION,
+      bucket,
+      ms,
+      hinted: hinted.current,
+    });
   }, [won, level, stop]);
 
   // v = 0 always erases, even in notes mode. push ignores actions that changed nothing.
   const enter = (v: number) => {
     if (selected === null) return;
     setHint(null);
-    setHistory((h) => push(h, v !== 0 && notesMode ? toggleNote(h.present, selected, v) : setValue(h.present, selected, v)));
+    setHistory((h) =>
+      push(h, v !== 0 && notesMode ? toggleNote(h.present, selected, v) : setValue(h.present, selected, v)),
+    );
   };
 
   return {

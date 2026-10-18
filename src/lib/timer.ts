@@ -10,7 +10,8 @@ export const startClock = (c: Clock, now: number): Clock => (c.startedAt === nul
 export const stopClock = (c: Clock, now: number): Clock =>
   c.startedAt === null ? c : { elapsedMs: c.elapsedMs + now - c.startedAt, startedAt: null };
 
-export const readClock = (c: Clock, now: number): number => c.elapsedMs + (c.startedAt === null ? 0 : now - c.startedAt);
+export const readClock = (c: Clock, now: number): number =>
+  c.elapsedMs + (c.startedAt === null ? 0 : now - c.startedAt);
 
 const two = (n: number) => String(n).padStart(2, '0');
 

@@ -16,7 +16,9 @@ type Props = { last: Size; stats: Stats; onPick: (size: Size) => void; onCancel:
 export function SizePicker({ last, stats, onPick, onCancel }: Props) {
   return (
     <ThemedView style={styles.panel}>
-      <ThemedText type="subtitle" style={styles.heading}>Pick a size</ThemedText>
+      <ThemedText type="subtitle" style={styles.heading}>
+        Pick a size
+      </ThemedText>
       {SIZES.map((size) => {
         const best = stats[size].bestScore;
         return (

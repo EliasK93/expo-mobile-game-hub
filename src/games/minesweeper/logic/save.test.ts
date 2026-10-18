@@ -4,7 +4,8 @@ import { newGame, open, toggleFlag, type Game } from './game';
 import { DEFAULT_SETTINGS, fromSave, fromSettings, fromStats, toSave, type SaveData } from './save';
 import { EMPTY_STATS, recordGame } from './stats';
 
-const flags = (level: Level, ...indices: number[]) => Array.from({ length: cellCount(level) }, (_, i) => indices.includes(i));
+const flags = (level: Level, ...indices: number[]) =>
+  Array.from({ length: cellCount(level) }, (_, i) => indices.includes(i));
 
 // A started game, still playing: the middle cell tapped, a flag on the first and on the last covered cell.
 function started(level: Level = 'beginner'): Game {
@@ -17,7 +18,8 @@ function started(level: Level = 'beginner'): Game {
 const roundTrip = (game: Game, elapsedMs: number) => fromSave(JSON.parse(JSON.stringify(toSave(game, elapsedMs))));
 
 const good = () => toSave(started(), 5000);
-const safeCells = (data: SaveData) => Array.from({ length: cellCount('beginner') }, (_, i) => i).filter((i) => !data.mines.includes(i));
+const safeCells = (data: SaveData) =>
+  Array.from({ length: cellCount('beginner') }, (_, i) => i).filter((i) => !data.mines.includes(i));
 
 describe('toSave / fromSave', () => {
   it('stores the cells as ascending lists of indices, and the elapsed time', () => {
@@ -37,7 +39,13 @@ describe('toSave / fromSave', () => {
   });
 
   it('an unmined board stores an empty mines list', () => {
-    expect(toSave(toggleFlag(newGame('expert'), 5), 0)).toEqual({ level: 'expert', mines: [], opened: [], flagged: [5], elapsedMs: 0 });
+    expect(toSave(toggleFlag(newGame('expert'), 5), 0)).toEqual({
+      level: 'expert',
+      mines: [],
+      opened: [],
+      flagged: [5],
+      elapsedMs: 0,
+    });
   });
 
   it('round-trips a started game with flags and the elapsed time', () => {
@@ -96,10 +104,16 @@ describe('toSave / fromSave', () => {
     ['a level that is a number', { ...good(), level: 1 }],
     ...badLists,
     ['one mine too few', { ...good(), mines: good().mines.slice(1) }],
-    ['one mine too many', { ...good(), mines: [...good().mines, safeCells(good()).find((i) => !good().opened.includes(i))] }],
+    [
+      'one mine too many',
+      { ...good(), mines: [...good().mines, safeCells(good()).find((i) => !good().opened.includes(i))] },
+    ],
     ['opened cells on a board with no mines', { ...good(), mines: [] }],
     ['a mined board with nothing opened', { ...good(), opened: [] }],
-    ['an opened mine', { ...good(), opened: [...good().opened, good().mines.find((m) => !good().flagged.includes(m))] }],
+    [
+      'an opened mine',
+      { ...good(), opened: [...good().opened, good().mines.find((m) => !good().flagged.includes(m))] },
+    ],
     ['a cell that is both opened and flagged', { ...good(), flagged: [...good().flagged, good().opened[0]] }],
     ['a finished game: every safe cell open', { ...good(), opened: safeCells(good()), flagged: [] }],
     ['a negative elapsed time', { ...good(), elapsedMs: -1 }],

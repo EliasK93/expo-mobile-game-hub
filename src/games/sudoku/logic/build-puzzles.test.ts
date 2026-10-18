@@ -31,7 +31,8 @@ build('generate a slice of the pool', () => {
   it('writes one part file', () => {
     const [, level, from, to] = /^([1-5]):(\d+)-(\d+)$/.exec(process.env.SUDOKU_BUILD!) ?? [];
     const dir = process.env.SUDOKU_BUILD_OUT;
-    if (!level || !dir) throw new Error('SUDOKU_BUILD=<level>:<from>-<to> and SUDOKU_BUILD_OUT=<folder> are both needed');
+    if (!level || !dir)
+      throw new Error('SUDOKU_BUILD=<level>:<from>-<to> and SUDOKU_BUILD_OUT=<folder> are both needed');
     const part: Part = { level: Number(level) as Level, from: Number(from), puzzles: [] };
     for (let seed = part.from; seed <= Number(to); seed++) {
       part.puzzles.push(formatGrid(generateLevel(part.level, mulberry32(seed)).puzzle));
@@ -44,12 +45,19 @@ build('generate a slice of the pool', () => {
 merge('merge the part files', () => {
   it('writes data/puzzles.json', () => {
     const dir = process.env.SUDOKU_MERGE!;
-    const parts = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).map((f) => JSON.parse(fs.readFileSync(`${dir}/${f}`, 'utf8')) as Part);
+    const parts = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => JSON.parse(fs.readFileSync(`${dir}/${f}`, 'utf8')) as Part);
     const out: Record<number, string[]> = {};
     for (const level of LEVELS) {
-      const ordered = parts.filter((p) => p.level === level).sort((a, b) => a.from - b.from).flatMap((p) => p.puzzles);
+      const ordered = parts
+        .filter((p) => p.level === level)
+        .sort((a, b) => a.from - b.from)
+        .flatMap((p) => p.puzzles);
       out[level] = [...new Set(ordered)].slice(0, POOL_SIZE);
-      if (out[level].length < POOL_SIZE) throw new Error(`level ${level}: only ${out[level].length} unique puzzles, build more seeds`);
+      if (out[level].length < POOL_SIZE)
+        throw new Error(`level ${level}: only ${out[level].length} unique puzzles, build more seeds`);
     }
     fs.mkdirSync(OUT_DIR, { recursive: true });
     fs.writeFileSync(`${OUT_DIR}/puzzles.json`, JSON.stringify(out));

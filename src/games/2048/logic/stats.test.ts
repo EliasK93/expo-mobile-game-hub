@@ -12,13 +12,19 @@ const result = (score: number, bestTile: number, extra: { won?: boolean; undoUse
 
 describe('EMPTY_STATS', () => {
   it('has nothing recorded on any size', () => {
-    for (const size of SIZES) expect(EMPTY_STATS[size]).toEqual({ played: 0, wins: 0, bestScore: null, bestTile: null });
+    for (const size of SIZES)
+      expect(EMPTY_STATS[size]).toEqual({ played: 0, wins: 0, bestScore: null, bestTile: null });
   });
 });
 
 describe('recordGame', () => {
   it('a finished game counts as played and sets the best score and best tile', () => {
-    expect(recordGame(EMPTY_STATS, 4, result(1200, 128))[4]).toEqual({ played: 1, wins: 0, bestScore: 1200, bestTile: 128 });
+    expect(recordGame(EMPTY_STATS, 4, result(1200, 128))[4]).toEqual({
+      played: 1,
+      wins: 0,
+      bestScore: 1200,
+      bestTile: 128,
+    });
   });
 
   it('a game that reached the win tile is a win as well', () => {
@@ -127,7 +133,12 @@ describe('abandoning a game is the same as losing it', () => {
   });
 
   it('a game left unfinished is recorded from its result: played, with its score and best tile', () => {
-    expect(recordGame(EMPTY_STATS, 4, resultOf(running({})))[4]).toEqual({ played: 1, wins: 0, bestScore: 640, bestTile: 64 });
+    expect(recordGame(EMPTY_STATS, 4, resultOf(running({})))[4]).toEqual({
+      played: 1,
+      wins: 0,
+      bestScore: 640,
+      bestTile: 64,
+    });
   });
 
   it('a game that had already reached the win tile is a win when abandoned', () => {

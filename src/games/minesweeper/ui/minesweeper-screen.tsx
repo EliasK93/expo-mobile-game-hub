@@ -20,8 +20,26 @@ const MOODS: Record<Status, Mood> = { playing: 'normal', won: 'cool', lost: 'diz
 
 export function MinesweeperScreen() {
   const {
-    loaded, game, mode, stats, newBest, picking, panel, lastLevel, elapsedMs, holding,
-    tap, hold, pressIn, pressOut, setMode, openPicker, closePicker, openPanel, closePanel, pickLevel,
+    loaded,
+    game,
+    mode,
+    stats,
+    newBest,
+    picking,
+    panel,
+    lastLevel,
+    elapsedMs,
+    holding,
+    tap,
+    hold,
+    pressIn,
+    pressOut,
+    setMode,
+    openPicker,
+    closePicker,
+    openPanel,
+    closePanel,
+    pickLevel,
   } = useMinesweeper();
   const insets = useSafeAreaInsets();
   // The screen measures its own area (everything below the Stack header), so no header size is ever guessed.
@@ -32,7 +50,12 @@ export function MinesweeperScreen() {
 
   const header = <StatsHeaderButton visible={loaded} onPress={openPanel} />;
 
-  if (!loaded) return <ThemedView style={container} onLayout={onLayout}>{header}</ThemedView>;
+  if (!loaded)
+    return (
+      <ThemedView style={container} onLayout={onLayout}>
+        {header}
+      </ThemedView>
+    );
 
   if (picking) {
     return (
@@ -49,7 +72,15 @@ export function MinesweeperScreen() {
       <ThemedView style={container} onLayout={onLayout}>
         {header}
         {/* Play again: the same level (pickLevel also keeps it as the last used one). */}
-        <StatsPanel stats={stats} game={game} ms={elapsedMs} newBest={newBest} onClose={closePanel} onPlayAgain={() => pickLevel(game.level)} onChangeLevel={openPicker} />
+        <StatsPanel
+          stats={stats}
+          game={game}
+          ms={elapsedMs}
+          newBest={newBest}
+          onClose={closePanel}
+          onPlayAgain={() => pickLevel(game.level)}
+          onChangeLevel={openPicker}
+        />
       </ThemedView>
     );
   }
@@ -61,10 +92,29 @@ export function MinesweeperScreen() {
       {header}
       <ThemedView style={styles.row}>
         {/* The active mode is the accent button, the other one has grey text. */}
-        <Button compact flex label="Dig" selected={mode === 'dig'} muted={mode !== 'dig'} onPress={() => setMode('dig')} />
-        <Button compact flex label="Flag" selected={mode === 'flag'} muted={mode !== 'flag'} onPress={() => setMode('flag')} />
+        <Button
+          compact
+          flex
+          label="Dig"
+          selected={mode === 'dig'}
+          muted={mode !== 'dig'}
+          onPress={() => setMode('dig')}
+        />
+        <Button
+          compact
+          flex
+          label="Flag"
+          selected={mode === 'flag'}
+          muted={mode !== 'flag'}
+          onPress={() => setMode('flag')}
+        />
       </ThemedView>
-      <TopBar minesLeft={minesLeft(game)} seconds={clampLed(Math.floor(elapsedMs / 1000))} mood={holding ? 'surprised' : MOODS[game.status]} onFace={openPicker} />
+      <TopBar
+        minesLeft={minesLeft(game)}
+        seconds={clampLed(Math.floor(elapsedMs / 1000))}
+        mood={holding ? 'surprised' : MOODS[game.status]}
+        onFace={openPicker}
+      />
       <MinesweeperBoard
         game={game}
         available={areaHeight === null ? null : areaHeight - reserved}

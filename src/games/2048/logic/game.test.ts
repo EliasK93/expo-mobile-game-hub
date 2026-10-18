@@ -3,7 +3,10 @@ import { SIZES, fromValues, toValues, winTile, type Dir, type Size } from './boa
 import { isStarted, keepGoing, newGame, play, resultOf, undo, winOpen, type Game } from './game';
 
 const first = () => 0; // spawns a 2 on the first empty cell
-const sequence = (...numbers: number[]) => () => numbers.shift() as number;
+const sequence =
+  (...numbers: number[]) =>
+  () =>
+    numbers.shift() as number;
 
 // A game on a hand-built board (values in reading order, 0 = empty); the side comes from the number of values.
 function withBoard(values: number[], extra: Partial<Game> = {}): Game {
@@ -138,13 +141,16 @@ describe('play', () => {
 });
 
 describe('winning', () => {
-  it.each(SIZES)('size %i: merging two halves of the win tile wins, and the overlay is still to be dismissed', (size) => {
-    const next = play(nearlyWon(size), 'left', first).game;
-    expect(next.board[0]?.value).toBe(winTile(size));
-    expect(next.won).toBe(true);
-    expect(next.keptGoing).toBe(false);
-    expect(next.status).toBe('playing');
-  });
+  it.each(SIZES)(
+    'size %i: merging two halves of the win tile wins, and the overlay is still to be dismissed',
+    (size) => {
+      const next = play(nearlyWon(size), 'left', first).game;
+      expect(next.board[0]?.value).toBe(winTile(size));
+      expect(next.won).toBe(true);
+      expect(next.keptGoing).toBe(false);
+      expect(next.status).toBe('playing');
+    },
+  );
 
   it('the win tile of a smaller board is no win on a bigger one', () => {
     const five = Array(25).fill(0);

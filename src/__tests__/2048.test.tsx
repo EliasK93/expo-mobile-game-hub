@@ -16,7 +16,9 @@ const start = (values: number[]) => {
   const size = Math.round(Math.sqrt(values.length)) as Size;
   // The tiles get the ids 1..k, so the next one is k + 1 (a spawn must not reuse an id: the board keys its tiles by it).
   const nextId = values.filter((v) => v > 0).length + 1;
-  (newGame as jest.Mock).mockReset().mockReturnValue({ ...realNewGame(size, () => 0), board: fromValues(values), nextId });
+  (newGame as jest.Mock)
+    .mockReset()
+    .mockReturnValue({ ...realNewGame(size, () => 0), board: fromValues(values), nextId });
 };
 const EMPTY = Array(16).fill(0);
 const withTiles = (tiles: Record<number, number>) => EMPTY.map((v, i) => tiles[i] ?? v);
@@ -80,7 +82,18 @@ const drag = (dx: number, dy: number) => {
       indexOfSingleActiveTouch: 0,
       mostRecentTimeStamp: t,
       touchBank: [
-        { touchActive: true, startPageX: 100, startPageY: 100, startTimeStamp: 1, currentPageX: x, currentPageY: y, currentTimeStamp: t, previousPageX: 100, previousPageY: 100, previousTimeStamp: 1 },
+        {
+          touchActive: true,
+          startPageX: 100,
+          startPageY: 100,
+          startTimeStamp: 1,
+          currentPageX: x,
+          currentPageY: y,
+          currentTimeStamp: t,
+          previousPageX: 100,
+          previousPageY: 100,
+          previousTimeStamp: 1,
+        },
       ],
     },
   });
@@ -129,7 +142,9 @@ describe('2048 screen', () => {
   it('ignores accessibility actions that are not one of the four moves', () => {
     const before = values();
 
-    fireEvent(screen.getByLabelText(/^Board \d+ by \d+/), 'accessibilityAction', { nativeEvent: { actionName: 'activate' } });
+    fireEvent(screen.getByLabelText(/^Board \d+ by \d+/), 'accessibilityAction', {
+      nativeEvent: { actionName: 'activate' },
+    });
 
     expect(values()).toEqual(before);
     expect(screen.getByLabelText('Score 0')).toBeTruthy();
@@ -405,7 +420,11 @@ describe('resume', () => {
 
 describe('size picker', () => {
   it('marks the last used size from the setting, not the running game, and shows the bests', async () => {
-    await seedSave(Array(36).fill(0).map((v, i) => (i === 0 ? 2 : v)));
+    await seedSave(
+      Array(36)
+        .fill(0)
+        .map((v, i) => (i === 0 ? 2 : v)),
+    );
     await seed('2048:settings', { size: 5 });
     await seedStats(6, { played: 1, wins: 0, bestScore: 4321, bestTile: 256 });
     await reopen();
@@ -606,7 +625,11 @@ describe('Animations', () => {
   });
 
   it('keeps a tile at least one pixel wide on a very short area', async () => {
-    await toGame(Array(49).fill(0).map((v, i) => (i === 0 ? 2 : v)));
+    await toGame(
+      Array(49)
+        .fill(0)
+        .map((v, i) => (i === 0 ? 2 : v)),
+    );
 
     fireEvent(screen.getByTestId('game-area'), 'layout', { nativeEvent: { layout: { height: 50 } } });
 

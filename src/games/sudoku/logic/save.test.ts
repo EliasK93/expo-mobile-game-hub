@@ -1,14 +1,6 @@
 import { parseGrid } from './board';
 import { setValue, toggleNote, type Game } from './game';
-import {
-  bucketOf,
-  DEFAULT_LEVEL,
-  fromSave,
-  fromSettings,
-  hasProgress,
-  SAVE_VERSION,
-  toSave,
-} from './save';
+import { bucketOf, DEFAULT_LEVEL, fromSave, fromSettings, hasProgress, SAVE_VERSION, toSave } from './save';
 
 const SOLUTION = parseGrid('534678912672195348198342567859761423426853791713924856961537284287419635345286179');
 const PUZZLE = parseGrid('.3467891267219534819834256785976142342685379171392485696153728428741963534528617.');
@@ -44,9 +36,15 @@ describe('toSave / fromSave', () => {
   });
 
   it('has the documented fields', () => {
-    expect(Object.keys(toSave(fresh, 0, false, 3)).sort()).toEqual(
-      ['elapsedMs', 'hinted', 'level', 'notes', 'puzzle', 'solution', 'values'],
-    );
+    expect(Object.keys(toSave(fresh, 0, false, 3)).sort()).toEqual([
+      'elapsedMs',
+      'hinted',
+      'level',
+      'notes',
+      'puzzle',
+      'solution',
+      'values',
+    ]);
   });
 
   it.each([

@@ -33,7 +33,8 @@ export function generateLevel(level: Level, random: Random): { puzzle: Grid; sol
       const keep = puzzle[i];
       puzzle[i] = 0;
       const r = countSolutions(puzzle, 2) === 1 ? rate(puzzle, level) : null;
-      if (r === null) puzzle[i] = keep; // a second solution, or it would need a technique above the level
+      if (r === null)
+        puzzle[i] = keep; // a second solution, or it would need a technique above the level
       else rated = r;
     }
     if (rated === level) return { puzzle, solution, attempts };

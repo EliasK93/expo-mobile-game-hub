@@ -45,11 +45,14 @@ describe('stats', () => {
       expect(await AsyncStorage.getItem('test:save')).toBeNull();
       expect(await load<Stats>('test:stats', 1)).toEqual({
         easy: { solved: 2, timedCount: 2, totalMs: 7000, bestMs: 3000 },
-      });    });
+      });
+    });
 
     it('starts the stats when there are none', async () => {
       await recordWinStored({ ...where, bucket: 'easy', ms: 3000, hinted: true });
-      expect(await load<Stats>('test:stats', 1)).toEqual({ easy: { solved: 1, timedCount: 0, totalMs: 0, bestMs: null } });
+      expect(await load<Stats>('test:stats', 1)).toEqual({
+        easy: { solved: 1, timedCount: 0, totalMs: 0, bestMs: null },
+      });
     });
 
     it('deletes the save before it writes the stats, so a crash in between loses the win rather than counting it twice', async () => {

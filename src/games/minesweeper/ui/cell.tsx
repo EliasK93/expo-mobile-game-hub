@@ -26,7 +26,12 @@ export function CellFace({ view, size }: { view: CellView; size: number }) {
         borderRightColor: theme.mineBevelDark,
       }
     : { backgroundColor: view === 'hit' ? theme.mineHit : theme.mineOpen, borderWidth: 1, borderColor: theme.mineGrid };
-  const cross = { position: 'absolute', width: size * 0.8, height: Math.max(1, size * 0.08), backgroundColor: theme.mineBomb } as const;
+  const cross = {
+    position: 'absolute',
+    width: size * 0.8,
+    height: Math.max(1, size * 0.08),
+    backgroundColor: theme.mineBomb,
+  } as const;
 
   return (
     <View style={[styles.cell, { width: size, height: size }, look]}>
@@ -79,7 +84,17 @@ type Props = {
   onHoldEnd: () => void;
 };
 
-export const MinesweeperCell = memo(function MinesweeperCell({ index, cols, view, size, playing, onTap, onHold, onHoldStart, onHoldEnd }: Props) {
+export const MinesweeperCell = memo(function MinesweeperCell({
+  index,
+  cols,
+  view,
+  size,
+  playing,
+  onTap,
+  onHold,
+  onHoldStart,
+  onHoldEnd,
+}: Props) {
   const interactive = playing && (view === 'covered' || view === 'flag');
   return (
     <Pressable

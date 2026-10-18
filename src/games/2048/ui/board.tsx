@@ -32,7 +32,13 @@ export type Motion = { seq: number; slides: Slide[]; merges: Merge[]; spawned: S
 // then the board is sized by the width alone. onSwipe must be a stable function: the PanResponder is built from it once.
 // motion = the last move, null when the board did not change by a move (start, undo, resume) or with reduced motion: then
 // the board just changes, no slides and no ghosts. overlay = the win overlay, drawn over the cells.
-type Props = { game: Game; available: number | null; motion: Motion | null; onSwipe: (dir: Dir) => void; overlay?: ReactNode };
+type Props = {
+  game: Game;
+  available: number | null;
+  motion: Motion | null;
+  onSwipe: (dir: Dir) => void;
+  overlay?: ReactNode;
+};
 
 export function Game2048Board({ game, available, motion, onSwipe, overlay }: Props) {
   const theme = useTheme();
@@ -110,18 +116,21 @@ export function Game2048Board({ game, available, motion, onSwipe, overlay }: Pro
             effect={null}
           />
         ))}
-        {game.board.map((t, cell) =>
-          t && (
-            <AnimatedTile
-              key={`${t.id}:${motion?.seq ?? 0}`}
-              id={t.id}
-              value={t.value}
-              size={tile}
-              {...px(cell)}
-              {...from(t.id, cell)}
-              effect={motion?.spawned?.id === t.id ? 'spawn' : motion?.merges.some((m) => m.id === t.id) ? 'pop' : null}
-            />
-          ),
+        {game.board.map(
+          (t, cell) =>
+            t && (
+              <AnimatedTile
+                key={`${t.id}:${motion?.seq ?? 0}`}
+                id={t.id}
+                value={t.value}
+                size={tile}
+                {...px(cell)}
+                {...from(t.id, cell)}
+                effect={
+                  motion?.spawned?.id === t.id ? 'spawn' : motion?.merges.some((m) => m.id === t.id) ? 'pop' : null
+                }
+              />
+            ),
         )}
         {over && (
           <Dim>

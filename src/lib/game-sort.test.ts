@@ -43,7 +43,10 @@ describe('the sort setting', () => {
   it('is stored as { version: 1, data: { sort } } under hub:settings and read back', async () => {
     await saveSort('playtime');
 
-    expect(JSON.parse((await AsyncStorage.getItem('hub:settings')) as string)).toEqual({ version: 1, data: { sort: 'playtime' } });
+    expect(JSON.parse((await AsyncStorage.getItem('hub:settings')) as string)).toEqual({
+      version: 1,
+      data: { sort: 'playtime' },
+    });
     expect(await loadSort()).toBe('playtime');
   });
 

@@ -16,8 +16,25 @@ import { WinOverlay } from './win-overlay';
 
 export function Game2048Screen() {
   const {
-    loaded, game, motion, stats, best, lastSize, newBest, picking, panel, canUndo, winOpen,
-    swipe, undo, keepGoing, openPicker, closePicker, pickSize, openPanel, closePanel,
+    loaded,
+    game,
+    motion,
+    stats,
+    best,
+    lastSize,
+    newBest,
+    picking,
+    panel,
+    canUndo,
+    winOpen,
+    swipe,
+    undo,
+    keepGoing,
+    openPicker,
+    closePicker,
+    pickSize,
+    openPanel,
+    closePanel,
   } = useGame2048();
   const insets = useSafeAreaInsets();
   // The screen measures its own area (everything below the Stack header), so no header size is ever guessed.
@@ -28,7 +45,12 @@ export function Game2048Screen() {
 
   const header = <StatsHeaderButton visible={loaded} onPress={openPanel} />;
 
-  if (!loaded) return <ThemedView style={container} onLayout={onLayout}>{header}</ThemedView>;
+  if (!loaded)
+    return (
+      <ThemedView style={container} onLayout={onLayout}>
+        {header}
+      </ThemedView>
+    );
 
   if (picking) {
     return (
@@ -45,7 +67,14 @@ export function Game2048Screen() {
       <ThemedView style={container} onLayout={onLayout}>
         {header}
         {/* Play again: the same size (pickSize also keeps it as the last used one). */}
-        <StatsPanel stats={stats} game={game} newBest={newBest} onClose={closePanel} onPlayAgain={() => pickSize(game.size)} onChangeSize={openPicker} />
+        <StatsPanel
+          stats={stats}
+          game={game}
+          newBest={newBest}
+          onClose={closePanel}
+          onPlayAgain={() => pickSize(game.size)}
+          onChangeSize={openPicker}
+        />
       </ThemedView>
     );
   }

@@ -9,7 +9,12 @@ export type Game = { puzzle: Grid; solution: Grid; values: Grid; notes: readonly
 // What the generator and the pool (pickPuzzle) hand over.
 export type Puzzle = Pick<Game, 'puzzle' | 'solution'>;
 
-export const newGame = ({ puzzle, solution }: Puzzle): Game => ({ puzzle, solution, values: puzzle, notes: Array(81).fill(0) });
+export const newGame = ({ puzzle, solution }: Puzzle): Game => ({
+  puzzle,
+  solution,
+  values: puzzle,
+  notes: Array(81).fill(0),
+});
 
 export const isGiven = (game: Game, i: number) => game.puzzle[i] !== 0;
 
