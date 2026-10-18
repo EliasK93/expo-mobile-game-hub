@@ -16,13 +16,14 @@ type Props = {
   flex?: boolean;
   primary?: boolean; // the accent button: use it for the one action a screen wants you to take
   compact?: boolean; // a slim button (36 instead of 48 high) for secondary actions
+  muted?: boolean; // grey label (and detail): for the inactive one of a switch; `primary` wins
   background?: ThemeColor;
   textType?: ThemedTextProps['type'];
 };
 
 // The hub's one text button. A disabled one is dimmed.
 // The label stretches to the full width of the button: a shrink-wrapped, centred Text gets its last word cut off on some Android fonts.
-export function Button({ label, text = label, detail, onPress, selected, disabled, flex, primary, compact, background = 'backgroundSelected', textType = 'smallBold' }: Props) {
+export function Button({ label, text = label, detail, onPress, selected, disabled, flex, primary, compact, muted, background = 'backgroundSelected', textType = 'smallBold' }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -32,7 +33,7 @@ export function Button({ label, text = label, detail, onPress, selected, disable
       onPress={onPress}
       style={[flex && styles.flex, disabled && styles.dimmed]}>
       <ThemedView type={primary ? 'accent' : background} style={[styles.button, compact && styles.compact]}>
-        <ThemedText type={textType} themeColor={primary ? 'onAccent' : undefined} style={styles.text}>{text}</ThemedText>
+        <ThemedText type={textType} themeColor={primary ? 'onAccent' : muted ? 'textSecondary' : undefined} style={styles.text}>{text}</ThemedText>
         {detail && (
           <ThemedText type="small" themeColor={primary ? 'onAccent' : 'textSecondary'} style={styles.text}>{detail}</ThemedText>
         )}
