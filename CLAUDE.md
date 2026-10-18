@@ -86,7 +86,7 @@ src/
 
 - [Sudoku](docs/sudoku.md)
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
-- [Minesweeper](docs/minesweeper.md): M1-M3 done (logic, playable, save and stats), next M4 (polish)
+- [Minesweeper](docs/minesweeper.md): complete in the web preview (M1-M4, 2026-10-18), APK test pending
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
@@ -178,3 +178,5 @@ Hub-wide things verified only in the web preview that must be tested on the phon
 - [x] Home is a 3-column grid on the phone: tiles are square, the art and names are readable, the sort chips fit in one row, and the chosen sort is still there after closing and reopening the app.
 - [x] The app is called "Game Hub" under its launcher icon; the icon (yellow background, 3×3 tile) is not cut off in the phone's icon shape and, with themed icons on, the monochrome version looks right; the splash screen shows the tile on the paper colour, not clipped, without a blue flash.
 - [x] Playtime pauses while the app is in the background and while the phone screen is off, and counts again on return: open Sudoku, send the app to the background for a minute, come back, and check that Playtime sorting only reflects the time the app was in front. Confirmed with Sudoku (2026-10-17).
+- [ ] One selection look (2026-10-18): the selected sort chip, the stats switches (2048 sizes, Minesweeper levels), the last used picker option and Sudoku's Notes when on are blue with white text; the inactive options of a switch have grey text on light grey; all readable in light and dark mode.
+- [ ] The shared stats numbers row and header Stats button (2026-10-18): 2048's stats panel looks as before (values fit, smaller on a narrow phone), and the Stats button sits clear of the right edge in every game.

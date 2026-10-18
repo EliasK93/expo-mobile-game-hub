@@ -2,7 +2,7 @@
 
 Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: the gate, tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Minesweeper lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** M1 (logic), M2 (playable) and M3 (save, stats, abandon) are done. Next is M4 (polish) in plan mode (rule 10). The decisions below are settled; don't ask about them again.
+**Status (2026-10-18):** M1-M4 are done; the game is complete in the web preview. Next is the APK test (the user builds it, rule 6) with the Android checks below as the checklist. The decisions below are settled; don't ask about them again.
 
 ## Overview
 
@@ -109,7 +109,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 - **Fit without scrolling.**
   - The screen measures its own height with `onLayout` (no header-height guess) and sizes the board from it and from the window width. The cell size is the smaller of the width and height limits, with a lower bound so it never reaches 0 (2048's T4 lesson).
   - No ScrollView. The bottom safe area stays free.
-  - Check 360×640 and 320×568 in the browser device toolbar with **Expert**. At 360×640 Expert's cells are about 26 px.
+  - Check 360×640 and 320×568 in the browser device toolbar with **Expert**. Expert's cells are about 25 px at 360×640 and 21 px at 320×568; both fit with a few pixels to spare (M4).
 - **Text centring on Android:** numbers and LED digits use the shared `glyphStyle` (`src/components/glyph-style.ts`).
 - **Panels replace controls; they never stack.** The stats panel takes the whole screen below the header, and the level picker takes the place of the board and the controls.
 - **Header buttons get a right margin** (the Stats button first sat flush against the edge; copy its width and margin).
@@ -183,7 +183,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - Resume directly, the last used level, the abandon rule, the stats panel after the game ends and from the header, bests in the picker.
   - Route tests for each, with the AsyncStorage mock.
   - The user checks it in the browser.
-- [ ] M4. **Polish.**
+- [x] M4. **Polish.** Done 2026-10-18, checked by the user in the browser (held cell, surprised face, Expert at 360×640 and 320×568, dark mode; the colours stay at their starting values). Re-check: `npx jest src/__tests__/minesweeper.test.tsx` (tests named with `surprised`, `button role`, `longpress action`, `flagged cell in Flag mode`). The held-cell look comes from the Pressable's own `pressed` state, so no other cell re-renders; the face follows `holding` in the hook, reset at the end of a game, on a new game and when the panel or picker opens.
   - The pressed states (sunken cell, surprised face), accessibility (from the M2 review: opened cells are still buttons with nothing to do; a screen reader announces every cell), the layout at 360×640 and 320×568 with Expert, and the dark-mode colours.
   - The user checks it in the browser.
 
@@ -197,11 +197,12 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 - [ ] The timer pauses in the background and with the screen off, and an unfinished game comes back directly after closing the app, at the same time.
 - [ ] The header Stats button sits clear of the screen edge; the picker and the stats panel fit without scrolling.
 - [ ] The Minesweeper home tile looks right next to the other games.
+- [ ] A finger on a covered cell sinks it and makes the face surprised; lifting it or sliding away brings both back. After a win or loss the stats panel opens about 1 second later.
 - [ ] With TalkBack on, the cells are read with their state, double tap opens, and double-tap-and-hold flags.
 
 ## Open decisions
 
-- The token values above are starting points; tune them in the browser.
+- The token values above are starting points. The user checked them in light and dark mode in the browser (M4) and kept them; tune them only if the phone shows a problem.
 
 ## Known shortcuts
 
