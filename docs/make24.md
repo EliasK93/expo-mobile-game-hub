@@ -2,7 +2,7 @@
 
 Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Make 24 lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** the concept is agreed and nothing is built yet. Start with M1 in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
+**Status (2026-10-18):** M1 (logic) is done; next is M2 (puzzle pool) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
 
 ## Overview
 
@@ -43,7 +43,7 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
   - after Give up: the solution steps.
   - Next starts the next puzzle of the same level. The picker (New) stays available.
 - **Puzzle order:** each level's puzzles come in a stored shuffled order, so nothing repeats until every puzzle of that level was played (user; `logic/order.ts`).
-- **Abandon:** picking a level in the picker (New) while a **started** puzzle is unsolved counts it as not solved (played +1, streak reset), like Minesweeper. Started = at least one combine or one hint. An unstarted puzzle just goes (a free skip before touching it).
+- **Abandon:** picking a level in the picker (New) while a **started** puzzle is unsolved counts it as not solved (played +1, streak reset), like Minesweeper. Started = at least one combine on the board now, or any hint used. An unstarted puzzle just goes (a free skip before touching it); so does one whose combines were all undone without a hint (user, 2026-10-18).
 - **Stats per level:** played, solved, solved %, current and best streak, best time.
   - A **hinted solve** counts as played and solved but doesn't extend the streak (it neither increases nor resets it) and doesn't set a best time (the hub's hint rule, as in Sudoku).
   - Give up and abandon count as played, not solved, and reset the current streak.
@@ -64,6 +64,7 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
 - **Result line + Next on the board; stats only from the header** (user). Reason: puzzles take seconds to minutes; a panel after each one would get in the way.
 - **Shuffled order without repeats per level** (user).
 - **No new colour tokens unless the browser check shows a need.** Starting look: cards `backgroundElement` with a `gridLine` border (raised: a slightly darker bottom edge, e.g. `backgroundSelected`), numbers in `text` with `glyphStyle`; selected card `cellSelected` (pencil yellow); operators and actions are the shared `Button` (selected operator = `selected`); messages in `textSecondary`, "Can't divide by 0" and "not 24" in `digitConflict`. If a new token is needed, it goes into `constants/theme.ts` with a `make24` prefix, light and dark.
+- **Selection, operator and the last notice (÷ 0, hint) live in `Game`** (M1), not in the UI hook. Reason: what a tap does is a rule, and rules live in `logic/`. Replaying saved steps (`replay`, the one rebuild path for Undo and resume) leaves the last result selected, as after a live combine.
 - **Solver on the device is fine** (not "heavy work"): from four cards there are at most 6 pairs × 6 results × … ≈ 3,900 combine paths, a few milliseconds. The pool and the rating are built ahead of time anyway, so the app never searches over many puzzles.
 
 ## Rating and the puzzle pool
@@ -101,7 +102,10 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
 - **Saved data may be rejected during development:** a changed format bumps the version, and old data simply starts fresh (no migration code; user, 2026-10-17).
 - **Browser test setups:** AsyncStorage on the web writes straight to `localStorage` under the same key, so a one-line console snippet can seed a `make24:save` for the user (run it on the home screen, not inside the game, or the running game saves over it).
 
-## Architecture and storage keys (planned)
+## Architecture and storage keys
+
+`logic/` is built (M1) except `pool.ts` and the build/data tests (M2); `data/` comes in M2 and `ui/` in M3.
+`LEVEL_IDS`/`Level`, `replay`, `isStarted` and `message` live in `game.ts`; the operators (`Op`, `SYMBOL`, `apply`) and `TARGET` in `solve.ts`.
 
 ```
 src/games/make24/
@@ -136,7 +140,7 @@ Storage keys, all versioned (`{ version, data }`, version 1 each):
 
 Same ticking rule as the hub: tick an item only when its re-check passes and the user has verified it in the web preview. Each step is its own commit with the `Make 24:` prefix; shared moves get `Hub:`, docs get `Docs:`. Each milestone gets a ponytail review in a visible pane before its commit.
 
-- [ ] M1. **Logic, test first** (xhigh effort; exact arithmetic and the solver are easy to get subtly wrong):
+- [x] M1. **Logic, test first** (xhigh effort; exact arithmetic and the solver are easy to get subtly wrong). Done 2026-10-18, no UI to check. Re-check: `npx jest src/games/make24` (e.g. test names containing `1,362`, `divide by 0`, `second card's place`, `undo`). `solve.test.ts` takes about 10 s in the gate (the full 1,820-set count). For M3: every in-play text comes from `message(game)`; only the "Solved in 0:42" line, which needs the time, is built in the UI.
   - `fraction`: reduce, signs, ÷ 0 → null, format (`8/3`, `−4`, `24`);
   - `solve`: 3 3 8 8, 1 5 5 5, 3 3 7 7, 4 4 7 7 are solvable and need fractions; 1 1 1 1 has no solution; 1 2 3 4 has many ways; `solution` from any partial state, or null; the count over all 1,820 sets is 1,362;
   - `game`: select/deselect/switch, operator, combine order for − and ÷, ÷ 0 refused, the result takes the second card's place and stays selected, solved at 24, "not 24" at another last value, undo back to the start, hint (marks hinted; "can't make 24" state), give up, finished games don't change, `isStarted`;
@@ -176,4 +180,7 @@ Then the hub's Release milestone: the APK is built and tested once, after M5, wi
 
 ## Known shortcuts
 
-None yet.
+The `ponytail:` comments in `src/games/make24/`. Re-check: `Get-ChildItem src/games/make24 -Recurse -File | Select-String -Pattern 'ponytail:'`.
+
+- `logic/order.ts`: a stale order (the pool changed) is dropped whole, so retuning the pool loses the progress through the old order. The stale check compares length and membership only, so a corrupted order with one puzzle repeated and another missing passes. Revisit if the pool is retuned after release.
+- `logic/save.ts`: stats with any bad field fall back to empty as a whole; keep the good levels if a format change ever needs it.
