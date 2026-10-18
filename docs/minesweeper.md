@@ -2,7 +2,7 @@
 
 Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: the gate, tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Minesweeper lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** the concept is agreed and nothing is built yet. Start with M1 in plan mode (rule 10). The decisions below are settled; don't ask about them again.
+**Status (2026-10-18):** M1 (the logic) is done; there is no screen yet. Next is M2 in plan mode (rule 10). The decisions below are settled; don't ask about them again.
 
 ## Overview
 
@@ -130,24 +130,32 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards`, `lib/timer` (`formatTime`);
   - the theme tokens.
 
-## Architecture and storage keys (planned)
+## Architecture and storage keys
+
+`logic/` is built (M1); `ui/` is planned.
 
 ```
 src/games/minesweeper/
   logic/            # pure TS, unit-tested; the ESLint purity rule applies
-    board.ts        # LEVELS (cols, rows, mines), Cell index math, neighbours(i), counts; Board = mines + opened + flagged
-    generate.ts     # placeMines(level, safeIndex, random): mines anywhere except safeIndex and its neighbours
-    game.ts         # Game { level, mines | null (unmined until the first tap), opened, flagged, status, hit, elapsedMs };
-                    # newGame(level), open(game, i, random), toggleFlag(game, i), minesLeft, isStarted, resultOf; pure transitions
-    stats.ts        # per level: played, wins, bestMs, currentStreak, bestStreak; recordGame(stats, level, result); win %
-    save.ts         # keys, versions; toSave/fromSave (unfinished games only), fromStats, fromSettings
+    board.ts        # LEVEL_IDS, Level, LEVELS (cols, rows, mines), cellCount; cells in reading order (i = row * cols + col);
+                    # neighbours(level, i) (no wrap across row ends), counts(level, mines)
+    generate.ts     # placeMines(level, safe, random): mines anywhere except safe and its neighbours. Its own module so
+                    # route tests can swap it (jest.mock + requireActual) for hand-built boards
+    game.ts         # Game { level, mines: boolean[] | null (null until the first opening), opened, flagged: boolean[],
+                    # status: playing | won | lost, hit }; newGame(level), open(game, i, random), toggleFlag(game, i),
+                    # isWon, minesLeft, isStarted (= mined); pure transitions that return the same game when nothing changes.
+                    # No time in Game: the UI's clock owns it (like Sudoku)
+    stats.ts        # per level: played, wins, currentStreak, bestStreak, bestMs; Result { won, ms };
+                    # recordGame(stats, level, result) (abandon = won: false), isNewBest. Win % is winPercent in lib/stats.ts
+    save.ts         # keys, versions; toSave(game, elapsedMs) / fromSave -> { game, elapsedMs } (unfinished games only;
+                    # rejects states no game can reach), fromStats, fromSettings (default beginner)
   ui/
     minesweeper-screen.tsx, board.tsx, cell.tsx, top-bar.tsx (LED boxes + face), face.tsx, mine.tsx/flag.tsx (drawn),
     use-minesweeper.ts, level-picker.tsx, stats-panel.tsx, colors.ts (value -> token, one place), tile.tsx (home art)
 ```
 
 Storage keys, all versioned (`{ version, data }`, version 1 each):
-- `minesweeper:save`: `{ level, mines, opened, flagged, elapsedMs }`, the unfinished game; `mines` is empty while the board is unmined.
+- `minesweeper:save`: `{ level, mines, opened, flagged, elapsedMs }`, the unfinished game; `mines`, `opened` and `flagged` are lists of cell indices, and `mines` is empty while the board is unmined.
 - `minesweeper:stats`: `{ beginner: …, intermediate: …, expert: … }`, one entry per level.
 - `minesweeper:settings`: `{ level }`, the last used level.
 
@@ -155,7 +163,7 @@ Storage keys, all versioned (`{ version, data }`, version 1 each):
 
 Same ticking rule as the hub: tick an item only when its re-check passes and the user has verified it in the web preview. Each step is its own commit with the `Minesweeper:` prefix; shared moves get `Hub:`, docs get `Docs:`. Each milestone gets a ponytail review in a visible pane before its commit.
 
-- [ ] M1. **Logic, test first** (xhigh effort; the first-tap and flood-fill rules are easy to get wrong):
+- [x] M1. **Logic, test first** (xhigh effort; the first-tap and flood-fill rules are easy to get wrong). Done 2026-10-18, no UI to check. Re-check: `npx jest src/games/minesweeper` (e.g. test names containing `first tap`, `flood`, `no chording`, `last safe cell`). For M2: `isStarted` means mined, so a Flag-mode first tap leaves the game unstarted (no timer, nothing recorded on abandon).
   - `placeMines`: the right count, never on the safe cell or its neighbours (also in corners and on edges), the same seed gives the same board;
   - `open`: the first tap places the mines and opens an area; numbers; flood fill across zeros (iterative), stopping at numbers and keeping flags; opening a mine is a loss with `hit`; flagged cells don't open; finished games don't change;
   - `toggleFlag`: on covered cells only, `minesLeft` can go negative, the first action may be a flag (still unmined);
@@ -194,4 +202,6 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 
 ## Known shortcuts
 
-None yet.
+The `ponytail:` comments in `src/games/minesweeper/`. Re-check: `Get-ChildItem src/games/minesweeper -Recurse -File | Select-String -Pattern 'ponytail:'`.
+
+- `logic/save.ts`, `fromStats`: stats with any bad field fall back to empty as a whole (same as 2048). Revisit if a format change needs to keep the good levels.
