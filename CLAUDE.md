@@ -69,7 +69,7 @@ src/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
-  components/ hooks/ constants/   # shared UI (themed text/view, `button` with a `primary` accent variant for a screen's one main action and a `compact` slim variant (36 px high) for secondary actions, `game-route`: `GameRoute` records a game's playtime, `glyph-style`: the shared style for digits on tiles and cells), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background; `use-reduced-motion`: the system's reduce-motion setting, used by 2048's tile animations), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours included; the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
+  components/ hooks/ constants/   # shared UI (themed text/view, `button` with a `primary` accent variant for a screen's one main action and a `compact` slim variant (36 px high) for secondary actions, plus `muted` (grey label) for the inactive side of a switch, `game-route`: `GameRoute` records a game's playtime, `glyph-style`: the shared style for digits on tiles and cells), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background; `use-reduced-motion`: the system's reduce-motion setting, used by 2048's tile animations), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours included; the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
   lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle), guards (shape checks for loaded saves, e.g. isCount), playtime, game-sort (home's sort order and its setting)
 ```
 
@@ -86,7 +86,7 @@ src/
 
 - [Sudoku](docs/sudoku.md)
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
-- [Minesweeper](docs/minesweeper.md): concept agreed 2026-10-18; M1 (logic) done, next M2
+- [Minesweeper](docs/minesweeper.md): M1 (logic) and M2 (playable) done, next M3
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 

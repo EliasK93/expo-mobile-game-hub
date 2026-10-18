@@ -2,7 +2,7 @@
 
 Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: the gate, tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Minesweeper lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** M1 (the logic) is done; there is no screen yet. Next is M2 in plan mode (rule 10). The decisions below are settled; don't ask about them again.
+**Status (2026-10-18):** M1 (logic) and M2 (playable) are done; there is no save or stats yet. Next is M3 in plan mode (rule 10). The decisions below are settled; don't ask about them again.
 
 ## Overview
 
@@ -20,9 +20,9 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 
   | Level | Columns × rows | Mines | Density |
   |---|---|---|---|
-  | Beginner | 9 × 9 | 10 | 12 % |
-  | Intermediate | 10 × 14 | 22 | 16 % |
-  | Expert | 10 × 18 | 37 | 21 % |
+  | Beginner | 8 × 12 | 12 | 12.5 % |
+  | Intermediate | 10 × 15 | 24 | 16 % |
+  | Expert | 12 × 18 | 45 | 21 % |
 
   The classic sizes (16 × 16, 30 × 16) would give cells of about 22 px on a phone, too small to tap without zoom.
 - **Tap** (a short press) on a covered cell:
@@ -30,7 +30,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - In **Flag** mode it toggles a flag.
   - A flagged cell can't be opened; remove the flag first.
 - **Long press** on a covered cell does the opposite of the mode: it flags in Dig mode and opens in Flag mode. It works as a mouse hold in the web preview.
-- **Dig / Flag switch:** one slim row of two selected/unselected buttons above the board (the shared `Button` with `compact flex selected`). The mode is not saved; a game always starts in Dig mode.
+- **Dig / Flag switch:** one slim row of two selected/unselected buttons above the board (the shared `Button` with `compact flex`; the active one is `primary` (accent), the inactive one `muted` (grey text), user 2026-10-18). The mode is not saved; a game always starts in Dig mode.
 - **Opening a cell:**
   - A mine ends the game (loss).
   - A number stays as it is.
@@ -72,7 +72,8 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 
 ## Decisions (decided 2026-10-18), with reasons
 
-- **Phone-fitted levels, max 10 columns, no zoom** (user). Reason: the classic 16 × 16 and 30 × 16 boards give cells of about 22 px, too small to tap; pan/zoom would be a lot of gesture code and awkward on the web. The classic densities keep the difficulty familiar.
+- **Phone-fitted levels, no zoom** (user). Reason: the classic 16 × 16 and 30 × 16 boards give cells of about 22 px, too small to tap; pan/zoom would be a lot of gesture code and awkward on the web. The classic densities keep the difficulty familiar.
+- **One board shape for every level (3 : 2 portrait); the levels differ by cell size and mine density** (user, 2026-10-18, M2 browser check). Reason: the first sizes (9 × 9, 10 × 14, 10 × 18) left the lower screen empty on Beginner and made the board height jump between levels. Fixed sizes rather than rows that grow to fit the screen: those would make sizes, and so best times and win %, differ per device, and would move the board size from the level table into the game and the save. Expert's 12 columns give cells of about 26 px at 360×640, no smaller than the first 10 × 18 Expert.
 - **Long press plus a Dig/Flag switch** (user). Reason: long press is the natural flag gesture on a phone; the switch makes flag-heavy play comfortable and works the same on the web.
 - **The first tap opens an area; otherwise classic random** (user). Reason: no lost game on the first tap and always a start area. No-guess boards would need a solver and pre-generated boards.
 - **No chording** (user). Reason: kept simple; every cell is opened by hand.
@@ -103,11 +104,11 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 
 ## Lessons from Sudoku and 2048 built into this design
 
-- **Nothing heavy on the phone.** Mine placement and flood fill are a few array passes over at most 180 cells; there's no solver and no generated data.
+- **Nothing heavy on the phone.** Mine placement and flood fill are a few array passes over at most 216 cells; there's no solver and no generated data.
 - **Fit without scrolling.**
   - The screen measures its own height with `onLayout` (no header-height guess) and sizes the board from it and from the window width. The cell size is the smaller of the width and height limits, with a lower bound so it never reaches 0 (2048's T4 lesson).
   - No ScrollView. The bottom safe area stays free.
-  - Check 360×640 and 320×568 in the browser device toolbar with **Expert**. At 360×640 the cells will be roughly 26 px; see "Open decisions".
+  - Check 360×640 and 320×568 in the browser device toolbar with **Expert**. At 360×640 Expert's cells are about 26 px.
 - **Text centring on Android:** numbers and LED digits use the shared `glyphStyle` (`src/components/glyph-style.ts`).
 - **Panels replace controls; they never stack.** The stats panel takes the whole screen below the header, and the level picker takes the place of the board and the controls.
 - **Header buttons get a right margin** (the Stats button first sat flush against the edge; copy its width and margin).
@@ -132,7 +133,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 
 ## Architecture and storage keys
 
-`logic/` is built (M1); `ui/` is planned.
+`logic/` (M1) and `ui/` (M2) are built.
 
 ```
 src/games/minesweeper/
@@ -151,7 +152,9 @@ src/games/minesweeper/
                     # rejects states no game can reach), fromStats, fromSettings (default beginner)
   ui/
     minesweeper-screen.tsx, board.tsx, cell.tsx, top-bar.tsx (LED boxes + face), face.tsx, mine.tsx/flag.tsx (drawn),
-    use-minesweeper.ts, level-picker.tsx, stats-panel.tsx, colors.ts (value -> token, one place), tile.tsx (home art)
+    use-minesweeper.ts, level-picker.tsx, colors.ts (number -> token, one place), format.ts (led, levelName), tile.tsx (home art,
+    drawn with the board's CellFace); stats-panel.tsx comes in M3. logic/game.ts also has cellViews(game): what each cell shows
+    (number, covered, flag, wrong flag, mine, hit), so the loss and win display are game rules, not UI
 ```
 
 Storage keys, all versioned (`{ version, data }`, version 1 each):
@@ -170,7 +173,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - win: all safe cells open → win; the remaining mines count as flagged;
   - `stats`: played, wins, win %, best time, streaks, abandon = loss;
   - `save`: round trips (also unmined), bad data rejected, finished games rejected.
-- [ ] M2. **Playable.**
+- [x] M2. **Playable.** Done 2026-10-18, checked by the user in the browser (level sizes and the Dig/Flag look changed after the check, see Decisions). Re-check: `npx jest src/__tests__/minesweeper.test.tsx src/games/minesweeper` (e.g. tests named with `long press`, `Flag mode`, `dizzy`, `cool face`, `timer`, `12 × 18`). Accessibility labels (cells, face, LEDs) came with M2, because the route tests find the cells by them. For M3: `onStop` in `use-minesweeper.ts` is empty and `lastLevel` lives in memory until the save and the setting exist.
   - The route, the registry entry with `GameRoute`, the colour tokens, the home tile (a mini board with covered and opened cells, a couple of numbers, a flag; the user checks the look).
   - The board for the three levels with the 3D bevel, tap/long press, the Dig/Flag switch, the top bar (LED counters, drawn face), the timer, the level picker on the face, the loss and win display on the board.
   - Route tests: open by tap, flag by long press, flag mode, flood fill, loss, win, the picker and an Expert game, the LED values.
@@ -180,7 +183,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - Route tests for each, with the AsyncStorage mock.
   - The user checks it in the browser.
 - [ ] M4. **Polish.**
-  - The pressed states (sunken cell, surprised face), accessibility labels, the layout at 360×640 and 320×568 with Expert, and the dark-mode colours.
+  - The pressed states (sunken cell, surprised face), accessibility (from the M2 review: opened cells are still buttons with nothing to do; a screen reader announces every cell), the layout at 360×640 and 320×568 with Expert, and the dark-mode colours.
   - The user checks it in the browser.
 
 Then the hub's Release milestone: the APK is built and tested once, after M4, with the Android checks below as the checklist.
@@ -188,7 +191,7 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 ## Android checks
 
 - [ ] Tap and long press are reliable on every level; a long press flags without also opening; the default long-press delay feels right (not too slow).
-- [ ] The cells of Expert (10 × 18) are big enough to tap accurately, and the board, top bar and Dig/Flag row fit without scrolling; nothing sits under the navigation bar.
+- [ ] The cells of Expert (12 × 18) are big enough to tap accurately, and the board, top bar and Dig/Flag row fit without scrolling; nothing sits under the navigation bar.
 - [ ] The 3D bevel, numbers, mines, flags and face look right in light and dark mode; numbers and LED digits are vertically centred (shared glyph style).
 - [ ] The timer pauses in the background and with the screen off, and an unfinished game comes back directly after closing the app, at the same time.
 - [ ] The header Stats button sits clear of the screen edge; the picker and the stats panel fit without scrolling.
@@ -197,7 +200,6 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 
 ## Open decisions
 
-- After M2 in the browser: if Expert's cells at 360×640 are too small to tap comfortably, Expert becomes 10 × 16 with 33 mines (the same density). Ask the user then.
 - The token values above are starting points; tune them in the browser.
 
 ## Known shortcuts
