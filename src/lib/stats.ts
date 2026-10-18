@@ -21,6 +21,9 @@ export function recordWin(stats: Stats, bucket: string, ms: number, hinted: bool
   return { ...stats, [bucket]: next };
 }
 
+// The share of games won in whole percent; 0 when nothing is played.
+export const winPercent = (played: number, wins: number) => (played === 0 ? 0 : Math.round((wins / played) * 100));
+
 // "5 solved · Best 3:10". An entry with only hinted wins shows just the count.
 export const statsLine = (e: StatsEntry): string =>
   e.bestMs === null ? `${e.solved} solved` : `${e.solved} solved · Best ${formatTime(e.bestMs)}`;
