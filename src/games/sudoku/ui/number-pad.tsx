@@ -34,7 +34,6 @@ export function NumberPad({ onDigit, onErase, onUndo, onRedo, onToggleNotes, can
           label="Notes"
           text={notesMode ? 'Notes: on' : 'Notes'}
           selected={notesMode}
-          background={notesMode ? 'backgroundSelected' : 'backgroundElement'}
           textType={notesMode ? 'smallBold' : 'default'}
           onPress={onToggleNotes}
         />
