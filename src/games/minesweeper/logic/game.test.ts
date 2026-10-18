@@ -1,6 +1,6 @@
 import { mulberry32 } from '@/lib/random';
 import { LEVELS, LEVEL_IDS, cellCount, neighbours, type Level } from './board';
-import { isStarted, minesLeft, newGame, open, toggleFlag, type Game } from './game';
+import { cellViews, isStarted, minesLeft, newGame, open, toggleFlag, type Game } from './game';
 
 const random = mulberry32(1);
 
@@ -17,12 +17,13 @@ const openedExcept = (level: Level, mineIndices: number[], ...left: number[]) =>
 
 const indices = (flags: boolean[]) => flags.flatMap((f, i) => (f ? [i] : []));
 
-// Beginner (9 columns) with a wall of mines down column 4: opening the left side floods columns 0-3 and stops at the wall.
-const WALL = [4, 13, 22, 31, 40, 49, 58, 67, 76];
-const leftSide = Array.from({ length: 81 }, (_, i) => i % 9 < 4);
+// Beginner (8 columns) with a wall of mines down column 4: opening the left side floods columns 0-3 and stops at the wall.
+const WALL = Array.from({ length: LEVELS.beginner.rows }, (_, r) => r * 8 + 4);
+const leftSide = Array.from({ length: cellCount('beginner') }, (_, i) => i % 8 < 4);
 
-// Exactly the 10 mines of Beginner, along the top: every other cell is open after a flood from the bottom corner.
-const TEN = Array.from({ length: 10 }, (_, i) => i);
+// Exactly the mines of Beginner, packed at the top (row 0 and the start of row 1): every other cell is open after a flood
+// from the bottom corner. The first safe cells after them are 12 and 13.
+const TOP = Array.from({ length: LEVELS.beginner.mines }, (_, i) => i);
 
 describe('newGame', () => {
   it.each(LEVEL_IDS)('%s: unmined, nothing opened or flagged, playing, no mine hit', (level) => {
@@ -38,10 +39,10 @@ describe('newGame', () => {
 
 describe('open: the first tap', () => {
   it('places the mines and opens the tapped cell and all its neighbours', () => {
-    const g = open(newGame('beginner'), 40, random);
+    const g = open(newGame('beginner'), 43, random);
     expect(g.mines).not.toBeNull();
     expect(indices(g.mines!)).toHaveLength(LEVELS.beginner.mines);
-    for (const i of [40, ...neighbours('beginner', 40)]) {
+    for (const i of [43, ...neighbours('beginner', 43)]) {
       expect(g.opened[i]).toBe(true);
       expect(g.mines![i]).toBe(false);
     }
@@ -62,16 +63,16 @@ describe('open: the first tap', () => {
   });
 
   it('keeps a flag that was placed before the first tap: the flagged cell stays covered', () => {
-    const flagged = toggleFlag(newGame('beginner'), 41); // next to the tapped cell
-    const g = open(flagged, 40, random);
-    expect(g.opened[40]).toBe(true);
-    expect(g.opened[41]).toBe(false);
-    expect(g.flagged[41]).toBe(true);
+    const flagged = toggleFlag(newGame('beginner'), 44); // next to the tapped cell
+    const g = open(flagged, 43, random);
+    expect(g.opened[43]).toBe(true);
+    expect(g.opened[44]).toBe(false);
+    expect(g.flagged[44]).toBe(true);
   });
 
   it('a flagged cell is not opened by the first tap either, and the board stays unmined', () => {
-    const flagged = toggleFlag(newGame('beginner'), 40);
-    expect(open(flagged, 40, random)).toBe(flagged);
+    const flagged = toggleFlag(newGame('beginner'), 43);
+    expect(open(flagged, 43, random)).toBe(flagged);
     expect(flagged.mines).toBeNull();
   });
 
@@ -85,8 +86,8 @@ describe('open: the first tap', () => {
 
 describe('open: numbers and flood fill', () => {
   it('a cell with a number opens alone', () => {
-    const g = open(withMines('beginner', [40]), 31, random);
-    expect(indices(g.opened)).toEqual([31]);
+    const g = open(withMines('beginner', [43]), 35, random);
+    expect(indices(g.opened)).toEqual([35]);
     expect(g.status).toBe('playing');
   });
 
@@ -98,7 +99,7 @@ describe('open: numbers and flood fill', () => {
 
   it('the flood stops at numbers: the cells behind the wall stay covered', () => {
     const g = open(withMines('beginner', WALL), 0, random);
-    for (const i of [4, 5, 8, 13, 14, 40, 76, 80]) expect(g.opened[i]).toBe(false);
+    for (const i of [4, 5, 7, 12, 15, 44, 76, 95]) expect(g.opened[i]).toBe(false);
   });
 
   it('a flagged cell inside the flood stays covered and flagged, and the rest still opens', () => {
@@ -135,17 +136,17 @@ describe('open: a mine', () => {
   });
 
   it('is a loss after cells were opened, too', () => {
-    const lost = open(open(withMines('beginner', WALL), 0, random), 13, random);
+    const lost = open(open(withMines('beginner', WALL), 0, random), 12, random);
     expect(lost.status).toBe('lost');
-    expect(lost.hit).toBe(13);
+    expect(lost.hit).toBe(12);
     expect(lost.opened).toEqual(leftSide);
   });
 });
 
 describe('open: cells that do nothing', () => {
   it('a flagged cell returns the same game', () => {
-    const g = toggleFlag(withMines('beginner', [0]), 31);
-    expect(open(g, 31, random)).toBe(g);
+    const g = toggleFlag(withMines('beginner', [0]), 35);
+    expect(open(g, 35, random)).toBe(g);
   });
 
   it('a flagged mine does not explode', () => {
@@ -154,10 +155,10 @@ describe('open: cells that do nothing', () => {
   });
 
   it('an opened cell returns the same game: no chording', () => {
-    const g = open(withMines('beginner', [40]), 31, random);
-    expect(open(g, 31, random)).toBe(g);
-    const flagged = toggleFlag(g, 30); // a flag next to the opened 1 changes nothing either
-    expect(open(flagged, 31, random)).toBe(flagged);
+    const g = open(withMines('beginner', [43]), 35, random);
+    expect(open(g, 35, random)).toBe(g);
+    const flagged = toggleFlag(g, 34); // a flag next to the opened 1 changes nothing either
+    expect(open(flagged, 35, random)).toBe(flagged);
   });
 
   it('a lost game returns the same game', () => {
@@ -167,7 +168,7 @@ describe('open: cells that do nothing', () => {
   });
 
   it('a won game returns the same game', () => {
-    const won = open(withMines('beginner', TEN), 80, random);
+    const won = open(withMines('beginner', TOP), 80, random);
     expect(won.status).toBe('won');
     expect(open(won, 0, random)).toBe(won);
   });
@@ -180,10 +181,10 @@ describe('open: does not change the game it is given', () => {
     expect(JSON.stringify(g)).toBe(copy);
   };
 
-  it('on the first tap', () => check(newGame('beginner'), 40));
+  it('on the first tap', () => check(newGame('beginner'), 43));
   it('on a flood', () => check(toggleFlag(withMines('beginner', WALL), 18), 0));
   it('on a mine', () => check(withMines('beginner', [0]), 0));
-  it('on a win', () => check(withMines('beginner', TEN), 80));
+  it('on a win', () => check(withMines('beginner', TOP), 80));
 });
 
 describe('toggleFlag', () => {
@@ -196,14 +197,14 @@ describe('toggleFlag', () => {
   });
 
   it('an opened cell returns the same game', () => {
-    const g = open(withMines('beginner', [40]), 31, random);
-    expect(toggleFlag(g, 31)).toBe(g);
+    const g = open(withMines('beginner', [43]), 35, random);
+    expect(toggleFlag(g, 35)).toBe(g);
   });
 
   it('a finished game returns the same game', () => {
     const lost = open(withMines('beginner', [0]), 0, random);
     expect(toggleFlag(lost, 5)).toBe(lost);
-    const won = open(withMines('beginner', TEN), 80, random);
+    const won = open(withMines('beginner', TOP), 80, random);
     expect(toggleFlag(won, 5)).toBe(won);
   });
 
@@ -234,9 +235,9 @@ describe('minesLeft', () => {
     expect(minesLeft(toggleFlag(g, 0))).toBe(LEVELS[level].mines - 1);
   });
 
-  it('is -1 with 11 flags on Beginner', () => {
+  it('is -1 with one flag too many on Beginner', () => {
     let g = newGame('beginner');
-    for (let i = 0; i < 11; i++) g = toggleFlag(g, i);
+    for (let i = 0; i <= LEVELS.beginner.mines; i++) g = toggleFlag(g, i);
     expect(minesLeft(g)).toBe(-1);
     expect(minesLeft(toggleFlag(g, 0))).toBe(0);
   });
@@ -247,15 +248,15 @@ describe('isStarted', () => {
     const g = newGame('beginner');
     expect(isStarted(g)).toBe(false);
     expect(isStarted(toggleFlag(g, 3))).toBe(false);
-    expect(isStarted(open(g, 40, random))).toBe(true);
+    expect(isStarted(open(g, 43, random))).toBe(true);
     expect(isStarted(open(withMines('beginner', [0]), 0, random))).toBe(true);
   });
 });
 
 describe('winning', () => {
   it('opening the last safe cell directly wins: the remaining mines show as flags and none are left', () => {
-    const g = withMines('beginner', TEN, { opened: openedExcept('beginner', TEN, 10) });
-    const won = open(g, 10, random);
+    const g = withMines('beginner', TOP, { opened: openedExcept('beginner', TOP, 12) });
+    const won = open(g, 12, random);
     expect(won.status).toBe('won');
     expect(won.hit).toBeNull();
     expect(won.flagged).toEqual(won.mines);
@@ -264,23 +265,23 @@ describe('winning', () => {
   });
 
   it('opening the last safe cell through a flood wins as well', () => {
-    const won = open(withMines('beginner', TEN), 80, random);
+    const won = open(withMines('beginner', TOP), 80, random);
     expect(won.status).toBe('won');
-    expect(won.opened).toEqual(openedExcept('beginner', TEN));
+    expect(won.opened).toEqual(openedExcept('beginner', TOP));
     expect(won.flagged).toEqual(won.mines);
     expect(minesLeft(won)).toBe(0);
   });
 
   it('is not won while one safe cell is still covered', () => {
-    const g = withMines('beginner', TEN, { opened: openedExcept('beginner', TEN, 10, 11) });
-    const next = open(g, 10, random);
+    const g = withMines('beginner', TOP, { opened: openedExcept('beginner', TOP, 12, 13) });
+    const next = open(g, 12, random);
     expect(next.status).toBe('playing');
     expect(next.flagged).toEqual(g.flagged);
   });
 
   it('wrong flags do not count: a flagged safe cell must be unflagged and opened first', () => {
-    const flagged = toggleFlag(withMines('beginner', TEN), 80);
-    const flooded = open(flagged, 40, random);
+    const flagged = toggleFlag(withMines('beginner', TOP), 80);
+    const flooded = open(flagged, 43, random);
     expect(flooded.status).toBe('playing');
     expect(flooded.opened[80]).toBe(false);
     const won = open(toggleFlag(flooded, 80), 80, random);
@@ -298,5 +299,65 @@ describe('winning', () => {
     expect(g.opened.filter(Boolean)).toHaveLength(cellCount(level) - LEVELS[level].mines);
     expect(g.flagged).toEqual(g.mines);
     expect(minesLeft(g)).toBe(0);
+  });
+});
+
+describe('cellViews', () => {
+  it.each(LEVEL_IDS)('%s: one entry per cell, all covered on a new game', (level) => {
+    expect(cellViews(newGame(level))).toEqual(Array(cellCount(level)).fill('covered'));
+  });
+
+  it('a flag shows as a flag, on an unmined board too', () => {
+    const views = cellViews(toggleFlag(newGame('beginner'), 7));
+    expect(views[7]).toBe('flag');
+    expect(views.filter((v) => v === 'flag')).toHaveLength(1);
+  });
+
+  it('an opened cell shows its number, a 0 for none; covered cells stay covered', () => {
+    const g = open(withMines('beginner', WALL), 0, random);
+    const views = cellViews(g);
+    expect(views[0]).toBe(0);
+    expect(views[3]).toBe(2); // next to two mines of the wall
+    expect(views[11]).toBe(3); // next to three
+    expect(views[5]).toBe('covered');
+    expect(views[4]).toBe('covered'); // a mine, not shown while the game runs
+  });
+
+  it('while the game runs a wrong flag still looks like any flag', () => {
+    const views = cellViews(toggleFlag(withMines('beginner', [0]), 80));
+    expect(views[80]).toBe('flag');
+    expect(views[0]).toBe('covered');
+  });
+
+  describe('after a loss', () => {
+    // Mines 0, 5 and 9; a right flag on 0, a wrong one on 80; 5 is hit.
+    const lost = open(toggleFlag(toggleFlag(withMines('beginner', [0, 5, 9]), 0), 80), 5, random);
+    const views = cellViews(lost);
+
+    it('the hit mine is marked, the other mines show, a right flag stays a flag', () => {
+      expect(lost.status).toBe('lost');
+      expect(views[5]).toBe('hit');
+      expect(views[9]).toBe('mine');
+      expect(views[0]).toBe('flag');
+    });
+
+    it('a wrong flag is crossed, the rest stays covered', () => {
+      expect(views[80]).toBe('wrongFlag');
+      expect(views[43]).toBe('covered');
+    });
+
+    it('opened cells keep their numbers', () => {
+      const g = open(open(withMines('beginner', WALL), 0, random), 12, random);
+      expect(cellViews(g)[3]).toBe(2);
+      expect(cellViews(g)[12]).toBe('hit');
+    });
+  });
+
+  it('after a win every mine is a flag and no cell is covered', () => {
+    const won = open(withMines('beginner', TOP), 80, random);
+    const views = cellViews(won);
+    expect(views.filter((v) => v === 'flag')).toHaveLength(TOP.length);
+    expect(views.slice(0, TOP.length)).toEqual(Array(TOP.length).fill('flag'));
+    expect(views).not.toContain('covered');
   });
 });

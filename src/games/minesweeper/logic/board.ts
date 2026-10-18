@@ -1,11 +1,12 @@
 export const LEVEL_IDS = ['beginner', 'intermediate', 'expert'] as const;
 export type Level = (typeof LEVEL_IDS)[number];
 
-// Sized for a phone in portrait, with the mine density of the classic levels (12 %, 16 %, 21 %).
+// Sized for a phone in portrait: every level has the same 3 : 2 board shape, so the board fills the same area; the
+// difficulty comes from smaller cells and the mine density of the classic levels (12 %, 16 %, 21 %).
 export const LEVELS: Record<Level, { cols: number; rows: number; mines: number }> = {
-  beginner: { cols: 9, rows: 9, mines: 10 },
-  intermediate: { cols: 10, rows: 14, mines: 22 },
-  expert: { cols: 10, rows: 18, mines: 37 },
+  beginner: { cols: 8, rows: 12, mines: 12 },
+  intermediate: { cols: 10, rows: 15, mines: 24 },
+  expert: { cols: 12, rows: 18, mines: 45 },
 };
 
 // A board is cols × rows cells in reading order (row by row): i = row * cols + col.

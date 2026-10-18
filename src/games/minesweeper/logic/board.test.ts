@@ -3,18 +3,20 @@ import { LEVELS, LEVEL_IDS, cellCount, counts, neighbours, type Level } from './
 // neighbours in ascending order, so a test does not depend on the order they come in.
 const around = (level: Level, i: number) => neighbours(level, i).sort((a, b) => a - b);
 
+const LAST = cellCount('beginner') - 1; // the bottom-right corner of Beginner (8 columns)
+
 describe('LEVELS', () => {
   it('has the three levels, cols × rows and mines as agreed', () => {
     expect(LEVEL_IDS).toEqual(['beginner', 'intermediate', 'expert']);
     expect(LEVELS).toEqual({
-      beginner: { cols: 9, rows: 9, mines: 10 },
-      intermediate: { cols: 10, rows: 14, mines: 22 },
-      expert: { cols: 10, rows: 18, mines: 37 },
+      beginner: { cols: 8, rows: 12, mines: 12 },
+      intermediate: { cols: 10, rows: 15, mines: 24 },
+      expert: { cols: 12, rows: 18, mines: 45 },
     });
   });
 
   it('cellCount is cols × rows', () => {
-    expect(LEVEL_IDS.map(cellCount)).toEqual([81, 140, 180]);
+    expect(LEVEL_IDS.map(cellCount)).toEqual([96, 150, 216]);
   });
 
   it.each(LEVEL_IDS)('%s: after the first tap there are more candidate cells than mines (the tapped cell and its 8 neighbours stay clear)', (level) => {
@@ -24,17 +26,17 @@ describe('LEVELS', () => {
 
 describe('neighbours', () => {
   it('a corner has 3', () => {
-    expect(around('beginner', 0)).toEqual([1, 9, 10]);
-    expect(around('beginner', 80)).toEqual([70, 71, 79]);
+    expect(around('beginner', 0)).toEqual([1, 8, 9]);
+    expect(around('beginner', LAST)).toEqual([LAST - 9, LAST - 8, LAST - 1]);
   });
 
   it('an edge cell has 5', () => {
-    expect(around('beginner', 4)).toEqual([3, 5, 12, 13, 14]); // top edge
-    expect(around('beginner', 18)).toEqual([9, 10, 19, 27, 28]); // left edge
+    expect(around('beginner', 4)).toEqual([3, 5, 11, 12, 13]); // top edge
+    expect(around('beginner', 16)).toEqual([8, 9, 17, 24, 25]); // left edge
   });
 
   it('an inner cell has 8', () => {
-    expect(around('beginner', 40)).toEqual([30, 31, 32, 39, 41, 48, 49, 50]);
+    expect(around('beginner', 43)).toEqual([34, 35, 36, 42, 44, 50, 51, 52]);
   });
 
   it('the last cell of a row does not get the first cell of the next row, nor the other way round', () => {
@@ -65,22 +67,22 @@ describe('counts', () => {
     Array.from({ length: cellCount(level) }, (_, i) => mineIndices.includes(i));
 
   it('is the number of mines next to each cell, on a hand board', () => {
-    // Beginner with mines in the top-left corner, just below-right of it, and the bottom-right corner.
-    const c = counts('beginner', minesAt('beginner', 0, 10, 80));
-    expect(c[1]).toBe(2); // next to 0 and 10
-    expect(c[9]).toBe(2);
-    expect(c[2]).toBe(1); // next to 10
-    expect(c[11]).toBe(1);
-    expect(c[0]).toBe(1); // a mine's own count leaves itself out
+    // Beginner with mines in the top-left corner, just below-right of it (cell 9), and the bottom-right corner.
+    const c = counts('beginner', minesAt('beginner', 0, 9, LAST));
+    expect(c[1]).toBe(2); // next to 0 and 9
+    expect(c[8]).toBe(2);
+    expect(c[2]).toBe(1); // next to 9
     expect(c[10]).toBe(1);
-    expect(c[71]).toBe(1); // next to 80
+    expect(c[0]).toBe(1); // a mine's own count leaves itself out
+    expect(c[9]).toBe(1);
+    expect(c[LAST - 9]).toBe(1); // next to the last cell
     expect(c[3]).toBe(0);
     expect(c[40]).toBe(0);
-    expect(c).toHaveLength(81);
+    expect(c).toHaveLength(cellCount('beginner'));
   });
 
   it('every mine is counted once by each of its neighbours: 3 for a corner, 8 for an inner cell', () => {
-    const c = counts('beginner', minesAt('beginner', 0, 10, 80));
+    const c = counts('beginner', minesAt('beginner', 0, 9, LAST));
     expect(c.reduce((a, b) => a + b, 0)).toBe(3 + 8 + 3);
   });
 

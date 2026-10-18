@@ -17,7 +17,7 @@ function started(level: Level = 'beginner'): Game {
 const roundTrip = (game: Game, elapsedMs: number) => fromSave(JSON.parse(JSON.stringify(toSave(game, elapsedMs))));
 
 const good = () => toSave(started(), 5000);
-const safeCells = (data: SaveData) => Array.from({ length: 81 }, (_, i) => i).filter((i) => !data.mines.includes(i));
+const safeCells = (data: SaveData) => Array.from({ length: cellCount('beginner') }, (_, i) => i).filter((i) => !data.mines.includes(i));
 
 describe('toSave / fromSave', () => {
   it('stores the cells as ascending lists of indices, and the elapsed time', () => {
@@ -82,7 +82,7 @@ describe('toSave / fromSave', () => {
       [`${key} that is not an array`, { ...good(), [key]: 'x' }],
       [`a fractional index in ${key}`, { ...good(), [key]: [...list.slice(1), 1.5] }],
       [`a negative index in ${key}`, { ...good(), [key]: [-1, ...list.slice(1)] }],
-      [`an index past the last cell in ${key}`, { ...good(), [key]: [...list.slice(1), 81] }],
+      [`an index past the last cell in ${key}`, { ...good(), [key]: [...list.slice(1), cellCount('beginner')] }],
       [`an index that is a string in ${key}`, { ...good(), [key]: [...list.slice(1), '3'] }],
       [`a duplicate in ${key}`, { ...good(), [key]: [...list.slice(0, -1), list[0]] }],
     ];

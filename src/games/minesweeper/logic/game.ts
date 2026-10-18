@@ -60,3 +60,21 @@ export const minesLeft = (game: Game) => LEVELS[game.level].mines - game.flagged
 
 // Started = the mines are placed, i.e. at least one cell was opened; only a started game is recorded when abandoned.
 export const isStarted = (game: Game) => game.mines !== null;
+
+// What a cell shows: a number (0 = nothing around), covered, a flag, and the ones only a lost game reveals: every mine,
+// the mine that was hit, and a flag with no mine under it. While the game runs nothing is revealed. After a win the
+// flags are the mines already, so no case of its own.
+export type CellView = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'covered' | 'flag' | 'wrongFlag' | 'mine' | 'hit';
+
+export function cellViews(game: Game): CellView[] {
+  const { level, mines, opened, flagged, status, hit } = game;
+  const around = mines && counts(level, mines);
+  const lost = status === 'lost';
+  return opened.map((isOpen, i): CellView => {
+    if (isOpen) return (around as number[])[i] as CellView; // an opened cell means the board is mined
+    if (i === hit) return 'hit';
+    if (lost && mines?.[i]) return flagged[i] ? 'flag' : 'mine';
+    if (flagged[i]) return lost ? 'wrongFlag' : 'flag';
+    return 'covered';
+  });
+}
