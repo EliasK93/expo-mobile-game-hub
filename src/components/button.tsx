@@ -11,12 +11,12 @@ type Props = {
   text?: string;
   detail?: string; // a small second line under the text
   onPress: () => void;
-  selected?: boolean;
+  selected?: boolean; // the chosen option of a switch, picker or toggle: the accent look, like `primary`
   disabled?: boolean;
   flex?: boolean;
   primary?: boolean; // the accent button: use it for the one action a screen wants you to take
   compact?: boolean; // a slim button (36 instead of 48 high) for secondary actions
-  muted?: boolean; // grey label (and detail): for the inactive one of a switch; `primary` wins
+  muted?: boolean; // grey label (and detail) on the lighter grey background: for the inactive ones of a switch; `primary` and `selected` win
   background?: ThemeColor;
   textType?: ThemedTextProps['type'];
 };
@@ -24,6 +24,7 @@ type Props = {
 // The hub's one text button. A disabled one is dimmed.
 // The label stretches to the full width of the button: a shrink-wrapped, centred Text gets its last word cut off on some Android fonts.
 export function Button({ label, text = label, detail, onPress, selected, disabled, flex, primary, compact, muted, background = 'backgroundSelected', textType = 'smallBold' }: Props) {
+  const accent = primary || selected;
   return (
     <Pressable
       accessibilityRole="button"
@@ -32,10 +33,10 @@ export function Button({ label, text = label, detail, onPress, selected, disable
       disabled={disabled}
       onPress={onPress}
       style={[flex && styles.flex, disabled && styles.dimmed]}>
-      <ThemedView type={primary ? 'accent' : background} style={[styles.button, compact && styles.compact]}>
-        <ThemedText type={textType} themeColor={primary ? 'onAccent' : muted ? 'textSecondary' : undefined} style={styles.text}>{text}</ThemedText>
+      <ThemedView type={accent ? 'accent' : muted ? 'backgroundElement' : background} style={[styles.button, compact && styles.compact]}>
+        <ThemedText type={textType} themeColor={accent ? 'onAccent' : muted ? 'textSecondary' : undefined} style={styles.text}>{text}</ThemedText>
         {detail && (
-          <ThemedText type="small" themeColor={primary ? 'onAccent' : 'textSecondary'} style={styles.text}>{detail}</ThemedText>
+          <ThemedText type="small" themeColor={accent ? 'onAccent' : 'textSecondary'} style={styles.text}>{detail}</ThemedText>
         )}
       </ThemedView>
     </Pressable>

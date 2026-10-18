@@ -44,7 +44,7 @@ export default function HomeScreen() {
               label={`Sort by ${SORT_LABELS[s]}`}
               text={SORT_LABELS[s]}
               selected={s === sort}
-              background={s === sort ? 'backgroundSelected' : 'backgroundElement'}
+              muted={s !== sort}
               onPress={() => choose(s)}
             />
           ))}

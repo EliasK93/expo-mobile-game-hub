@@ -5,6 +5,8 @@ import { AppState, Text } from 'react-native';
 
 import HomeScreen from '@/app/index';
 import { GameRoute } from '@/components/game-route';
+import { Colors } from '@/constants/theme';
+import { buttonLook } from '@/test-utils/button-look';
 
 // Sorting needs more than one game, so home runs here with three made-up games. The real registry is covered by navigation.test.tsx.
 jest.mock('@/games/registry', () => {
@@ -69,6 +71,17 @@ describe('Home grid', () => {
 
     fireEvent.press(screen.getByLabelText('Sort by Playtime'));
     expect(tiles()).toEqual(['Mid', 'Zeta', 'Alpha']);
+  });
+
+  it('the active sort chip is the accent one and the others have grey text, after switching', async () => {
+    const active = { background: Colors.light.accent, text: Colors.light.onAccent };
+    const inactive = { background: Colors.light.backgroundElement, text: Colors.light.textSecondary };
+    open();
+    await settle();
+
+    expect([buttonLook('Recent'), buttonLook('Name'), buttonLook('Playtime')]).toEqual([active, inactive, inactive]);
+    fireEvent.press(screen.getByLabelText('Sort by Name'));
+    expect([buttonLook('Recent'), buttonLook('Name'), buttonLook('Playtime')]).toEqual([inactive, active, inactive]);
   });
 
   it('remembers the sort for the next visit', async () => {
