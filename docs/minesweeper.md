@@ -2,7 +2,7 @@
 
 Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: the gate, tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Minesweeper lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** M1 (logic) and M2 (playable) are done; there is no save or stats yet. Next is M3 in plan mode (rule 10). The decisions below are settled; don't ask about them again.
+**Status (2026-10-18):** M1 (logic), M2 (playable) and M3 (save, stats, abandon) are done. Next is M4 (polish) in plan mode (rule 10). The decisions below are settled; don't ask about them again.
 
 ## Overview
 
@@ -78,7 +78,8 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 - **The first tap opens an area; otherwise classic random** (user). Reason: no lost game on the first tap and always a start area. No-guess boards would need a solver and pre-generated boards.
 - **No chording** (user). Reason: kept simple; every cell is opened by hand.
 - **Look: classic 3D bevel in hub colours; smiley face as the New game button; graphics drawn from Views; red LED counters** (user). Reason: recognisably Minesweeper, but in the Pencil & Paper palette with dark mode. Drawn shapes look the same on the web and on the phone (emoji differ between platforms and ignore the theme).
-- **Game end: the board stays, then the stats panel opens; a header Stats button** (user). Reason: the same pattern as 2048, confirmed on the phone.
+- **Game end: the board stays, then the stats panel opens; a header Stats button** (user). Reason: the same pattern as 2048, confirmed on the phone. The board stays for 1 second (`PANEL_DELAY_MS`, user 2026-10-18), so the explosion or the sunglasses are seen first; the face or the header Stats button within that second cancels the automatic opening.
+- **The stats numbers row and the header Stats button are generic hub components** (`components/stats-numbers.tsx`, `components/stats-header-button.tsx`; user 2026-10-18, M3 plan), shared with 2048. Reason: a second copy would have repeated the small-screen rule and the header button's width and margin; both components know no game, so a game can still be copied out as a standalone app with the generic hub files. The stats panels and pickers stay per game.
 - **Resume directly** (user). Reason: like 2048. The timer only runs while the screen is open, so there's nothing to protect with a prompt.
 - **An abandoned started game counts as a loss** (user). Reason: keeps win % and streaks honest, like 2048.
 - **Stats: played, wins, win %, best time, streaks; best times also in the picker** (user). Reason: 2048's stats plus Sudoku's best time per level.
@@ -153,7 +154,7 @@ src/games/minesweeper/
   ui/
     minesweeper-screen.tsx, board.tsx, cell.tsx, top-bar.tsx (LED boxes + face), face.tsx, mine.tsx/flag.tsx (drawn),
     use-minesweeper.ts, level-picker.tsx, colors.ts (number -> token, one place), format.ts (led, levelName), tile.tsx (home art,
-    drawn with the board's CellFace); stats-panel.tsx comes in M3. logic/game.ts also has cellViews(game): what each cell shows
+    drawn with the board's CellFace); stats-panel.tsx (M3). logic/game.ts also has cellViews(game): what each cell shows
     (number, covered, flag, wrong flag, mine, hit), so the loss and win display are game rules, not UI
 ```
 
@@ -173,12 +174,12 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - win: all safe cells open → win; the remaining mines count as flagged;
   - `stats`: played, wins, win %, best time, streaks, abandon = loss;
   - `save`: round trips (also unmined), bad data rejected, finished games rejected.
-- [x] M2. **Playable.** Done 2026-10-18, checked by the user in the browser (level sizes and the Dig/Flag look changed after the check, see Decisions). Re-check: `npx jest src/__tests__/minesweeper.test.tsx src/games/minesweeper` (e.g. tests named with `long press`, `Flag mode`, `dizzy`, `cool face`, `timer`, `12 × 18`). Accessibility labels (cells, face, LEDs) came with M2, because the route tests find the cells by them. For M3: `onStop` in `use-minesweeper.ts` is empty and `lastLevel` lives in memory until the save and the setting exist.
+- [x] M2. **Playable.** Done 2026-10-18, checked by the user in the browser (level sizes and the Dig/Flag look changed after the check, see Decisions). Re-check: `npx jest src/__tests__/minesweeper.test.tsx src/games/minesweeper` (e.g. tests named with `long press`, `Flag mode`, `dizzy`, `cool face`, `timer`, `12 × 18`). Accessibility labels (cells, face, LEDs) came with M2, because the route tests find the cells by them.
   - The route, the registry entry with `GameRoute`, the colour tokens, the home tile (a mini board with covered and opened cells, a couple of numbers, a flag; the user checks the look).
   - The board for the three levels with the 3D bevel, tap/long press, the Dig/Flag switch, the top bar (LED counters, drawn face), the timer, the level picker on the face, the loss and win display on the board.
   - Route tests: open by tap, flag by long press, flag mode, flood fill, loss, win, the picker and an Expert game, the LED values.
   - The user checks it in the browser.
-- [ ] M3. **Save, stats, abandon.**
+- [x] M3. **Save, stats, abandon.** Done 2026-10-18, checked by the user in the browser. Re-check: `npx jest src/__tests__/minesweeper.test.tsx` (describe blocks `resume`, `saving`, `after a win`, `the panel timer`, `after a loss`, `abandoning`, `header Stats`, `level picker with stats`). The save always holds the unfinished board on screen: written after every action, when the clock stops and when a new game starts (an unmined board too, so an old save never comes back).
   - Resume directly, the last used level, the abandon rule, the stats panel after the game ends and from the header, bests in the picker.
   - Route tests for each, with the AsyncStorage mock.
   - The user checks it in the browser.
