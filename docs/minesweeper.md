@@ -2,7 +2,7 @@
 
 Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: the gate, tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Minesweeper lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** M1-M4 are done; the game is complete in the web preview. Next is the APK test (the user builds it, rule 6) with the Android checks below as the checklist. The decisions below are settled; don't ask about them again.
+**Status (2026-10-18):** M1-M4 are done. Released: every Android check passed on the phone (first APK, 2026-10-18). The decisions below are settled; don't ask about them again.
 
 ## Overview
 
@@ -191,14 +191,14 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 
 ## Android checks
 
-- [ ] Tap and long press are reliable on every level; a long press flags without also opening; the default long-press delay feels right (not too slow).
-- [ ] The cells of Expert (12 × 18) are big enough to tap accurately, and the board, top bar and Dig/Flag row fit without scrolling; nothing sits under the navigation bar.
-- [ ] The 3D bevel, numbers, mines, flags and face look right in light and dark mode; numbers and LED digits are vertically centred (shared glyph style).
-- [ ] The timer pauses in the background and with the screen off, and an unfinished game comes back directly after closing the app, at the same time.
-- [ ] The header Stats button sits clear of the screen edge; the picker and the stats panel fit without scrolling.
-- [ ] The Minesweeper home tile looks right next to the other games.
-- [ ] A finger on a covered cell sinks it and makes the face surprised; lifting it or sliding away brings both back. After a win or loss the stats panel opens about 1 second later.
-- [ ] With TalkBack on, the cells are read with their state, double tap opens, and double-tap-and-hold flags.
+- [x] Tap and long press are reliable on every level; a long press flags without also opening; the default long-press delay feels right (not too slow).
+- [x] The cells of Expert (12 × 18) are big enough to tap accurately, and the board, top bar and Dig/Flag row fit without scrolling; nothing sits under the navigation bar.
+- [x] The 3D bevel, numbers, mines, flags and face look right in light and dark mode; numbers and LED digits are vertically centred (shared glyph style).
+- [x] The timer pauses in the background and with the screen off, and an unfinished game comes back directly after closing the app, at the same time.
+- [x] The header Stats button sits clear of the screen edge; the picker and the stats panel fit without scrolling.
+- [x] The Minesweeper home tile looks right next to the other games.
+- [x] A finger on a covered cell sinks it and makes the face surprised; lifting it or sliding away brings both back. After a win or loss the stats panel opens about 1 second later.
+- [x] With TalkBack on, the cells are read with their state, double tap opens, and double-tap-and-hold flags.
 
 ## Open decisions
 
