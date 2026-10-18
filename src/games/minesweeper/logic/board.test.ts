@@ -1,0 +1,100 @@
+import { LEVELS, LEVEL_IDS, cellCount, counts, neighbours, type Level } from './board';
+
+// neighbours in ascending order, so a test does not depend on the order they come in.
+const around = (level: Level, i: number) => neighbours(level, i).sort((a, b) => a - b);
+
+describe('LEVELS', () => {
+  it('has the three levels, cols × rows and mines as agreed', () => {
+    expect(LEVEL_IDS).toEqual(['beginner', 'intermediate', 'expert']);
+    expect(LEVELS).toEqual({
+      beginner: { cols: 9, rows: 9, mines: 10 },
+      intermediate: { cols: 10, rows: 14, mines: 22 },
+      expert: { cols: 10, rows: 18, mines: 37 },
+    });
+  });
+
+  it('cellCount is cols × rows', () => {
+    expect(LEVEL_IDS.map(cellCount)).toEqual([81, 140, 180]);
+  });
+
+  it.each(LEVEL_IDS)('%s: after the first tap there are more candidate cells than mines (the tapped cell and its 8 neighbours stay clear)', (level) => {
+    expect(cellCount(level) - 9).toBeGreaterThanOrEqual(LEVELS[level].mines);
+  });
+});
+
+describe('neighbours', () => {
+  it('a corner has 3', () => {
+    expect(around('beginner', 0)).toEqual([1, 9, 10]);
+    expect(around('beginner', 80)).toEqual([70, 71, 79]);
+  });
+
+  it('an edge cell has 5', () => {
+    expect(around('beginner', 4)).toEqual([3, 5, 12, 13, 14]); // top edge
+    expect(around('beginner', 18)).toEqual([9, 10, 19, 27, 28]); // left edge
+  });
+
+  it('an inner cell has 8', () => {
+    expect(around('beginner', 40)).toEqual([30, 31, 32, 39, 41, 48, 49, 50]);
+  });
+
+  it('the last cell of a row does not get the first cell of the next row, nor the other way round', () => {
+    // intermediate has 10 columns: cell 9 ends row 0, cell 10 starts row 1.
+    expect(around('intermediate', 9)).toEqual([8, 18, 19]);
+    expect(around('intermediate', 10)).toEqual([0, 1, 11, 20, 21]);
+  });
+
+  it.each(LEVEL_IDS)('%s: every cell has 3, 5 or 8 distinct neighbours next to it, never itself, and the relation is symmetric', (level) => {
+    const { cols, rows } = LEVELS[level];
+    for (let i = 0; i < cellCount(level); i++) {
+      const list = neighbours(level, i);
+      const edges = Number(i % cols === 0 || i % cols === cols - 1) + Number(i < cols || i >= cols * (rows - 1));
+      expect(list).toHaveLength([8, 5, 3][edges]);
+      expect(new Set(list).size).toBe(list.length);
+      for (const n of list) {
+        expect(n).not.toBe(i);
+        expect(Math.abs(Math.floor(n / cols) - Math.floor(i / cols))).toBeLessThanOrEqual(1);
+        expect(Math.abs((n % cols) - (i % cols))).toBeLessThanOrEqual(1);
+        expect(neighbours(level, n)).toContain(i);
+      }
+    }
+  });
+});
+
+describe('counts', () => {
+  const minesAt = (level: Level, ...mineIndices: number[]) =>
+    Array.from({ length: cellCount(level) }, (_, i) => mineIndices.includes(i));
+
+  it('is the number of mines next to each cell, on a hand board', () => {
+    // Beginner with mines in the top-left corner, just below-right of it, and the bottom-right corner.
+    const c = counts('beginner', minesAt('beginner', 0, 10, 80));
+    expect(c[1]).toBe(2); // next to 0 and 10
+    expect(c[9]).toBe(2);
+    expect(c[2]).toBe(1); // next to 10
+    expect(c[11]).toBe(1);
+    expect(c[0]).toBe(1); // a mine's own count leaves itself out
+    expect(c[10]).toBe(1);
+    expect(c[71]).toBe(1); // next to 80
+    expect(c[3]).toBe(0);
+    expect(c[40]).toBe(0);
+    expect(c).toHaveLength(81);
+  });
+
+  it('every mine is counted once by each of its neighbours: 3 for a corner, 8 for an inner cell', () => {
+    const c = counts('beginner', minesAt('beginner', 0, 10, 80));
+    expect(c.reduce((a, b) => a + b, 0)).toBe(3 + 8 + 3);
+  });
+
+  it('does not count across the end of a row', () => {
+    // Mine on the first cell of row 1 (cell 10 of 10 columns): the last cell of row 0 (9) is not next to it.
+    const c = counts('intermediate', minesAt('intermediate', 10));
+    expect(c[9]).toBe(0);
+    expect(c[0]).toBe(1);
+    expect(c[1]).toBe(1);
+    expect(c[11]).toBe(1);
+    expect(c[19]).toBe(0);
+  });
+
+  it('no mines, no counts', () => {
+    expect(counts('beginner', minesAt('beginner')).every((n) => n === 0)).toBe(true);
+  });
+});
