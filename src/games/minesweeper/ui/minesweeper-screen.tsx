@@ -20,8 +20,8 @@ const MOODS: Record<Status, Mood> = { playing: 'normal', won: 'cool', lost: 'diz
 
 export function MinesweeperScreen() {
   const {
-    loaded, game, mode, stats, newBest, picking, panel, lastLevel, elapsedMs,
-    tap, hold, setMode, openPicker, closePicker, openPanel, closePanel, pickLevel,
+    loaded, game, mode, stats, newBest, picking, panel, lastLevel, elapsedMs, holding,
+    tap, hold, pressIn, pressOut, setMode, openPicker, closePicker, openPanel, closePanel, pickLevel,
   } = useMinesweeper();
   const insets = useSafeAreaInsets();
   // The screen measures its own area (everything below the Stack header), so no header size is ever guessed.
@@ -64,8 +64,15 @@ export function MinesweeperScreen() {
         <Button compact flex label="Dig" selected={mode === 'dig'} muted={mode !== 'dig'} onPress={() => setMode('dig')} />
         <Button compact flex label="Flag" selected={mode === 'flag'} muted={mode !== 'flag'} onPress={() => setMode('flag')} />
       </ThemedView>
-      <TopBar minesLeft={minesLeft(game)} seconds={clampLed(Math.floor(elapsedMs / 1000))} mood={MOODS[game.status]} onFace={openPicker} />
-      <MinesweeperBoard game={game} available={areaHeight === null ? null : areaHeight - reserved} onTap={tap} onHold={hold} />
+      <TopBar minesLeft={minesLeft(game)} seconds={clampLed(Math.floor(elapsedMs / 1000))} mood={holding ? 'surprised' : MOODS[game.status]} onFace={openPicker} />
+      <MinesweeperBoard
+        game={game}
+        available={areaHeight === null ? null : areaHeight - reserved}
+        onTap={tap}
+        onHold={hold}
+        onHoldStart={pressIn}
+        onHoldEnd={pressOut}
+      />
     </ThemedView>
   );
 }

@@ -2,8 +2,8 @@ import { View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 
-// normal while playing, cool after a win, dizzy after a loss (the surprised face comes with the pressed states).
-export type Mood = 'normal' | 'cool' | 'dizzy';
+// normal while playing, surprised while a cell is held down, cool after a win, dizzy after a loss.
+export type Mood = 'normal' | 'surprised' | 'cool' | 'dizzy';
 
 // The face, drawn from Views like the mine and the flag: a yellow circle with an outline. Fills a square of `size`.
 export function Face({ mood, size }: { mood: Mood; size: number }) {
@@ -26,10 +26,11 @@ export function Face({ mood, size }: { mood: Mood; size: number }) {
         borderWidth: stroke,
         borderColor: ink,
       }}>
-      {mood === 'normal' &&
-        eyeXs.map((x) => (
-          <View key={x} style={[bar, { left: x - dot / 2 - stroke, top: eyeY - dot / 2 - stroke, width: dot, height: dot, borderRadius: dot / 2 }]} />
-        ))}
+      {(mood === 'normal' || mood === 'surprised') &&
+        eyeXs.map((x) => {
+          const d = mood === 'surprised' ? dot * 1.5 : dot; // wide eyes
+          return <View key={x} style={[bar, { left: x - d / 2 - stroke, top: eyeY - d / 2 - stroke, width: d, height: d, borderRadius: d / 2 }]} />;
+        })}
       {mood === 'cool' && (
         // sunglasses: one dark bar across both eyes
         <View style={[bar, { left: size * 0.14 - stroke, top: eyeY - size * 0.08 - stroke, width: size * 0.72, height: size * 0.16 }]} />
@@ -43,7 +44,7 @@ export function Face({ mood, size }: { mood: Mood; size: number }) {
             />
           )),
         )}
-      {mood === 'dizzy' ? (
+      {mood === 'dizzy' || mood === 'surprised' ? (
         // a round open mouth
         <View
           style={{

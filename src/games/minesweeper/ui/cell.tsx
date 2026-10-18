@@ -62,17 +62,37 @@ const cellLabel = (index: number, cols: number, view: CellView) =>
 
 // Primitive props only, and stable handlers from the hook: a tap re-renders just the cells that changed. A tap is the
 // press, the long press the other action (the hook decides which is which from the mode); no delayLongPress, the
-// defaults are the same on the web and on the phone.
-type Props = { index: number; cols: number; view: CellView; size: number; onTap: (i: number) => void; onHold: (i: number) => void };
+// defaults are the same on the web and on the phone. `playing` is false once the game is over.
+// Only covered and flagged cells of a running game are buttons. An opened cell (or any cell after the end) is disabled
+// text for a screen reader: it keeps its label, but there is nothing to press. TalkBack's double-tap-and-hold arrives as
+// the `longpress` accessibility action (a double tap stays the press); react-native-web ignores actions, so that part is
+// checked on the phone only. The held cell looks opened and empty while it is pressed (a pressed state local to this cell).
+type Props = {
+  index: number;
+  cols: number;
+  view: CellView;
+  size: number;
+  playing: boolean;
+  onTap: (i: number) => void;
+  onHold: (i: number) => void;
+  onHoldStart: () => void;
+  onHoldEnd: () => void;
+};
 
-export const MinesweeperCell = memo(function MinesweeperCell({ index, cols, view, size, onTap, onHold }: Props) {
+export const MinesweeperCell = memo(function MinesweeperCell({ index, cols, view, size, playing, onTap, onHold, onHoldStart, onHoldEnd }: Props) {
+  const interactive = playing && (view === 'covered' || view === 'flag');
   return (
     <Pressable
-      accessibilityRole="button"
+      accessibilityRole={interactive ? 'button' : undefined}
       accessibilityLabel={cellLabel(index, cols, view)}
+      accessibilityActions={interactive ? [{ name: 'longpress' }] : undefined}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === 'longpress' && onHold(index)}
+      disabled={!interactive}
       onPress={() => onTap(index)}
-      onLongPress={() => onHold(index)}>
-      <CellFace view={view} size={size} />
+      onLongPress={() => onHold(index)}
+      onPressIn={view === 'covered' ? onHoldStart : undefined}
+      onPressOut={onHoldEnd}>
+      {({ pressed }) => <CellFace view={pressed && view === 'covered' ? 0 : view} size={size} />}
     </Pressable>
   );
 });

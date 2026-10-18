@@ -779,6 +779,127 @@ describe('header Stats', () => {
   });
 });
 
+// ---- M4: polish ----
+
+describe('a held cell', () => {
+  it('shows the surprised face while a covered cell is pressed in, and the normal one when it is let go', () => {
+    fireEvent(cell(44), 'pressIn');
+    expect(screen.getByTestId('face-surprised')).toBeTruthy();
+    expect(screen.queryByTestId('face-normal')).toBeNull();
+
+    fireEvent(cell(44), 'pressOut');
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+  });
+
+  it('a long press that flags the cell ends the surprise, even if the release never arrives', () => {
+    fireEvent(cell(44), 'pressIn');
+
+    hold(44);
+
+    expect(stateOf(44)).toBe('flagged');
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+  });
+
+  it('is not a thing on a flagged cell, an opened cell or a finished game', () => {
+    layout(WALL);
+    tap(0);
+    hold(44);
+
+    fireEvent(cell(44), 'pressIn'); // flagged
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+    fireEvent(cell(3), 'pressIn'); // opened
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+
+    tap(12); // a mine: the game is lost
+    fireEvent(cell(61), 'pressIn');
+    expect(screen.getByTestId('face-dizzy')).toBeTruthy();
+  });
+
+  it('a press in whose release never comes, because the board went away, does not leave the face surprised', () => {
+    fireEvent(cell(44), 'pressIn');
+
+    fireEvent.press(screen.getByLabelText('Stats'));
+    fireEvent.press(screen.getByLabelText('Close'));
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+
+    fireEvent(cell(44), 'pressIn');
+    fireEvent.press(screen.getByLabelText('New game'));
+    fireEvent.press(screen.getByLabelText('Cancel'));
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+  });
+
+  it('a press in that is still held when the game ends does not leave the face surprised', () => {
+    layout(WALL);
+    tap(0);
+    fireEvent(cell(61), 'pressIn');
+
+    tap(12);
+
+    expect(screen.getByTestId('face-dizzy')).toBeTruthy();
+  });
+});
+
+describe('screen reader', () => {
+  it('a covered or flagged cell is a button, an opened one is disabled text with no button role', () => {
+    layout(WALL);
+    tap(0);
+    hold(44);
+
+    expect(cell(61).props.accessibilityRole).toBe('button');
+    expect(cell(44).props.accessibilityRole).toBe('button');
+    expect(cell(3).props.accessibilityRole).toBeUndefined();
+    expect(cell(3).props.accessibilityState).toMatchObject({ disabled: true });
+    expect(cell(0).props.accessibilityRole).toBeUndefined(); // an empty cell too
+  });
+
+  it('after the game ends no cell is a button any more', () => {
+    layout(WALL);
+    tap(0);
+    tap(12);
+
+    expect(screen.queryAllByRole('button', { name: /^Row \d+, column/ })).toHaveLength(0);
+  });
+
+  // TalkBack's double-tap-and-hold arrives as the `longpress` accessibility action (a double tap stays the press).
+  const action = (i: number, actionName: string) => fireEvent(cell(i), 'accessibilityAction', { nativeEvent: { actionName } });
+
+  it('the longpress action flags in Dig mode', () => {
+    action(44, 'longpress');
+
+    expect(stateOf(44)).toBe('flagged');
+    action(44, 'longpress');
+    expect(stateOf(44)).toBe('covered');
+  });
+
+  it('the longpress action opens in Flag mode', () => {
+    layout(WALL);
+    fireEvent.press(screen.getByLabelText('Flag'));
+
+    action(0, 'longpress');
+
+    expect(stateOf(0)).toBe('empty');
+    expect(covered()).toBe(CELLS - LEFT);
+  });
+
+  it('a long press on a flagged cell in Flag mode changes nothing', () => {
+    layout(WALL);
+    hold(44);
+    fireEvent.press(screen.getByLabelText('Flag'));
+
+    hold(44);
+
+    expect(stateOf(44)).toBe('flagged');
+    expect(covered()).toBe(CELLS - 1);
+    expect(screen.getByTestId('face-normal')).toBeTruthy();
+  });
+
+  it('other actions, such as activate, do nothing', () => {
+    action(44, 'activate');
+
+    expect(stateOf(44)).toBe('covered');
+  });
+});
+
 describe('level picker with stats', () => {
   it('shows the best times and marks the last used level from the setting', async () => {
     await seedStats('intermediate', { played: 3, wins: 1, currentStreak: 1, bestStreak: 1, bestMs: 83_000 });

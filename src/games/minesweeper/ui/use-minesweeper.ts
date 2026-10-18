@@ -37,6 +37,7 @@ export function useMinesweeper() {
   const [picking, setPicking] = useState(false);
   const [panel, setPanel] = useState(false); // the stats panel covers the game
   const [newBest, setNewBest] = useState(false); // the game that just ended set a new best time
+  const [holding, setHolding] = useState(false); // a covered cell is pressed in: the face is surprised
   const [lastLevel, setLastLevel] = useState<Level>('beginner'); // the setting: marks the picker, not the running game
   const gameRef = useRef(game);
   const statsRef = useRef(stats);
@@ -106,6 +107,7 @@ export function useMinesweeper() {
       const next = dig ? open(g, i, Math.random) : toggleFlag(g, i);
       if (next === g) return;
       put(next);
+      setHolding(false); // a long press acts while the finger is still down, and the release may not reach a cell that changed
       if (next.status === 'playing') persist(next, read());
       else {
         finish(next.level, next.status === 'won', stop());
@@ -116,15 +118,20 @@ export function useMinesweeper() {
   );
   const tap = useCallback((i: number) => act(i, modeRef.current === 'dig'), [act]);
   const hold = useCallback((i: number) => act(i, modeRef.current === 'flag'), [act]);
+  const pressIn = useCallback(() => setHolding(true), []);
+  const pressOut = useCallback(() => setHolding(false), []);
 
   // The picker and the panel replace the board; they also cancel a panel that was about to open by itself.
+  // They also end a hold: the board unmounts, so the held cell never sends its release.
   const openPicker = useCallback(() => {
     cancelPanel();
+    setHolding(false);
     setPicking(true);
   }, [cancelPanel]);
   const closePicker = useCallback(() => setPicking(false), []);
   const openPanel = useCallback(() => {
     cancelPanel();
+    setHolding(false);
     setPicking(false);
     setPanel(true);
   }, [cancelPanel]);
@@ -144,6 +151,7 @@ export function useMinesweeper() {
       persist(fresh, 0); // on purpose: it overwrites a flag-only save, which an unstarted game leaves behind
       chooseMode('dig');
       setNewBest(false);
+      setHolding(false);
       setPicking(false);
       setPanel(false);
       reset();
@@ -161,8 +169,11 @@ export function useMinesweeper() {
     panel,
     lastLevel,
     elapsedMs,
+    holding,
     tap,
     hold,
+    pressIn,
+    pressOut,
     setMode: chooseMode,
     openPicker,
     closePicker,
