@@ -42,7 +42,7 @@ export function StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChang
       {result && <ThemedText type="smallBold" style={styles.centered}>{result}</ThemedText>}
       <ThemedView style={styles.row}>
         {SIZES.map((n) => (
-          <Button key={n} compact flex label={`${n}×${n} stats`} text={String(n)} selected={n === size} onPress={() => setSize(n)} />
+          <Button key={n} compact flex label={`${n}×${n} stats`} text={String(n)} selected={n === size} muted={n !== size} onPress={() => setSize(n)} />
         ))}
       </ThemedView>
       <ThemedView style={styles.row}>
