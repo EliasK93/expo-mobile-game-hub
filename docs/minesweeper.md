@@ -30,7 +30,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - In **Flag** mode it toggles a flag.
   - A flagged cell can't be opened; remove the flag first.
 - **Long press** on a covered cell does the opposite of the mode: it flags in Dig mode and opens in Flag mode. It works as a mouse hold in the web preview.
-- **Dig / Flag switch:** one slim row of two selected/unselected buttons above the board (the shared `Button` with `compact flex`; the active one is `primary` (accent), the inactive one `muted` (grey text), user 2026-10-18). The mode is not saved; a game always starts in Dig mode.
+- **Dig / Flag switch:** one slim row of two selected/unselected buttons above the board (the shared `Button` with `compact flex`; the active one `selected` (accent), the inactive one `muted` (grey text), the hub-wide selection look since 2026-10-18). The mode is not saved; a game always starts in Dig mode.
 - **Opening a cell:**
   - A mine ends the game (loss).
   - A number stays as it is.
