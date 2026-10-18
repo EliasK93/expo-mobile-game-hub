@@ -1,9 +1,9 @@
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
-import { StyleSheet } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { LEVELS, cellCount, type Level } from '@/games/minesweeper/logic/board';
 import { placeMines } from '@/games/minesweeper/logic/generate';
+import { buttonLook } from '@/test-utils/button-look';
 
 // placeMines is replaced so each test starts from a mine layout built by hand; open and the rest stay real.
 jest.mock('@/games/minesweeper/logic/generate', () => ({ ...jest.requireActual('@/games/minesweeper/logic/generate'), placeMines: jest.fn() }));
@@ -69,17 +69,7 @@ describe('Minesweeper screen', () => {
   });
 
   it('the active mode button is the accent one and the inactive one has grey text, after switching both ways', () => {
-    // The button's background is the first element above its text that has one.
-    const backgroundOf = (label: string) => {
-      let node = screen.getByText(label).parent;
-      while (node && !StyleSheet.flatten(node.props.style)?.backgroundColor) node = node.parent;
-      return StyleSheet.flatten(node?.props.style).backgroundColor;
-    };
-    const look = (label: string) => ({
-      selected: selected(label),
-      background: backgroundOf(label),
-      text: StyleSheet.flatten(screen.getByText(label).props.style).color,
-    });
+    const look = (label: string) => ({ selected: selected(label), ...buttonLook(label) });
     const active = { selected: true, background: Colors.light.accent, text: Colors.light.onAccent };
     const inactive = { selected: false, background: Colors.light.backgroundElement, text: Colors.light.textSecondary };
 

@@ -38,9 +38,9 @@ export function MinesweeperScreen() {
   return (
     <ThemedView testID="game-area" style={container} onLayout={onLayout}>
       <ThemedView style={styles.row}>
-        {/* The active mode is the accent button, the other one is plain with grey text. */}
-        <Button compact flex label="Dig" selected={mode === 'dig'} primary={mode === 'dig'} muted={mode !== 'dig'} background="backgroundElement" onPress={() => setMode('dig')} />
-        <Button compact flex label="Flag" selected={mode === 'flag'} primary={mode === 'flag'} muted={mode !== 'flag'} background="backgroundElement" onPress={() => setMode('flag')} />
+        {/* The active mode is the accent button, the other one has grey text. */}
+        <Button compact flex label="Dig" selected={mode === 'dig'} muted={mode !== 'dig'} onPress={() => setMode('dig')} />
+        <Button compact flex label="Flag" selected={mode === 'flag'} muted={mode !== 'flag'} onPress={() => setMode('flag')} />
       </ThemedView>
       <TopBar minesLeft={minesLeft(game)} seconds={clampLed(Math.floor(elapsedMs / 1000))} mood={MOODS[game.status]} onFace={openPicker} />
       <MinesweeperBoard game={game} available={areaHeight === null ? null : areaHeight - reserved} onTap={tap} onHold={hold} />
