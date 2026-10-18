@@ -1,9 +1,9 @@
-import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, COMPACT_HEIGHT } from '@/components/button';
+import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
@@ -13,8 +13,6 @@ import { SizePicker } from './size-picker';
 import { StatsPanel } from './stats-panel';
 import { useGame2048 } from './use-game2048';
 import { WinOverlay } from './win-overlay';
-
-const STATS_BUTTON_WIDTH = 72; // the header gives a button no width of its own, and the Button's label stretches to its parent
 
 export function Game2048Screen() {
   const {
@@ -28,20 +26,7 @@ export function Game2048Screen() {
   const container = [styles.container, { paddingBottom: Spacing.two + insets.bottom }];
   const onLayout = (e: LayoutChangeEvent) => setAreaHeight(e.nativeEvent.layout.height);
 
-  // Header button: Expo Router's <Stack.Screen options> inside the screen, hidden while storage is read.
-  const header = (
-    <Stack.Screen
-      options={{
-        headerRight: loaded
-          ? () => (
-              <ThemedView style={{ width: STATS_BUTTON_WIDTH, marginRight: Spacing.three }}>
-                <Button compact label="Stats" onPress={openPanel} />
-              </ThemedView>
-            )
-          : undefined,
-      }}
-    />
-  );
+  const header = <StatsHeaderButton visible={loaded} onPress={openPanel} />;
 
   if (!loaded) return <ThemedView style={container} onLayout={onLayout}>{header}</ThemedView>;
 

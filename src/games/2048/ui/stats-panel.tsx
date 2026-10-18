@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { Button } from '@/components/button';
+import { StatsNumbers } from '@/components/stats-numbers';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -45,14 +46,7 @@ export function StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChang
           <Button key={n} compact flex label={`${n}×${n} stats`} text={String(n)} selected={n === size} muted={n !== size} onPress={() => setSize(n)} />
         ))}
       </ThemedView>
-      <ThemedView style={styles.row}>
-        {numbers.map(([name, value]) => (
-          <ThemedView key={name} accessible accessibilityLabel={`${name}: ${value}`} style={styles.number}>
-            <ThemedText type="subtitle" style={styles.value}>{value}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.centered}>{name}</ThemedText>
-          </ThemedView>
-        ))}
-      </ThemedView>
+      <StatsNumbers numbers={numbers} />
       {over && (
         <ThemedView style={styles.row}>
           <Button primary flex label="Play again" onPress={onPlayAgain} />
@@ -68,6 +62,4 @@ const styles = StyleSheet.create({
   panel: { flex: 1, width: '100%', maxWidth: MaxContentWidth, gap: Spacing.two },
   centered: { textAlign: 'center' },
   row: { flexDirection: 'row', gap: Spacing.two },
-  number: { flex: 1, alignItems: 'center' },
-  value: { fontSize: 24, lineHeight: 30, textAlign: 'center' },
 });
