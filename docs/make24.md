@@ -2,7 +2,7 @@
 
 Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Make 24 lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-19):** M1 (logic), M2 (puzzle pool), M3 (playable) and M4 (save, stats, abandon, order) are done; next is M5 (polish) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
+**Status (2026-10-19):** M1-M5 are done (logic, pool, playable, save and stats, polish), all checked in the browser; next is the hub's Release milestone: the APK with the Android checks below. The decisions below are settled with the user; don't ask about them again.
 
 ## Overview
 
@@ -163,7 +163,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - Resume directly, the last used level, the shuffled order, the abandon rule, the stats panel from the header (shared components), bests in the picker.
   - Route tests for each, with the AsyncStorage mock; a seed snippet for the user.
   - The user checks it in the browser.
-- [ ] M5. **Polish.**
+- [x] M5. **Polish.** Done 2026-10-19 (run in auto mode at the user's request, no plan step), checked by the user in the browser (360×640, 320×568, the long values `−157/156` and `28561`, dark mode). Re-check: `npx jest src/games/make24/ui/cards.test.ts src/__tests__/make24.test.tsx` (tests named `textSize`, `fit without scrolling`, describe `accessibility`). Nothing needed a layout change: `textSize` fits 8 characters on the smallest (48 px) card, and the fit rule (`reservedHeight` in `make24-screen.tsx`, the one place for the rows' heights) leaves 120 px cards at 320×568 with a 48 px bottom inset. The message line is a polite live region, so TalkBack reads each new message. No literal colours in `ui/`; no dark-mode route test (no game has that pattern).
   - Card text for long values (`−11/3`, `169`), the layout at 360×640 and 320×568, accessibility labels, dark mode.
   - The user checks it in the browser.
 
@@ -172,12 +172,13 @@ Then the hub's Release milestone: the APK is built and tested once, after M5, wi
 ## Android checks
 
 - [ ] Card and operator taps are reliable; the selected card and operator are clearly visible in light and dark mode.
-- [ ] Long values (`−11/3`) fit on a card; numbers are vertically centred (shared glyph style).
+- [ ] Long values (`−11/3`, `−157/156`, `28561`) fit on a card with the phone's real font (the test only checks a 0.6 em estimate); numbers are vertically centred (shared glyph style).
+- [ ] A Give up solution on Hard fits the two-line message line on the phone (a longer one is cut off).
 - [ ] Cards, operators, the action row and the message line fit without scrolling; nothing sits under the navigation bar.
 - [ ] The timer pauses in the background and with the screen off; an unfinished puzzle comes back directly after closing the app, with its steps and time.
 - [ ] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
 - [ ] The Make 24 home tile looks right next to the other games.
-- [ ] With TalkBack on, cards and operators are read with their value and state.
+- [ ] With TalkBack on, cards and operators are read with their value and state, and a new message ("Can't divide by 0", "Try …", the result line) is read out by itself.
 
 ## Open decisions
 
