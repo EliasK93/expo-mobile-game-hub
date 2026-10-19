@@ -43,7 +43,7 @@ git status --short       # nothing left unstaged or untracked
 
 - Expo SDK 57 (see `package.json`), React Native, TypeScript `strict`, Expo Router (routes in `src/app/`).
 - Typed routes are **off** (`experiments.typedRoutes` removed from `app.json`): their types lived in a gitignored cache that only the dev server regenerated, which broke `tsc` in the gate. Route wiring is covered by `src/__tests__/navigation.test.tsx`, which opens every route in the registry. `Game.route` is a plain string.
-- Jest via `jest-expo`.
+- Jest via `jest-expo`, `testTimeout` 15 s (2026-10-19: with every suite in parallel, the first route test of a suite took over 5 s and the pre-commit gate refused commits).
 - Formatting: Prettier, run through ESLint as Expo's docs recommend (`eslint-plugin-prettier` in `eslint.config.js`; `.prettierrc`: 120 columns, single quotes; `.prettierignore` skips the shipped data in `src/games/*/data/`). `expo lint` reports unformatted code as an error, so the gate and the pre-commit hook catch it; `npm run format` fixes it. Added 2026-10-18 at the user's request.
 - Persistence: `@react-native-async-storage/async-storage`.
 - App identity (set in `app.json`, images in `assets/images/`): name "Game Hub"; the icon, adaptive-icon foreground and monochrome, favicon and splash image all show the 3×3 Sudoku tile motif in the Pencil & Paper colours. Adaptive icon on a pencil-yellow `backgroundColor` (`#F2C230`, no background image), the tile kept inside the launcher's circle mask; splash on the paper colour (`#FBFAF6`). The PNGs were rendered from SVG with Edge headless (no image library); to change them, redraw the SVG and render again.
@@ -88,7 +88,7 @@ src/
 - [Sudoku](docs/sudoku.md)
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
-- [Make 24](docs/make24.md): in progress: M1 (logic) and M2 (puzzle pool) done 2026-10-19, next M3
+- [Make 24](docs/make24.md): in progress: M1-M3 done 2026-10-19 (playable), next M4
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 

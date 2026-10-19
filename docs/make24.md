@@ -2,7 +2,7 @@
 
 Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Make 24 lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-19):** M1 (logic) and M2 (puzzle pool) are done; next is M3 (playable) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
+**Status (2026-10-19):** M1 (logic), M2 (puzzle pool) and M3 (playable) are done; next is M4 (save, stats, abandon, order) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
 
 ## Overview
 
@@ -150,7 +150,11 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `order`: no repeats until a level is used up, a stale order is replaced;
   - `save`: round trips (also with steps), bad data rejected, finished puzzles rejected.
 - [x] M2. **Puzzle pool.** Done 2026-10-19, no UI to check. Re-check: `npx jest src/games/make24/logic/puzzles-data.test.ts` (about 1.8 s in the gate). `pool.ts` (load the pool, pick the next puzzle) moves to M3, its first user. `build-puzzles.test.ts` (skipped unless `MAKE24_BUILD`), `data/puzzles.json`, `puzzles-data.test.ts` in the gate; the rating split; a printed sample per level for the user.
-- [ ] M3. **Playable.**
+- [x] M3. **Playable.** Done 2026-10-19, checked by the user in the browser ("all good"). Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `opening`, `selecting`, `combining`, `finishing`, `level picker`, `timer`). Built as:
+  - Rows from top: `Easy · 0:42` (labelled `Time 0:42`), the message line (fixed height, up to two lines), the 2 × 2 cards, the operator row (`Plus`, `Minus`, `Times`, `Divided by`), the action row (fixed height: compact Undo · Hint · Give up · New while playing; New · primary Next once finished). The picker replaces everything below the top line; the clock pauses while it is open.
+  - Cards: the size is the smaller of what fits the width and the measured height (48 to 200); text size `min(size × 0.5, (size − 8) / (0.6 × length))`. A hinted card is `cellHint` (Sudoku's hint tint) and wins over selected; the label carries both (`Card 8, selected, hint`). Cards are disabled once the puzzle is finished. The raised edge is a thicker bottom border (`gridLine` and `backgroundSelected` are the same colour).
+  - The home tile shows 3 3 8 8 as paper cards on `backgroundSelected`, so they stand out.
+  - `pool.ts` `pickPuzzle(level, order, random)` wraps `nextPuzzle` over the shipped pool; the orders live in memory until M4 stores them. Route tests swap it with `jest.mock` + `requireActual`.
   - The route, the registry entry with `GameRoute`, the home tile (four paper cards, e.g. 3 3 8 8; the user checks the look).
   - The cards, operators, combine flow, Undo, Hint, Give up, the message line, the timer, the result line + Next, the level picker on New.
   - Route tests: combine and solve, − and ÷ order, ÷ 0, not 24, undo, hint, give up, next, the picker.
@@ -178,7 +182,7 @@ Then the hub's Release milestone: the APK is built and tested once, after M5, wi
 ## Open decisions
 
 - After M2/M3: whether the Easy / Medium / Hard split feels right in play (the split rule above is the starting point).
-- The look (cards, colours) is a starting point; tune it in the browser.
+- The look (cards, colours): accepted at the M3 browser check; tune it in M5 if the phone shows a need.
 
 ## Known shortcuts
 
