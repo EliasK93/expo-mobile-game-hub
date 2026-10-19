@@ -88,7 +88,7 @@ src/
 - [Sudoku](docs/sudoku.md)
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
-- [Make 24](docs/make24.md): complete (M1-M5) 2026-10-19, APK test pending
+- [Make 24](docs/make24.md): complete (M1-M5), released 2026-10-19
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
@@ -157,7 +157,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 Milestones that belong to one game live in its doc (`docs/<game>.md`, "Milestones"). Hub-wide:
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
-- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. The APK is built and tested once per finished game (after its last milestone), with that game's Android checks plus any open hub-wide ones as the checklist; not after intermediate milestones (user, 2026-10-16). Last passed: 2026-10-18 (Sudoku, 2048 and Minesweeper).
+- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. The APK is built and tested once per finished game (after its last milestone), with that game's Android checks plus any open hub-wide ones as the checklist; not after intermediate milestones (user, 2026-10-16). Last passed: 2026-10-19 (Make 24; before it 2026-10-18 for Sudoku, 2048 and Minesweeper).
 
 ## Open decisions
 
