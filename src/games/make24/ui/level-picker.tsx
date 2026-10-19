@@ -4,15 +4,17 @@ import { Button } from '@/components/button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { formatTime } from '@/lib/timer';
 
 import { LEVEL_IDS, type Level } from '../logic/game';
+import type { Stats } from '../logic/stats';
 
 export const levelName = (level: Level) => level[0].toUpperCase() + level.slice(1);
 
-// The three levels; the last used one is marked. Cancel goes back to where the picker was opened. (M4 adds each level's best time.)
-type Props = { last: Level; onPick: (level: Level) => void; onCancel: () => void };
+// The three levels, each with its best time once it has one; the last used one is marked. Cancel goes back to where the picker was opened.
+type Props = { last: Level; stats: Stats; onPick: (level: Level) => void; onCancel: () => void };
 
-export function LevelPicker({ last, onPick, onCancel }: Props) {
+export function LevelPicker({ last, stats, onPick, onCancel }: Props) {
   return (
     <ThemedView style={styles.panel}>
       <ThemedText type="subtitle" style={styles.heading}>
@@ -20,11 +22,13 @@ export function LevelPicker({ last, onPick, onCancel }: Props) {
       </ThemedText>
       {LEVEL_IDS.map((level) => {
         const name = levelName(level);
+        const { bestMs } = stats[level];
         return (
           <Button
             key={level}
             label={name}
             text={level === last ? `${name} (last used)` : name}
+            detail={bestMs === null ? undefined : `Best ${formatTime(bestMs)}`}
             selected={level === last}
             onPress={() => onPick(level)}
           />

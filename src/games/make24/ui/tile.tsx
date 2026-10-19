@@ -13,11 +13,14 @@ const GAP = 0.06; // of the grid's side
 export function Make24Tile() {
   const [side, setSide] = useState(0); // 0 until the first layout: nothing is drawn then
   const onLayout = (e: LayoutChangeEvent) => setSide(e.nativeEvent.layout.width);
-  const gap = side * GAP;
+  // The measured side is fractional: floor the card, and the gap is what is left, so two cards and the gap never exceed
+  // the row (a fraction too wide wraps every card onto its own row).
+  const size = Math.floor((side * (1 - GAP)) / 2);
+  const gap = side - 2 * size;
   return (
     <ThemedView type="backgroundSelected" style={styles.tile}>
       <View onLayout={onLayout} style={[styles.grid, { gap }]}>
-        {side > 0 && NUMBERS.map((text, i) => <CardFace key={i} text={text} size={(side - gap) / 2} />)}
+        {side > 0 && NUMBERS.map((text, i) => <CardFace key={i} text={text} size={size} />)}
       </View>
     </ThemedView>
   );

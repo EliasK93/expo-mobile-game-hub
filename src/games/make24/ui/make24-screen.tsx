@@ -3,6 +3,7 @@ import { type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -12,6 +13,7 @@ import { message } from '../logic/game';
 import { cardSize, Make24Cards } from './cards';
 import { levelName, LevelPicker } from './level-picker';
 import { Make24Operators } from './operators';
+import { StatsPanel } from './stats-panel';
 import { useMake24 } from './use-make24';
 
 // The heights of the rows around the cards: the time line, the message line (two lines of small text), and the operator
@@ -22,8 +24,12 @@ const ROW_HEIGHT = 48;
 
 export function Make24Screen() {
   const {
+    loaded,
     game,
+    stats,
+    newBest,
     picking,
+    panel,
     lastLevel,
     elapsedMs,
     tapCard,
@@ -34,6 +40,8 @@ export function Make24Screen() {
     next,
     openPicker,
     closePicker,
+    openPanel,
+    closePanel,
     pickLevel,
   } = useMake24();
   const insets = useSafeAreaInsets();
@@ -43,6 +51,26 @@ export function Make24Screen() {
   const [areaHeight, setAreaHeight] = useState<number | null>(null);
   const onLayout = (e: LayoutChangeEvent) => setAreaHeight(e.nativeEvent.layout.height);
   const container = [styles.container, { paddingBottom: Spacing.two + insets.bottom }];
+
+  const header = <StatsHeaderButton visible={loaded} onPress={openPanel} />;
+
+  // Until storage is read only the empty area shows, so no placeholder puzzle flashes.
+  if (!loaded)
+    return (
+      <ThemedView style={container} onLayout={onLayout}>
+        {header}
+      </ThemedView>
+    );
+
+  // The panel has the screen to itself, the board is hidden.
+  if (panel) {
+    return (
+      <ThemedView style={container} onLayout={onLayout}>
+        {header}
+        <StatsPanel stats={stats} current={game.level} onClose={closePanel} />
+      </ThemedView>
+    );
+  }
 
   const time = formatTime(elapsedMs);
   const timeLine = (
@@ -54,8 +82,9 @@ export function Make24Screen() {
   if (picking) {
     return (
       <ThemedView style={container} onLayout={onLayout}>
+        {header}
         {timeLine}
-        <LevelPicker last={lastLevel} onPick={pickLevel} onCancel={closePicker} />
+        <LevelPicker last={lastLevel} stats={stats} onPick={pickLevel} onCancel={closePicker} />
       </ThemedView>
     );
   }
@@ -64,13 +93,17 @@ export function Make24Screen() {
   // In play, or after Give up: the game's own text. Solved: the result line, which needs the time.
   const note =
     game.status === 'solved'
-      ? { text: `Solved ${game.hints > 0 ? 'with hints ' : ''}in ${time}`, error: false }
+      ? {
+          text: `Solved ${game.hints > 0 ? 'with hints ' : ''}in ${time}${newBest ? ' · New best!' : ''}`,
+          error: false,
+        }
       : message(game);
 
   // Padding top and bottom, the four rows, and four gaps between the five children.
   const reserved = insets.bottom + 2 * Spacing.two + TIME_HEIGHT + MESSAGE_HEIGHT + 2 * ROW_HEIGHT + 4 * Spacing.two;
   return (
     <ThemedView testID="game-area" style={container} onLayout={onLayout}>
+      {header}
       {timeLine}
       <ThemedText
         type="small"
