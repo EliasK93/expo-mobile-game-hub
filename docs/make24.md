@@ -2,7 +2,7 @@
 
 Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Make 24 lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-19):** M1 (logic), M2 (puzzle pool) and M3 (playable) are done; next is M4 (save, stats, abandon, order) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
+**Status (2026-10-19):** M1 (logic), M2 (puzzle pool), M3 (playable) and M4 (save, stats, abandon, order) are done; next is M5 (polish) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
 
 ## Overview
 
@@ -48,7 +48,7 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
   - A **hinted solve** counts as played and solved but doesn't extend the streak (it neither increases nor resets it) and doesn't set a best time (the hub's hint rule, as in Sudoku).
   - Give up and abandon count as played, not solved, and reset the current streak.
 - **Stats panel:** from the header "Stats" button only (the shared `StatsHeaderButton`). It takes the whole screen below the header, with an **Easy · Medium · Hard** switch (`selected`/`muted`) that opens on the current level, the numbers in the shared `StatsNumbers` row (Played, Solved %, Current streak, Best streak, Best time) and Close. The clock is paused while it is open.
-- **Save and resume:** the unfinished puzzle is saved after every action and when the clock stops; opening Make 24 **resumes it directly** (with its steps, hints and time). Without one, the next puzzle of the last used level starts at once. A finished puzzle deletes the save.
+- **Save and resume:** the unfinished puzzle is saved after every action and when the clock stops; opening Make 24 **resumes it directly** (with its steps, hints and time). Without one, the next puzzle of the last used level starts at once. A finished puzzle deletes the save. A new puzzle is saved as soon as it is shown (M4), so reopening the app shows the same puzzle instead of using up the next one; each pick also stores the level's order at once.
 - **No animations** (cards change at once; the pressed and selected states are the feedback). No sound, no vibration.
 
 ## Decisions (decided 2026-10-18), with reasons
@@ -159,7 +159,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - The cards, operators, combine flow, Undo, Hint, Give up, the message line, the timer, the result line + Next, the level picker on New.
   - Route tests: combine and solve, − and ÷ order, ÷ 0, not 24, undo, hint, give up, next, the picker.
   - The user checks it in the browser.
-- [ ] M4. **Save, stats, abandon, order.**
+- [x] M4. **Save, stats, abandon, order.** Done 2026-10-19, checked by the user in the browser. Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `resume`, `saving`, `order`, `stats`, `abandon`, `stats panel and picker`). The stats panel has no result line and no new-game buttons (the result line stays on the board). The browser check found the home tile wrapping its cards into one column at phone width (fractional measured width); the card size is now floored and the gap takes the rest.
   - Resume directly, the last used level, the shuffled order, the abandon rule, the stats panel from the header (shared components), bests in the picker.
   - Route tests for each, with the AsyncStorage mock; a seed snippet for the user.
   - The user checks it in the browser.
