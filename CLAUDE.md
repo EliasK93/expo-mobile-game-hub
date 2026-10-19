@@ -88,7 +88,7 @@ src/
 - [Sudoku](docs/sudoku.md)
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
-- [Make 24](docs/make24.md): in progress: M1 (logic) done 2026-10-18, next M2
+- [Make 24](docs/make24.md): in progress: M1 (logic) and M2 (puzzle pool) done 2026-10-19, next M3
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 

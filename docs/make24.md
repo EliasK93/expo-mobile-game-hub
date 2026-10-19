@@ -2,7 +2,7 @@
 
 Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Make 24 lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** M1 (logic) is done; next is M2 (puzzle pool) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
+**Status (2026-10-19):** M1 (logic) and M2 (puzzle pool) are done; next is M3 (playable) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again.
 
 ## Overview
 
@@ -77,6 +77,8 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
 - **Pool size:** of the 1,820 sets of four numbers from 1 to 13, **1,362 are solvable** (the commonly cited figure for these rules). The build test checks that count; a different number means a solver bug or a rule difference, to investigate before shipping.
 - **Shipped as data:** `src/games/make24/data/puzzles.json`, `{ "easy": [[1,2,3,4], …], "medium": […], "hard": […] }`, the numbers sorted ascending. No solutions are stored (the solver finds them on the device). Built by `logic/build-puzzles.test.ts`, skipped unless `$env:MAKE24_BUILD = '1'` (the Sudoku pattern: a Jest test as the build script, so it runs in the same TypeScript setup). `logic/puzzles-data.test.ts` checks the shipped file on every gate: every puzzle solvable, sorted, in range, no duplicates across levels, the three sizes within 1 of each other, 1,362 in total. `data/` is in `.prettierignore` already (`src/games/*/data/`).
 - After the pool is built (M2) the build prints a few sample puzzles per level with their `ways`; the user plays some in the browser after M3 and may ask to move the split (an open decision then).
+- **Rebuild** (PowerShell, repo root): `$env:MAKE24_BUILD = '1'; npx.cmd jest src/games/make24/logic/build-puzzles.test.ts; Remove-Item Env:MAKE24_BUILD` (about 7 s, deterministic: ties are broken by the numbers). Each level is stored in rating order, easiest first.
+- **The split as built (2026-10-19):** Easy 454 puzzles, 300 to 20 ways; Medium 454, 20 to 8 ways; Hard 454, 8 to 1 ways. Only 16 of the 1,362 sets need fractions (3 3 8 8, 1 5 5 5, 3 3 7 7, 4 4 7 7 among them), so Hard is mostly the sets with few ways. Neighbouring levels share their boundary value (20, 8).
 
 ## Lessons from Sudoku, 2048 and Minesweeper built into this design
 
@@ -104,7 +106,7 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
 
 ## Architecture and storage keys
 
-`logic/` is built (M1) except `pool.ts` and the build/data tests (M2); `data/` comes in M2 and `ui/` in M3.
+`logic/` (M1) and `data/` with its build and data tests (M2) are built; `pool.ts` and `ui/` come in M3.
 `LEVEL_IDS`/`Level`, `replay`, `isStarted` and `message` live in `game.ts`; the operators (`Op`, `SYMBOL`, `apply`) and `TARGET` in `solve.ts`.
 
 ```
@@ -147,7 +149,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `stats`: the hint rule, give up and abandon = not solved, best time, streaks;
   - `order`: no repeats until a level is used up, a stale order is replaced;
   - `save`: round trips (also with steps), bad data rejected, finished puzzles rejected.
-- [ ] M2. **Puzzle pool.** `build-puzzles.test.ts` (skipped unless `MAKE24_BUILD`), `data/puzzles.json`, `puzzles-data.test.ts` in the gate; the rating split; a printed sample per level for the user.
+- [x] M2. **Puzzle pool.** Done 2026-10-19, no UI to check. Re-check: `npx jest src/games/make24/logic/puzzles-data.test.ts` (about 1.8 s in the gate). `pool.ts` (load the pool, pick the next puzzle) moves to M3, its first user. `build-puzzles.test.ts` (skipped unless `MAKE24_BUILD`), `data/puzzles.json`, `puzzles-data.test.ts` in the gate; the rating split; a printed sample per level for the user.
 - [ ] M3. **Playable.**
   - The route, the registry entry with `GameRoute`, the home tile (four paper cards, e.g. 3 3 8 8; the user checks the look).
   - The cards, operators, combine flow, Undo, Hint, Give up, the message line, the timer, the result line + Next, the level picker on New.
@@ -183,4 +185,5 @@ Then the hub's Release milestone: the APK is built and tested once, after M5, wi
 The `ponytail:` comments in `src/games/make24/`. Re-check: `Get-ChildItem src/games/make24 -Recurse -File | Select-String -Pattern 'ponytail:'`.
 
 - `logic/order.ts`: a stale order (the pool changed) is dropped whole, so retuning the pool loses the progress through the old order. The stale check compares length and membership only, so a corrupted order with one puzzle repeated and another missing passes. Revisit if the pool is retuned after release.
+- `logic/puzzles-data.test.ts`: the rating (ways order between levels, no fractions below Hard) is checked on every 10th puzzle per level; set `SAMPLE_EVERY` to 1 after a rebuild to check them all.
 - `logic/save.ts`: stats with any bad field fall back to empty as a whole; keep the good levels if a format change ever needs it.
