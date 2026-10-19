@@ -6,6 +6,7 @@ import { Colors } from '@/constants/theme';
 import type { Level } from '@/games/make24/logic/game';
 import { pickPuzzle, POOL } from '@/games/make24/logic/pool';
 import { EMPTY_STATS, type LevelStats } from '@/games/make24/logic/stats';
+import { settle } from '@/test-utils/settle';
 
 // pickPuzzle is replaced so each test starts from hand-picked numbers; everything else stays real.
 jest.mock('@/games/make24/logic/pool', () => ({
@@ -30,10 +31,6 @@ const serve = (...sets: number[][]) => {
   });
 };
 
-// settle() lets the pending storage promises finish (GameRoute's playtime write).
-const settle = async () => {
-  for (let i = 0; i < 5; i++) await act(async () => {});
-};
 const open = async (...sets: number[][]) => {
   serve(...(sets.length ? sets : [P3388, P1234]));
   renderRouter('./src/app', { initialUrl: '/make24' });

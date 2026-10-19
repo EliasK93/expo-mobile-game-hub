@@ -7,6 +7,7 @@ import { placeMines } from '@/games/minesweeper/logic/generate';
 import { EMPTY_STATS, type LevelStats } from '@/games/minesweeper/logic/stats';
 import { PANEL_DELAY_MS } from '@/games/minesweeper/ui/use-minesweeper';
 import { buttonLook } from '@/test-utils/button-look';
+import { settle } from '@/test-utils/settle';
 
 // placeMines is replaced so each test starts from a mine layout built by hand; open and the rest stay real.
 jest.mock('@/games/minesweeper/logic/generate', () => ({
@@ -34,10 +35,6 @@ const LEFT = 4 * BEGINNER.rows; // the cells of columns 0-3
 const WALL = Array.from({ length: BEGINNER.rows }, (_, r) => r * COLS + 4);
 const TOP = Array.from({ length: MINES }, (_, i) => i);
 
-// settle() lets the pending storage promises finish (GameRoute's playtime write).
-const settle = async () => {
-  for (let i = 0; i < 5; i++) await act(async () => {});
-};
 const open = async () => {
   renderRouter('./src/app', { initialUrl: '/minesweeper' });
   await settle();

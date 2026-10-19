@@ -6,6 +6,7 @@ import { AppState, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { parseGrid } from '@/games/sudoku/logic/board';
 import { pickPuzzle } from '@/games/sudoku/logic/pool';
+import { settle } from '@/test-utils/settle';
 
 // The pool pick is replaced by a fixed puzzle with two empty cells: row 1 column 1 (answer 5) and row 9 column 9 (answer 9).
 jest.mock('@/games/sudoku/logic/pool', () => ({ pickPuzzle: jest.fn() }));
@@ -30,10 +31,6 @@ const makeAll = (puzzle = PUZZLE) =>
   (pickPuzzle as jest.Mock).mockReset().mockReturnValue({ puzzle, solution: SOLUTION });
 
 // Fake timers so the clock is exact. Storage is the AsyncStorage mock (jest.setup.js), cleared before each test.
-// settle() lets the pending storage promises finish; they need no timers.
-const settle = async () => {
-  for (let i = 0; i < 5; i++) await act(async () => {});
-};
 // Opening shows the Continue prompt or the level picker; no game starts by itself.
 const open = async () => {
   renderRouter('./src/app', { initialUrl: '/sudoku' });

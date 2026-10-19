@@ -6,6 +6,7 @@ import { fromValues, type Dir, type Size } from '@/games/2048/logic/board';
 import { newGame } from '@/games/2048/logic/game';
 import { EMPTY_STATS, type SizeStats } from '@/games/2048/logic/stats';
 import { SLIDE_MS } from '@/games/2048/ui/animated-tile';
+import { settle } from '@/test-utils/settle';
 
 // newGame is replaced so each test starts from a board built by hand; play and the rest stay real.
 jest.mock('@/games/2048/logic/game', () => ({ ...jest.requireActual('@/games/2048/logic/game'), newGame: jest.fn() }));
@@ -23,10 +24,6 @@ const start = (values: number[]) => {
 const EMPTY = Array(16).fill(0);
 const withTiles = (tiles: Record<number, number>) => EMPTY.map((v, i) => tiles[i] ?? v);
 
-// settle() lets the pending storage promises finish (GameRoute's playtime write).
-const settle = async () => {
-  for (let i = 0; i < 5; i++) await act(async () => {});
-};
 const open = async () => {
   renderRouter('./src/app', { initialUrl: '/2048' });
   await settle();

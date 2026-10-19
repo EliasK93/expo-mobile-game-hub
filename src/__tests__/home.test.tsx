@@ -7,6 +7,7 @@ import HomeScreen from '@/app/index';
 import { GameRoute } from '@/components/game-route';
 import { Colors } from '@/constants/theme';
 import { buttonLook } from '@/test-utils/button-look';
+import { settle } from '@/test-utils/settle';
 
 // Sorting needs more than one game, so home runs here with three made-up games. The real registry is covered by navigation.test.tsx.
 jest.mock('@/games/registry', () => {
@@ -33,9 +34,6 @@ function game(id: string) {
 }
 const open = () => renderRouter({ index: HomeScreen, zeta: game('zeta'), alpha: game('alpha'), mid: game('mid') });
 
-const settle = async () => {
-  for (let i = 0; i < 5; i++) await act(async () => {});
-};
 const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 const tiles = () => screen.getAllByText(/^(Zeta|Alpha|Mid)$/).map((n) => n.props.children);
 const seed = (key: string, value: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data: value }));
