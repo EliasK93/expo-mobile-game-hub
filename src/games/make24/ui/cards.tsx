@@ -20,11 +20,11 @@ export function cardSize(width: number, available: number | null) {
   return Math.max(MIN_CARD, Math.min(MAX_CARD, Math.floor(Math.min(limitW, limitH))));
 }
 
-// The font size of a card's text: half a card, less once its characters would not fit (−11/3 is five). A bold glyph is
-// about 0.6 em wide, so that errs safe. M5 tunes this.
+// The font size of a card's text: half a card, less once its characters would not fit (−11/3 is five, the longest
+// values −157/156 and 28561 are eight and five). A bold glyph is about 0.6 em wide, so that errs safe.
 const MARGIN = 8;
 const GLYPH_EM = 0.6;
-const textSize = (size: number, text: string) =>
+export const textSize = (size: number, text: string) =>
   Math.max(1, Math.floor(Math.min(size * 0.5, (size - MARGIN) / (GLYPH_EM * text.length))));
 
 export type CardState = 'normal' | 'selected' | 'hint';

@@ -22,6 +22,11 @@ const TIME_HEIGHT = 24;
 const MESSAGE_HEIGHT = 40;
 const ROW_HEIGHT = 48;
 
+// Everything on the board except the cards: padding top and bottom (the bottom inset on top), the four rows, and four
+// gaps between the five children.
+export const reservedHeight = (bottomInset: number) =>
+  bottomInset + 2 * Spacing.two + TIME_HEIGHT + MESSAGE_HEIGHT + 2 * ROW_HEIGHT + 4 * Spacing.two;
+
 export function Make24Screen() {
   const {
     loaded,
@@ -99,16 +104,17 @@ export function Make24Screen() {
         }
       : message(game);
 
-  // Padding top and bottom, the four rows, and four gaps between the five children.
-  const reserved = insets.bottom + 2 * Spacing.two + TIME_HEIGHT + MESSAGE_HEIGHT + 2 * ROW_HEIGHT + 4 * Spacing.two;
+  const reserved = reservedHeight(insets.bottom);
   return (
     <ThemedView testID="game-area" style={container} onLayout={onLayout}>
       {header}
       {timeLine}
       <ThemedText
+        testID="message"
         type="small"
         themeColor={note?.error ? 'digitConflict' : 'textSecondary'}
         numberOfLines={2}
+        accessibilityLiveRegion="polite" // Android: TalkBack reads a new message; no effect on the web
         style={styles.message}>
         {note?.text}
       </ThemedText>

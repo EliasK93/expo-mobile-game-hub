@@ -247,6 +247,19 @@ describe('finishing', () => {
   });
 });
 
+describe('accessibility', () => {
+  beforeEach(() => open());
+
+  // One element carries every message (hint, result line, notices), so one polite live region makes TalkBack read them all.
+  it('the message line is a polite live region and shows the result line once solved', () => {
+    expect(screen.getByTestId('message').props.accessibilityLiveRegion).toBe('polite');
+
+    play(...SOLVE);
+
+    expect(screen.getByTestId('message').props.children).toBe('Solved in 0:00 · New best!');
+  });
+});
+
 describe('level picker', () => {
   beforeEach(() => open(P3388, P1234, P1155));
 
