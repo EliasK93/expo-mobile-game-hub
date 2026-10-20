@@ -1,17 +1,19 @@
 # Game Hub
 
-A personal Android app: a hub of simple games, built with Expo, React Native and TypeScript.
+A hub of simple games for Android, built with Expo, React Native and TypeScript.
+
+## Games
+
+Sudoku, 2048, Minesweeper, Make 24 and Snake.
 
 ## Run it
 
-```powershell
+```bash
 npm install        # install dependencies
 npx expo start     # start the dev server, then press w to open the web preview
-npm run gate       # type check, tests, lint and secret scan (stage changes first with git add)
+npm test           # run the tests
 ```
 
-## Docs
+## License
 
-- `CLAUDE.md`: project rules, tooling and architecture.
-- `docs/<game>.md`: one doc per game (for example `docs/sudoku.md`).
-- `AGENTS.md`: Expo and agent guidance.
+MIT, see [LICENSE](LICENSE).

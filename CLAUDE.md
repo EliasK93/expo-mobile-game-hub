@@ -164,7 +164,7 @@ Milestones that belong to one game live in its doc (`docs/<game>.md`, "Milestone
 
 Ask the user when the milestone comes up; move the answer into the spec above and delete the line here.
 
-None right now.
+None.
 
 ## Known shortcuts (hub)
 
