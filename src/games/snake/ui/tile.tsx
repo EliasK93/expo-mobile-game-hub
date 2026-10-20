@@ -56,6 +56,6 @@ export function SnakeTile() {
 const styles = StyleSheet.create({
   tile: { flex: 1, padding: '12%', justifyContent: 'center' },
   area: { width: '100%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center' },
-  board: { borderRadius: 4, overflow: 'hidden' },
+  board: { borderRadius: 3, overflow: 'hidden' },
   segment: { position: 'absolute' },
 });

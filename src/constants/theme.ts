@@ -57,11 +57,11 @@ export const Colors = {
     mineHit: '#E53935',
     mineFace: '#F2C230',
     mineFaceInk: '#1A1A1A', // the face's outline, eyes and mouth: dark in both modes, unlike `text`
-    snakeBoard: '#EFEDE5', // Snake: the board, its grid lines, the body (ink), the head and the apple (starting values from the palette, tuned in the browser)
+    snakeBoard: '#EFEDE5', // Snake: the board, its grid lines, the body (soft graphite), the head and the apple; the snake colours are muted like 2048's ramp (user, 2026-10-20)
     snakeGrid: '#DAD8CF',
-    snakeBody: '#202124',
-    snakeHead: '#2D5BD3',
-    snakeApple: '#C62828',
+    snakeBody: '#5F6368',
+    snakeHead: '#5B7FC7',
+    snakeApple: '#C9594F',
   },
   dark: {
     text: '#ECECEA',
@@ -117,9 +117,9 @@ export const Colors = {
     mineFaceInk: '#1A1A1A',
     snakeBoard: '#232427',
     snakeGrid: '#323438',
-    snakeBody: '#ECECEA',
-    snakeHead: '#8FB0FF',
-    snakeApple: '#FF8A80',
+    snakeBody: '#B8B9B6',
+    snakeHead: '#7F9AD6',
+    snakeApple: '#D9786F',
   },
 } as const;
 

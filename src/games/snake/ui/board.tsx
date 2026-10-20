@@ -10,7 +10,7 @@ import { COLS, colRow, DIRS, ROWS, type Dir } from '../logic/board';
 import type { Game } from '../logic/game';
 import { Dim } from './dim';
 
-const MIN_CELL = 8; // a very short area gets small cells and an overflowing board, never a zero or negative cell
+export const MIN_CELL = 8; // a very short area gets small cells and an overflowing board, never a zero or negative cell
 const MOVE_START = 4; // px of movement before the swipe area takes the gesture (small on purpose: better too sensitive than not enough)
 const SWIPE_MIN = 8; // px a drag needs to count as a swipe
 const INSET = 1; // px between a segment and the grid lines around its cell
@@ -24,7 +24,7 @@ function swipeDir(dx: number, dy: number): Dir | null {
 
 // The cell size from the width and the height the board may use (null until the screen is measured: then the width
 // alone). Whole pixels, so the board's sides are whole pixels (a fractional size blurs the lines and wraps rows).
-function cellSize(width: number, available: number | null): number {
+export function cellSize(width: number, available: number | null): number {
   const byWidth = Math.floor((Math.min(width, MaxContentWidth) - 2 * Spacing.two) / COLS);
   const byHeight = available === null ? byWidth : Math.floor(available / ROWS);
   return Math.max(MIN_CELL, Math.min(byWidth, byHeight));
@@ -171,7 +171,7 @@ export function SnakeBoard({ game, available, newBest, onSwipe, onResume, onPlay
 const styles = StyleSheet.create({
   area: { flex: 1, width: '100%', alignItems: 'center', userSelect: 'none' },
   board: { userSelect: 'none' },
-  rounded: { borderRadius: Spacing.two, overflow: 'hidden' },
+  rounded: { borderRadius: 3, overflow: 'hidden' }, // small: the snake's squares need a near-square board
   segment: { position: 'absolute' },
   hint: { alignItems: 'center', justifyContent: 'center' },
   buttons: { width: '70%', gap: Spacing.two, alignItems: 'stretch' },

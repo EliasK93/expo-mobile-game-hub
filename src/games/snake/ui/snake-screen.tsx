@@ -15,7 +15,8 @@ import { useSnake } from './use-snake';
 
 // Everything on the screen except the board: padding top and bottom (the bottom inset on top), the boxes, the button
 // row, and two gaps between the three children.
-const reservedHeight = (bottomInset: number) => bottomInset + SCORE_BOX_HEIGHT + COMPACT_HEIGHT + 4 * Spacing.two;
+export const reservedHeight = (bottomInset: number) =>
+  bottomInset + SCORE_BOX_HEIGHT + COMPACT_HEIGHT + 4 * Spacing.two;
 
 export function SnakeScreen() {
   const {

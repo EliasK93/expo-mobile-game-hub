@@ -327,6 +327,53 @@ describe('Snake screen', () => {
   });
 });
 
+// What the screen-reader tests below do not repeat: the labels of the score boxes, the buttons and the picker, the board's
+// label and value text, and a turn through an accessibility action are all used by the tests above.
+describe('accessibility', () => {
+  it('the board offers the four turns as labelled actions', async () => {
+    await open();
+
+    expect(screen.getByLabelText(/^Board 15 by 21/).props.accessibilityActions).toEqual([
+      { name: 'up', label: 'Turn up' },
+      { name: 'down', label: 'Turn down' },
+      { name: 'left', label: 'Turn left' },
+      { name: 'right', label: 'Turn right' },
+    ]);
+  });
+
+  it('the board ignores an action that is not a turn (the platform sends its own, e.g. activate)', async () => {
+    await open();
+
+    fireEvent(screen.getByLabelText(/^Board 15 by 21/), 'accessibilityAction', {
+      nativeEvent: { actionName: 'activate' },
+    });
+    await tick(1000);
+
+    expect(head()).toEqual([8, 13]);
+    expect(screen.getByText('Swipe to start')).toBeTruthy();
+  });
+
+  it('the result line is a polite live region', async () => {
+    await open();
+    swipe('left');
+    await ticks(8);
+
+    const line = screen.getByText('Game over · 0 apples');
+    expect(line.props.accessibilityLiveRegion).toBe('polite');
+  });
+
+  it('the Continue button is not inside the accessible board, so a screen reader reaches it', async () => {
+    await open();
+    swipe('up');
+    await tick(160);
+    press('Pause');
+
+    const boardView = screen.getByLabelText(/^Board 15 by 21/);
+    expect(within(boardView).queryByLabelText('Continue')).toBeNull();
+    expect(screen.getByLabelText('Continue')).toBeTruthy();
+  });
+});
+
 // ---- S3: save, stats, abandon ----
 
 const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
