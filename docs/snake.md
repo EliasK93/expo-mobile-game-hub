@@ -2,7 +2,7 @@
 
 Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Snake lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-20):** S1-S4 are done (logic, playable, save and stats, polish), all checked in the browser; next is the hub's Release milestone (APK, Android checks below). The decisions below are settled with the user; don't ask about them again. Speeds and colours are final (S4); retune them only if the phone shows a need.
+**Status (2026-10-20):** S1-S4 are done (logic, playable, save and stats, polish), all checked in the browser; released 2026-10-20 (APK, every Android check below passed on the phone). The decisions below are settled with the user; don't ask about them again. Speeds and colours are final (S4); retune them only if the phone shows a need.
 
 ## Overview
 
@@ -143,17 +143,17 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - The layout at 360×640 and 320×568, accessibility labels and actions, dark mode, the final speeds and colours.
   - The user checks it in the browser.
 
-Then the hub's Release milestone: the APK is built and tested once, after S4, with the Android checks below as the checklist.
+Then the hub's Release milestone: the APK is built and tested once, after S4, with the Android checks below as the checklist. Passed 2026-10-20.
 
 ## Android checks
 
-- [ ] Swipes turn the snake reliably at every level, also fast ones (two turns between two ticks); a swipe from the left edge does not trigger Android's back gesture instead.
-- [ ] The snake moves smoothly at the fastest speed (no stutter or skipped ticks).
-- [ ] The game pauses in the background and with the screen off, and comes back paused after closing the app.
-- [ ] The board, the score boxes and the button row fit without scrolling; nothing sits under the navigation bar.
-- [ ] The snake, its head and the apple are clearly visible in light and dark mode.
-- [ ] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
-- [ ] The Snake home tile looks right next to the other games.
+- [x] Swipes turn the snake reliably at every level, also fast ones (two turns between two ticks); a swipe from the left edge does not trigger Android's back gesture instead.
+- [x] The snake moves smoothly at the fastest speed (no stutter or skipped ticks).
+- [x] The game pauses in the background and with the screen off, and comes back paused after closing the app.
+- [x] The board, the score boxes and the button row fit without scrolling; nothing sits under the navigation bar.
+- [x] The snake, its head and the apple are clearly visible in light and dark mode.
+- [x] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
+- [x] The Snake home tile looks right next to the other games.
 
 ## Open decisions
 
