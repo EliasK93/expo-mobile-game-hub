@@ -1,6 +1,6 @@
 /**
  * The "Pencil & Paper" palette, light and dark: graphite on notebook paper, blue ink, pencil-yellow selection.
- * Every colour in the app comes from here. The Sudoku cell tokens and the 2048 ramp are part of it, so one place sets the whole look.
+ * Every colour in the app comes from here. The Sudoku cell tokens, the 2048 ramp, the Minesweeper and Snake tokens are part of it, so one place sets the whole look.
  * `cellSameValue` and `cellHint` have no counterpart in the palette mock-up; they are derived (see comments).
  */
 
@@ -57,6 +57,11 @@ export const Colors = {
     mineHit: '#E53935',
     mineFace: '#F2C230',
     mineFaceInk: '#1A1A1A', // the face's outline, eyes and mouth: dark in both modes, unlike `text`
+    snakeBoard: '#EFEDE5', // Snake: the board, its grid lines, the body (ink), the head and the apple (starting values from the palette, tuned in the browser)
+    snakeGrid: '#DAD8CF',
+    snakeBody: '#202124',
+    snakeHead: '#2D5BD3',
+    snakeApple: '#C62828',
   },
   dark: {
     text: '#ECECEA',
@@ -110,6 +115,11 @@ export const Colors = {
     mineHit: '#B3261E',
     mineFace: '#E0B12A',
     mineFaceInk: '#1A1A1A',
+    snakeBoard: '#232427',
+    snakeGrid: '#323438',
+    snakeBody: '#ECECEA',
+    snakeHead: '#8FB0FF',
+    snakeApple: '#FF8A80',
   },
 } as const;
 
