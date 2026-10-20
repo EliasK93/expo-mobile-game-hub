@@ -2,7 +2,7 @@
 
 Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Snake lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-20):** S1 (logic), S2 (playable) and S3 (save, stats, abandon) are done; next is S4 (polish) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
+**Status (2026-10-20):** S1-S4 are done (logic, playable, save and stats, polish), all checked in the browser; next is the hub's Release milestone (APK, Android checks below). The decisions below are settled with the user; don't ask about them again. Speeds and colours are final (S4); retune them only if the phone shows a need.
 
 ## Overview
 
@@ -27,7 +27,7 @@ It follows the patterns the other games established. The most recent finished ga
   - A swipe queues a turn. Up to **2 turns** wait in the queue, one is applied per tick, so a quick "up, left" both register between two ticks.
   - A turn into the opposite direction of the current one (or of the last queued one) is ignored, and so is a turn into the same direction.
 - **Start: the first swipe starts the game** (user). A new game shows the snake and the apple, waiting; the first swipe that is not "down" (into its own body) sets the direction and starts the ticks. Before that the game is *unstarted*.
-- **Speed levels** (user): **Slow · Normal · Fast**, on the same board. The level sets the starting tick interval; the snake **gets gently faster** (user): every 5 apples the interval shrinks by 5 %, down to a floor. Starting values (*tune*): Slow 220 ms → floor 150 ms, Normal 160 ms → floor 100 ms, Fast 110 ms → floor 70 ms. The interval is computed from the level and the apples eaten (`logic/`), never stored.
+- **Speed levels** (user): **Slow · Normal · Fast**, on the same board. The level sets the starting tick interval; the snake **gets gently faster** (user): every 5 apples the interval shrinks by 5 %, down to a floor. Final values (S4): Slow 220 ms → floor 150 ms, Normal 160 ms → floor 100 ms, Fast 110 ms → floor 70 ms. The interval is computed from the level and the apples eaten (`logic/`), never stored.
 - **Pause:** a **Pause** button while the game runs. Paused, the board dims and shows **Paused** with a primary **Continue**; the snake waits and continues in its direction. Swipes do nothing while paused. Leaving the screen, the app going to the background and the screen turning off all **pause** the game (it never runs unseen), and coming back shows it paused.
 - **Score:** the apples eaten (length − 3). Two boxes above the board, **Score** and **Best** (the level's best score), copied from 2048's score boxes. The Score box's title names the level, e.g. `Normal · Score` (user, 2026-10-20: the screen shows the level nowhere else). Best is live: the stored best, or the current score once it is higher. **No timer on screen** (user); the game's time is still measured (for the "Longest game" stat), only while the snake runs.
 - **Level picker on New** (like Make 24's): the three levels, the last used one marked (`selected`), each with `Best 23` once it has one, plus Cancel. The last level is stored; the default is **Normal**.
@@ -58,7 +58,7 @@ It follows the patterns the other games established. The most recent finished ga
 - **Step-wise movement, no tweening** (proposed with the concept). Reason: the classic look, no animation code, no reduced-motion case; smooth movement could come later if the phone shows a need.
 - **Abandoning a started game records it with its score** (proposed with the concept, like 2048). Reason: the score was earned; played, best and average stay honest. An unstarted game is a free skip, as in Minesweeper and Make 24.
 - **Default level Normal** (proposed with the concept).
-- **Its own colour tokens** (proposed with the concept): `snakeBoard`, `snakeGrid`, `snakeBody`, `snakeHead`, `snakeApple` in `constants/theme.ts`, light and dark. Starting values (*tune*) from the existing palette: board = `backgroundElement`, grid = `gridLine`, body = `text` (ink), head = `accent`, apple = `digitConflict`'s red. Reason: one place per role, so tuning the snake's look never touches Sudoku's conflict colour or the accent of every button. The logic never knows colours.
+- **Its own colour tokens** (proposed with the concept): `snakeBoard`, `snakeGrid`, `snakeBody`, `snakeHead`, `snakeApple` in `constants/theme.ts`, light and dark. Board = `backgroundElement`, grid = `gridLine`; the body, head and apple started as ink, `accent` and `digitConflict`'s red and were muted in S4 (user, 2026-10-20: too strong next to the other games, which are muted like 2048's ramp): a soft graphite body, a muted blue head, a muted brick-red apple, the same logic in dark mode. The board's corners are rounded by only 3 px (user: more rounding broke the snake's square look). Reason: one place per role, so tuning the snake's look never touches Sudoku's conflict colour or the accent of every button. The logic never knows colours.
 - **The tick loop runs exactly when the game clock runs** (proposed with the concept). `hooks/use-game-clock` already stops on blur, background and unmount; the Snake hook needs the same `running` signal to start and stop its tick timer. Expose it from `useGameClock` (a small **Hub:** change, its own commit, with a test in `src/__tests__/use-game-clock.test.tsx`) rather than copying the focus/AppState handling (rule 4).
 - **Draw only the snake and the apple, not 315 cells** (proposed with the concept). The board is one view with a grid drawn once; the snake's segments and the apple are absolutely positioned squares. Reason: a tick re-renders a few dozen views, not 315; the phone stays smooth at 70 ms ticks (an Android check).
 
@@ -139,7 +139,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - Resume directly (paused), the last used level, the abandon rule, the stats panel from the header, bests in the picker and the Best box from storage.
   - Route tests for each, with the AsyncStorage mock; seed snippets for the user.
   - The user checks it in the browser.
-- [ ] S4. **Polish.**
+- [x] S4. **Polish.** Done 2026-10-20, checked by the user in the browser (360×640, 320×568, dark mode, picker and panel fit). Re-check: `npx jest src/games/snake/ui/board.test.ts src/__tests__/snake.test.tsx` (test `fit without scrolling`, describe `accessibility`). No layout change was needed: the worst case (320×568, header 64, bottom inset 48) gives 15 px cells, a 225 × 315 board. Colours muted and board corners at 3 px after the browser check; speeds kept. No literal colours in `src/games/snake/`.
   - The layout at 360×640 and 320×568, accessibility labels and actions, dark mode, the final speeds and colours.
   - The user checks it in the browser.
 
@@ -157,7 +157,7 @@ Then the hub's Release milestone: the APK is built and tested once, after S4, wi
 
 ## Open decisions
 
-- The speeds (start and floor per level) and the colours: the starting values passed the S2 browser check unchanged; the final call is in S4 (and on the phone).
+- None.
 
 ## Known shortcuts
 
