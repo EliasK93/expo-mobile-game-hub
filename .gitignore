@@ -36,7 +36,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-example
+# Claude Code local instructions
+CLAUDE.local.md
 
 # graphify (contains extracted content)
 graphify-out/
