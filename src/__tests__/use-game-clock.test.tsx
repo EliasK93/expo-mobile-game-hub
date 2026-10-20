@@ -14,6 +14,7 @@ function Probe() {
   return (
     <>
       <Text>{`time ${clock.elapsedMs}`}</Text>
+      <Text>{`running ${clock.running}`}</Text>
       <Pressable accessibilityLabel="switch" onPress={() => setEnabled((on) => !on)} />
       <Pressable accessibilityLabel="reset" onPress={() => clock.reset(5000)} />
       <Pressable accessibilityLabel="stop" onPress={() => (stoppedAt = clock.stop())} />
@@ -23,6 +24,7 @@ function Probe() {
 
 const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 const time = () => screen.getByText(/^time /).props.children;
+const running = () => screen.getByText(/^running /).props.children;
 const open = () => renderRouter({ index: Probe });
 
 beforeEach(() => {
@@ -69,6 +71,28 @@ describe('useGameClock', () => {
     await appState('active');
     await tick(1000);
     expect(time()).toBe('time 3000');
+  });
+
+  it('running is true exactly while the clock counts: enabled, focused and in the foreground', async () => {
+    const listeners: ((s: string) => void)[] = [];
+    (AppState.addEventListener as jest.Mock).mockImplementationOnce((_: string, l: (s: string) => void) => {
+      listeners.push(l);
+      return { remove: () => {} };
+    });
+    open();
+    const appState = (s: string) => act(() => listeners.forEach((l) => l(s)));
+
+    expect(running()).toBe('running true');
+
+    fireEvent.press(screen.getByLabelText('switch'));
+    expect(running()).toBe('running false');
+    fireEvent.press(screen.getByLabelText('switch'));
+    expect(running()).toBe('running true');
+
+    await appState('background');
+    expect(running()).toBe('running false');
+    await appState('active');
+    expect(running()).toBe('running true');
   });
 
   it('reset puts the clock at a new time and counts on from there; stop returns the time and holds it', async () => {

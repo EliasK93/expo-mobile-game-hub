@@ -61,5 +61,6 @@ export function useGameClock({ enabled, onStop }: { enabled: boolean; onStop: (m
     return ms;
   }, []);
 
-  return { elapsedMs, read, reset, stop };
+  // running = whether the clock counts right now; a game that needs a timer of its own (Snake's ticks) runs it exactly then.
+  return { elapsedMs, running, read, reset, stop };
 }
