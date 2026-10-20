@@ -1,5 +1,5 @@
 import { COLS, DIRS, LEVEL_IDS, ROWS, cell, colRow, next, type Dir, type Level } from './board';
-import { START_LENGTH, type Game } from './game';
+import { isInPlay, START_LENGTH, type Game } from './game';
 import { EMPTY_STATS, type LevelStats, type Stats } from './stats';
 import { isCount, isMs, isRecord } from '@/lib/guards';
 
@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: Settings = { level: 'normal' };
 // Only a started, unfinished game is ever saved, so anything else is null. A game that ended against a wall keeps a
 // snake that looks fine, so this is where that is ruled out.
 export function toSave(game: Game, elapsedMs: number): SaveData | null {
-  if ((game.status !== 'running' && game.status !== 'paused') || game.apple === null) return null;
+  if (!isInPlay(game) || game.apple === null) return null;
   return {
     level: game.level,
     snake: game.snake.map(colRow),

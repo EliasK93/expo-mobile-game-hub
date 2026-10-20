@@ -29,6 +29,9 @@ export const newGame = (level: Level, random: Random): Game => {
 // Started = the first swipe has been made; only a started game is recorded when abandoned.
 export const isStarted = (game: Game) => game.status !== 'ready';
 
+// In play = started and not ended (running or paused): the games that are saved, and the ones abandoning counts.
+export const isInPlay = (game: Game) => game.status === 'running' || game.status === 'paused';
+
 // A swipe. The first one starts the game (any way but down, into its own body). In a running game it joins the queue,
 // unless the queue is full or it is the same as, or the opposite of, the last turn before it (the last queued one, else
 // the current direction). Anything else returns the same game.

@@ -1,7 +1,7 @@
 import { mulberry32 } from '@/lib/random';
 import { CELLS, COLS, LEVEL_IDS, cell, type Dir, type Level } from './board';
 import { placeApple } from './apple';
-import { interval, isStarted, newGame, pause, resume, step, turn, type Game, type Status } from './game';
+import { interval, isInPlay, isStarted, newGame, pause, resume, step, turn, type Game, type Status } from './game';
 
 const random = mulberry32(1);
 
@@ -62,6 +62,17 @@ describe('isStarted', () => {
     expect(isStarted(newGame('normal', random))).toBe(false);
     for (const status of ['running', 'paused', 'over', 'won'] as const) {
       expect(isStarted({ ...newGame('normal', random), status })).toBe(true);
+    }
+  });
+});
+
+describe('isInPlay', () => {
+  it('is true for a running or paused game, false for ready, over and won', () => {
+    for (const status of ['running', 'paused'] as const) {
+      expect(isInPlay({ ...newGame('normal', random), status })).toBe(true);
+    }
+    for (const status of ['ready', 'over', 'won'] as const) {
+      expect(isInPlay({ ...newGame('normal', random), status })).toBe(false);
     }
   });
 });
