@@ -2,7 +2,7 @@
 
 Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Snake lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-20):** S1 (logic) and S2 (playable) are done; next is S3 in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
+**Status (2026-10-20):** S1 (logic), S2 (playable) and S3 (save, stats, abandon) are done; next is S4 (polish) in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
 
 ## Overview
 
@@ -37,7 +37,7 @@ It follows the patterns the other games established. The most recent finished ga
   - A won game: `You win! · 312 apples`, plus ` · New best!`.
 - **Stats per level** (user): games played, best score, average score (whole apples, rounded), longest game (time, `m:ss`). Played counts every finished or abandoned started game.
 - **Stats panel:** from the header "Stats" button only (the shared `StatsHeaderButton`), the whole screen below the header: a **Slow · Normal · Fast** switch (`selected`/`muted`) that opens on the current level, the shared `StatsNumbers` row (Played, Best, Average, Longest) and Close. A running game is paused while the panel is open (it stays paused after Close; Continue resumes).
-- **Save and resume** (user): a started, unfinished game is saved whenever it pauses (Pause, leaving the screen, background) and when a new game starts; opening Snake **resumes it directly, paused**, waiting for Continue. Without a save, a new unstarted game of the last used level is shown. A finished game deletes the save.
+- **Save and resume** (user): a started, unfinished game is saved whenever it pauses (Pause, leaving the screen, background, opening the picker or the stats panel); a game that has not started is never saved. Opening Snake **resumes it directly, paused**, waiting for Continue. Without a save, a new unstarted game of the last used level is shown. A finished game deletes the save.
 - **Look: Pencil & Paper** (user): a paper board in the hub palette; the snake in ink with an accent-blue head; a red apple. Step-wise movement (the snake jumps one cell per tick, no tweening), so reduced motion changes nothing. No sound, no vibration. No extras in v1 (user: no bonus apple, no obstacles).
 
 ## Decisions (decided 2026-10-20), with reasons
@@ -62,7 +62,7 @@ It follows the patterns the other games established. The most recent finished ga
 - **The tick loop runs exactly when the game clock runs** (proposed with the concept). `hooks/use-game-clock` already stops on blur, background and unmount; the Snake hook needs the same `running` signal to start and stop its tick timer. Expose it from `useGameClock` (a small **Hub:** change, its own commit, with a test in `src/__tests__/use-game-clock.test.tsx`) rather than copying the focus/AppState handling (rule 4).
 - **Draw only the snake and the apple, not 315 cells** (proposed with the concept). The board is one view with a grid drawn once; the snake's segments and the apple are absolutely positioned squares. Reason: a tick re-renders a few dozen views, not 315; the phone stays smooth at 70 ms ticks (an Android check).
 
-## Architecture and storage keys (logic built in S1, ui in S2; stats-panel.tsx comes in S3)
+## Architecture and storage keys (logic built in S1, ui in S2 and S3)
 
 ```
 src/games/snake/
@@ -72,7 +72,8 @@ src/games/snake/
                       # next(i, dir) (null = off the board, never wraps)
     game.ts           # Game { level, snake: cells head first, dir, queue: Dir[], apple (null only when won), apples,
                       # status: 'ready' | 'running' | 'paused' | 'over' | 'won' }; START_LENGTH = 3; newGame(level, random),
-                      # turn(game, dir), step(game, random), pause, resume, isStarted, interval({ level, apples })
+                      # turn(game, dir), step(game, random), pause, resume, isStarted, isInPlay (running or paused:
+                      # what is saved and what an abandon records), interval({ level, apples })
                       # (ms per tick; the SPEEDS table, tune). Game over leaves the snake where it was.
     apple.ts          # placeApple(snake, random): a random empty cell or null (board full); its own module so route
                       # tests can swap it with jest.mock + requireActual (Minesweeper's generate.ts pattern)
@@ -128,13 +129,13 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `apple`: only empty cells, null when the board is full, seeded.
   - `stats`: played, best (0 is never a best), average, longest; abandon = a game over with its score; `isNewBest`.
   - `save`: round trips; bad data rejected (cells off the board, a snake that isn't connected or overlaps itself, the apple on the snake, a bad dir); finished games rejected; loads paused.
-- [x] S2. **Playable.** Done 2026-10-20, checked by the user in the browser (speeds and colours kept at their starting values). Re-check: `npx jest src/__tests__/snake.test.tsx src/__tests__/use-game-clock.test.tsx` (e.g. test names containing `a swipe just before a tick does not delay it`, `its own body ends it`, `leaving the screen pauses it`, `the app going to the background pauses it`, `New best! only when the score beats`, `running is true exactly while the clock counts`). Until S3, Best lives only for the session, so the first scoring game shows "New best!", and picking a level drops a running game without recording it.
+- [x] S2. **Playable.** Done 2026-10-20, checked by the user in the browser (speeds and colours kept at their starting values). Re-check: `npx jest src/__tests__/snake.test.tsx src/__tests__/use-game-clock.test.tsx` (e.g. test names containing `a swipe just before a tick does not delay it`, `its own body ends it`, `leaving the screen pauses it`, `the app going to the background pauses it`, `running is true exactly while the clock counts`). Until S3, Best lives only for the session, so the first scoring game shows "New best!", and picking a level drops a running game without recording it.
   - **Hub:** `useGameClock` exposes `running` (own commit, with its test).
   - The route, the registry entry with `GameRoute`, the home tile (a mini board with a short snake and an apple; the user checks the look), the colour tokens.
   - The board with swipes, the tick loop, Pause/Continue, the Score/Best boxes (Best from this session only until S3), the level picker on New, the result line with Play again.
   - Route tests: start by swipe, turns, eating, the wall and the body, pause/continue, pausing on blur, game over, play again, the picker; ticks with fake timers.
   - The user checks it in the browser and tunes the speeds and colours.
-- [ ] S3. **Save, stats, abandon.**
+- [x] S3. **Save, stats, abandon.** Done 2026-10-20, checked by the user in the browser (seeded save and stats). Re-check: `npx jest src/__tests__/snake.test.tsx` (e.g. test names containing `opens a saved game directly, paused`, `and shows a new ready game of the stored level` (bad and finished-looking saves), `Pause saves the game`, `a ready game writes no save`, `game over removes the save and stores the stats`, `picking a level with a started game counts it`, `an unstarted game changes nothing`, `New best! only when the score is above the stored best`, `opening it pauses a running game and saves it`). The game is `null` until storage is read (no placeholder game flashes). A force-kill while the snake runs loses the run since its last pause (the save is written on pause; leaving or the background always pauses first).
   - Resume directly (paused), the last used level, the abandon rule, the stats panel from the header, bests in the picker and the Best box from storage.
   - Route tests for each, with the AsyncStorage mock; seed snippets for the user.
   - The user checks it in the browser.
