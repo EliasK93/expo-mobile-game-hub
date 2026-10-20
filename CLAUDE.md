@@ -89,7 +89,7 @@ src/
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
 - [Make 24](docs/make24.md): complete (M1-M5), released 2026-10-19
-- [Snake](docs/snake.md): concept agreed 2026-10-20, not built yet (start with S1)
+- [Snake](docs/snake.md): concept agreed 2026-10-20; S1-S2 done (playable), next S3
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 

@@ -2,7 +2,7 @@
 
 Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Snake lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-20):** S1 (logic) is done; next is S2 in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
+**Status (2026-10-20):** S1 (logic) and S2 (playable) are done; next is S3 in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
 
 ## Overview
 
@@ -29,7 +29,7 @@ It follows the patterns the other games established. The most recent finished ga
 - **Start: the first swipe starts the game** (user). A new game shows the snake and the apple, waiting; the first swipe that is not "down" (into its own body) sets the direction and starts the ticks. Before that the game is *unstarted*.
 - **Speed levels** (user): **Slow · Normal · Fast**, on the same board. The level sets the starting tick interval; the snake **gets gently faster** (user): every 5 apples the interval shrinks by 5 %, down to a floor. Starting values (*tune*): Slow 220 ms → floor 150 ms, Normal 160 ms → floor 100 ms, Fast 110 ms → floor 70 ms. The interval is computed from the level and the apples eaten (`logic/`), never stored.
 - **Pause:** a **Pause** button while the game runs. Paused, the board dims and shows **Paused** with a primary **Continue**; the snake waits and continues in its direction. Swipes do nothing while paused. Leaving the screen, the app going to the background and the screen turning off all **pause** the game (it never runs unseen), and coming back shows it paused.
-- **Score:** the apples eaten (length − 3). Two boxes above the board, **Score** and **Best** (the level's best score), copied from 2048's score boxes. Best is live: the stored best, or the current score once it is higher. **No timer on screen** (user); the game's time is still measured (for the "Longest game" stat), only while the snake runs.
+- **Score:** the apples eaten (length − 3). Two boxes above the board, **Score** and **Best** (the level's best score), copied from 2048's score boxes. The Score box's title names the level, e.g. `Normal · Score` (user, 2026-10-20: the screen shows the level nowhere else). Best is live: the stored best, or the current score once it is higher. **No timer on screen** (user); the game's time is still measured (for the "Longest game" stat), only while the snake runs.
 - **Level picker on New** (like Make 24's): the three levels, the last used one marked (`selected`), each with `Best 23` once it has one, plus Cancel. The last level is stored; the default is **Normal**.
 - **Abandon:** picking a level while a **started** game is running (running or paused) ends it and records it like a game over, with its score (played +1, its score counts for best and average). An unstarted game just goes.
 - **Game over** (user: result line + Play again, like Make 24): the board stays, dimmed, with a result line and a primary **Play again** (a new game of the same level) and **New** (the picker).
@@ -62,7 +62,7 @@ It follows the patterns the other games established. The most recent finished ga
 - **The tick loop runs exactly when the game clock runs** (proposed with the concept). `hooks/use-game-clock` already stops on blur, background and unmount; the Snake hook needs the same `running` signal to start and stop its tick timer. Expose it from `useGameClock` (a small **Hub:** change, its own commit, with a test in `src/__tests__/use-game-clock.test.tsx`) rather than copying the focus/AppState handling (rule 4).
 - **Draw only the snake and the apple, not 315 cells** (proposed with the concept). The board is one view with a grid drawn once; the snake's segments and the apple are absolutely positioned squares. Reason: a tick re-renders a few dozen views, not 315; the phone stays smooth at 70 ms ticks (an Android check).
 
-## Architecture and storage keys (logic built in S1, ui planned)
+## Architecture and storage keys (logic built in S1, ui in S2; stats-panel.tsx comes in S3)
 
 ```
 src/games/snake/
@@ -89,7 +89,8 @@ src/games/snake/
 
 - `logic/` is pure TypeScript (no React/RN/Expo imports; ESLint enforces it). All rules live there: what a turn does, a step, eating, growing, dying, winning, the speed. The UI only runs the timer and draws.
 - Randomness: the logic takes a `Random` (`mulberry32` from `lib/random` in tests); the UI passes `Math.random`.
-- The tick timer: `setTimeout` chained per tick with `interval(game)`, running only while the game is `running` and the clock runs (see Decisions); a test drives it with Jest fake timers.
+- The tick timer: `setTimeout` chained per tick with `interval(game)`, running only while the game is `running` and the clock runs (see Decisions); a test drives it with Jest fake timers. It is re-armed only when the clock's `running` changes or the snake moves, never by a swipe, so a queued turn never delays the next tick. The clock is enabled while the game runs and the picker is closed; its `onStop` pauses a running game (leaving the screen, background, opening the picker).
+- Layout (S2): Score · Best boxes, a compact row **New · Pause**, then the board in its swipe area (flex 1, so the space below the board swipes too). Cell size = `max(8, floor(min(width / 15, height / 21)))` from the measured area minus `reservedHeight` (in `snake-screen.tsx`): 21 px (315 × 441 board) at 360 × 640, 18 px (270 × 378) at 320 × 568.
 
 Storage keys, all versioned (`{ version, data }`, version 1 each):
 - `snake:save`: `{ level, snake: [[col,row], …] (head first), dir, apple: [col,row], apples, elapsedMs }`, a started unfinished game; it always loads as `paused`. The queue is not saved.
@@ -127,7 +128,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `apple`: only empty cells, null when the board is full, seeded.
   - `stats`: played, best (0 is never a best), average, longest; abandon = a game over with its score; `isNewBest`.
   - `save`: round trips; bad data rejected (cells off the board, a snake that isn't connected or overlaps itself, the apple on the snake, a bad dir); finished games rejected; loads paused.
-- [ ] S2. **Playable.**
+- [x] S2. **Playable.** Done 2026-10-20, checked by the user in the browser (speeds and colours kept at their starting values). Re-check: `npx jest src/__tests__/snake.test.tsx src/__tests__/use-game-clock.test.tsx` (e.g. test names containing `a swipe just before a tick does not delay it`, `its own body ends it`, `leaving the screen pauses it`, `the app going to the background pauses it`, `New best! only when the score beats`, `running is true exactly while the clock counts`). Until S3, Best lives only for the session, so the first scoring game shows "New best!", and picking a level drops a running game without recording it.
   - **Hub:** `useGameClock` exposes `running` (own commit, with its test).
   - The route, the registry entry with `GameRoute`, the home tile (a mini board with a short snake and an apple; the user checks the look), the colour tokens.
   - The board with swipes, the tick loop, Pause/Continue, the Score/Best boxes (Best from this session only until S3), the level picker on New, the result line with Play again.
@@ -155,7 +156,7 @@ Then the hub's Release milestone: the APK is built and tested once, after S4, wi
 
 ## Open decisions
 
-- After S2: the speeds (start and floor per level) and the colours, tuned in the browser.
+- The speeds (start and floor per level) and the colours: the starting values passed the S2 browser check unchanged; the final call is in S4 (and on the phone).
 
 ## Known shortcuts
 
