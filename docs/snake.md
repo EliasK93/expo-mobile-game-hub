@@ -2,7 +2,7 @@
 
 Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Snake lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-20):** the concept is agreed and nothing is built yet. Start with S1 in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
+**Status (2026-10-20):** S1 (logic) is done; next is S2 in plan mode (rule 10). The decisions below are settled with the user; don't ask about them again. The numbers marked *tune* (speeds, colours) are starting values the user adjusts in the browser.
 
 ## Overview
 
@@ -62,19 +62,24 @@ It follows the patterns the other games established. The most recent finished ga
 - **The tick loop runs exactly when the game clock runs** (proposed with the concept). `hooks/use-game-clock` already stops on blur, background and unmount; the Snake hook needs the same `running` signal to start and stop its tick timer. Expose it from `useGameClock` (a small **Hub:** change, its own commit, with a test in `src/__tests__/use-game-clock.test.tsx`) rather than copying the focus/AppState handling (rule 4).
 - **Draw only the snake and the apple, not 315 cells** (proposed with the concept). The board is one view with a grid drawn once; the snake's segments and the apple are absolutely positioned squares. Reason: a tick re-renders a few dozen views, not 315; the phone stays smooth at 70 ms ticks (an Android check).
 
-## Architecture and storage keys (planned)
+## Architecture and storage keys (logic built in S1, ui planned)
 
 ```
 src/games/snake/
   logic/              # pure TS, unit-tested; the ESLint purity rule applies
-    board.ts          # COLS = 15, ROWS = 21, Cell { col, row } or index, LEVEL_IDS = ['slow','normal','fast'], Level, Dir
-    game.ts           # Game { level, snake: cells head first, dir, queue: Dir[], apple, apples, status:
-                      # 'ready' | 'running' | 'paused' | 'over' | 'won' }; newGame(level, random), turn(game, dir),
-                      # step(game, random), pause, resume, isStarted, interval(game) (ms per tick from level and apples)
+    board.ts          # COLS = 15, ROWS = 21, CELLS; cells are indices i = row * COLS + col (0-based), cell(col, row),
+                      # colRow(i); LEVEL_IDS = ['slow','normal','fast'], Level, DIRS, Dir, opposite(dir),
+                      # next(i, dir) (null = off the board, never wraps)
+    game.ts           # Game { level, snake: cells head first, dir, queue: Dir[], apple (null only when won), apples,
+                      # status: 'ready' | 'running' | 'paused' | 'over' | 'won' }; START_LENGTH = 3; newGame(level, random),
+                      # turn(game, dir), step(game, random), pause, resume, isStarted, interval({ level, apples })
+                      # (ms per tick; the SPEEDS table, tune). Game over leaves the snake where it was.
     apple.ts          # placeApple(snake, random): a random empty cell or null (board full); its own module so route
                       # tests can swap it with jest.mock + requireActual (Minesweeper's generate.ts pattern)
-    stats.ts          # per level: played, best, totalApples, longestMs; recordGame(stats, level, { apples, ms }); isNewBest
-    save.ts           # keys, versions; toSave/fromSave (started, unfinished games only), fromStats, fromSettings
+    stats.ts          # per level { played, best (0 = none yet), totalApples, longestMs }, EMPTY_STATS;
+                      # recordGame(stats, level, { apples, ms }) for game over, win and abandon alike; isNewBest; average
+    save.ts           # keys, versions; toSave (null unless running or paused: finished games are never saved), fromSave
+                      # (loads paused, empty queue), fromStats, fromSettings (default Normal)
     *.test.ts
   ui/
     snake-screen.tsx, use-snake.ts (game in a ref and in state, the tick timer, saves and stats outside state updaters,
@@ -117,7 +122,7 @@ Storage keys, all versioned (`{ version, data }`, version 1 each):
 
 Same ticking rule as the hub: tick an item only when its re-check passes and the user has verified it in the web preview. Each step is its own commit with the `Snake:` prefix; shared changes get `Hub:`, docs get `Docs:`. Each milestone gets a ponytail review in a visible pane before its commit.
 
-- [ ] S1. **Logic, test first** (xhigh effort; collisions and the turn queue are easy to get subtly wrong):
+- [x] S1. **Logic, test first** (xhigh effort; collisions and the turn queue are easy to get subtly wrong). Done 2026-10-20, no UI to check. Re-check: `npx jest src/games/snake` (e.g. test names containing `two quick swipes between ticks`, `the tail leaves in the same tick`, `not in a tick that grows`, `fills every cell`, `ended against a wall`). For S2: the UI asks `toSave` for the save and removes it when that returns null.
   - `board`/`game`: the start position and length; a step in each direction; eating grows by one and places an apple; walls kill on all four sides; the body kills; moving into the tail's leaving cell is allowed, but not in a tick that grows; the turn queue (2 deep, reverse and same direction ignored, one per tick); the first swipe starts (down ignored); pause/resume; finished games don't change; a full board wins; `interval` per level, every 5 apples 5 % faster, never below the floor; `isStarted`.
   - `apple`: only empty cells, null when the board is full, seeded.
   - `stats`: played, best (0 is never a best), average, longest; abandon = a game over with its score; `isNewBest`.
@@ -154,4 +159,4 @@ Then the hub's Release milestone: the APK is built and tested once, after S4, wi
 
 ## Known shortcuts
 
-None yet.
+- `logic/save.ts` (`fromStats`): stats with any bad field fall back to empty as a whole; keep the good levels if a format change ever needs it (as in Minesweeper and Make 24). Re-check: `Select-String -Path src/games/snake/logic/save.ts -Pattern 'ponytail:'`.
