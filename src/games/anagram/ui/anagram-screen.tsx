@@ -2,6 +2,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -13,6 +14,7 @@ import { Dim } from './dim';
 import { levelName, LevelPicker } from './level-picker';
 import { AnswerRow, Rack, tileSize } from './letters';
 import { ScoreBox } from './score-box';
+import { StatsPanel } from './stats-panel';
 import { useAnagram } from './use-anagram';
 
 export function AnagramScreen() {
@@ -22,11 +24,27 @@ export function AnagramScreen() {
   const insets = useSafeAreaInsets();
   const container = [styles.container, { paddingBottom: Spacing.two + insets.bottom }];
 
+  const header = <StatsHeaderButton visible={game !== null} onPress={a.openPanel} />;
+
+  // Until storage is read only the empty area shows, so no placeholder round flashes.
+  if (game === null) return <ThemedView style={container}>{header}</ThemedView>;
+
+  // The panel has the screen to itself, the letters are hidden.
+  if (a.panel) {
+    return (
+      <ThemedView style={container}>
+        {header}
+        <StatsPanel stats={a.stats} current={game.level} onClose={a.closePanel} />
+      </ThemedView>
+    );
+  }
+
   // The picker takes the place of the boxes, the row and the letters.
   if (a.picking) {
     return (
       <ThemedView style={container}>
-        <LevelPicker last={game.level} stats={a.stats} onPick={a.pickLevel} onCancel={a.closePicker} />
+        {header}
+        <LevelPicker last={a.lastLevel} stats={a.stats} onPick={a.pickLevel} onCancel={a.closePicker} />
       </ThemedView>
     );
   }
@@ -40,6 +58,7 @@ export function AnagramScreen() {
 
   return (
     <ThemedView testID="game-area" style={container}>
+      {header}
       <ThemedView style={styles.row}>
         <ScoreBox title={`${levelName(game.level)} · Score`} value={game.solved} />
         {/* Whole seconds rounded up, so 0:00 shows only at the very end. */}

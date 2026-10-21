@@ -51,8 +51,12 @@ export const isInPlay = (game: Game) => game.status === 'running' || game.status
 export const isWrong = (game: Game) => game.status === 'running' && game.answer.every((k) => k !== null);
 
 export const start = (game: Game): Game => (game.status === 'ready' ? { ...game, status: 'running' } : game);
-export const pause = (game: Game): Game =>
-  game.status === 'running' ? { ...game, revealed: null, status: 'paused' } : game;
+// A round with no time left (the solution of the last skip is on show) ends instead of pausing, so a paused round
+// always has time left: nothing to continue, and a save of it would be rejected.
+export const pause = (game: Game, elapsedMs: number): Game =>
+  game.status !== 'running'
+    ? game
+    : { ...game, revealed: null, status: remainingMs(game, elapsedMs) === 0 ? 'over' : 'paused' };
 export const resume = (game: Game): Game => (game.status === 'paused' ? { ...game, status: 'running' } : game);
 
 // What the player can do: only in a running round, and not while a skipped solution shows.

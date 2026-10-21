@@ -93,27 +93,38 @@ describe('status', () => {
   it('start does nothing unless the round is ready', () => {
     const g = running();
     expect(start(g)).toBe(g);
-    expect(start(pause(g))).toEqual(pause(g));
+    expect(start(pause(g, 0))).toEqual(pause(g, 0));
     const over = { ...g, status: 'over' as const };
     expect(start(over)).toBe(over);
   });
 
   it('pause and resume swap running and paused, and do nothing in any other state', () => {
     const g = running();
-    const p = pause(g);
+    const p = pause(g, 0);
     expect(p.status).toBe('paused');
-    expect(pause(p)).toBe(p);
+    expect(pause(p, 0)).toBe(p);
     expect(resume(p).status).toBe('running');
     expect(resume(g)).toBe(g);
     const ready = newRound('easy', random());
-    expect(pause(ready)).toBe(ready);
+    expect(pause(ready, 0)).toBe(ready);
     expect(resume(ready)).toBe(ready);
+  });
+
+  it('pause with no time left ends the round instead, so a paused round always has time left', () => {
+    const g = running();
+    const over = pause({ ...g, skips: 1 }, 55_000);
+    expect(over.status).toBe('over');
+    expect(pause(g, 59_999).status).toBe('paused');
+    expect(pause(g, 60_000).status).toBe('over');
+    const s = skip(running(), 56_000, random());
+    expect(s.revealed).not.toBeNull();
+    expect(pause(s, 56_000)).toMatchObject({ status: 'over', revealed: null });
   });
 
   it('isInPlay is true while running or paused', () => {
     const g = running();
     expect(isInPlay(g)).toBe(true);
-    expect(isInPlay(pause(g))).toBe(true);
+    expect(isInPlay(pause(g, 0))).toBe(true);
     expect(isInPlay(newRound('easy', random()))).toBe(false);
     expect(isInPlay({ ...g, status: 'over' })).toBe(false);
   });
@@ -121,7 +132,7 @@ describe('status', () => {
   it('pausing clears the revealed solution', () => {
     const g = skip(running(), 0, random());
     expect(g.revealed).not.toBeNull();
-    expect(pause(g).revealed).toBeNull();
+    expect(pause(g, 0).revealed).toBeNull();
   });
 });
 
@@ -364,7 +375,7 @@ describe('canAct', () => {
     const g = running();
     expect(canAct(g)).toBe(true);
     expect(canAct(skip(g, 0, random()))).toBe(false);
-    expect(canAct(pause(g))).toBe(false);
+    expect(canAct(pause(g, 0))).toBe(false);
     expect(canAct(newRound('normal', random()))).toBe(false);
     expect(canAct({ ...g, status: 'over' })).toBe(false);
   });
@@ -403,12 +414,12 @@ describe('revealed', () => {
     expect(endReveal(over, 55_000)).toBe(over);
   });
 
-  it('pausing during the solution of the last skip clears it; continuing at 0:00 ends the round on the next tick', () => {
+  it('pausing during the solution of the last skip ends the round at once (nothing is left to continue)', () => {
     const s = skip(running(), 56_000, random());
-    const back = resume(pause(s));
-    expect(back.revealed).toBeNull();
-    expect(back.status).toBe('running');
-    expect(tick(back, 56_000).status).toBe('over');
+    const over = pause(s, 56_000);
+    expect(over.status).toBe('over');
+    expect(over.revealed).toBeNull();
+    expect(resume(over)).toBe(over);
   });
 });
 
@@ -440,14 +451,14 @@ describe('tick', () => {
   it('does nothing in a ready or paused round', () => {
     const ready = newRound('easy', random());
     expect(tick(ready, 99_000)).toBe(ready);
-    const p = pause(running());
+    const p = pause(running(), 0);
     expect(tick(p, 99_000)).toBe(p);
   });
 });
 
 describe('no-ops', () => {
   const ready = newRound('normal', mulberry32(1));
-  const paused = pause(running());
+  const paused = pause(running(), 0);
   const over = tick(running(), 60_000);
   const everything = (g: Game) => [
     place(g, 0, random()),
@@ -468,7 +479,7 @@ describe('no-ops', () => {
 
   it('a finished round never changes, whatever is done to it', () => {
     expect(over.status).toBe('over');
-    for (const next of [...everything(over), start(over), pause(over), resume(over), tick(over, 99_000)]) {
+    for (const next of [...everything(over), start(over), pause(over, 0), resume(over), tick(over, 99_000)]) {
       expect(next).toBe(over);
     }
   });

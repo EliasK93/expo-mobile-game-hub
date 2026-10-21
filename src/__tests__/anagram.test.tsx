@@ -1,9 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { AppState, StyleSheet } from 'react-native';
 
 import { Colors } from '@/constants/theme';
-import { pickWord, scramble } from '@/games/anagram/logic/words';
+import { EMPTY_STATS, type LevelStats } from '@/games/anagram/logic/stats';
+import { pickWord, scramble, type Level } from '@/games/anagram/logic/words';
 import { settle } from '@/test-utils/settle';
 
 // pickWord and scramble are replaced so every test knows its words and racks (the real ones are tested in logic/).
@@ -31,6 +33,18 @@ const words = (...list: string[]) => {
 const open = async () => {
   renderRouter('./src/app', { initialUrl: '/anagram' });
   await settle();
+};
+
+// Takes over AppState's subscriptions (the screen's clock and GameRoute's playtime clock, in mount order) and returns
+// the function that sends an app state change to both.
+const appStates = () => {
+  const listeners: ((s: string) => void)[] = [];
+  const subscribe = (_: string, l: (s: string) => void) => {
+    listeners.push(l);
+    return { remove: () => {} };
+  };
+  (AppState.addEventListener as jest.Mock).mockImplementationOnce(subscribe).mockImplementationOnce(subscribe);
+  return (s: string) => act(async () => listeners.forEach((l) => l(s)));
 };
 
 // Fake timers drive the clock (it updates every 250 ms) and the 1 s the solution of a skip shows.
@@ -252,20 +266,21 @@ describe('Anagrams screen', () => {
     expect(screen.queryByTestId('result')).toBeNull();
   });
 
-  it('Pause during the solution of the last skip: Continue ends the round at once', async () => {
+  it('Pause during the solution of the last skip ends the round at once: nothing is left to continue', async () => {
     words('plate', 'house');
     await open();
     press('Start');
     await tick(56_000);
     press('Skip');
-    press('Pause');
-    await tick(1000);
 
-    press('Continue');
-    await tick(250);
+    press('Pause');
+    await settle();
 
     expect(screen.queryByLabelText(/^Solution letter/)).toBeNull();
     expect(screen.getByText('Time! · 0 words')).toBeTruthy();
+    expect(screen.queryByLabelText('Continue')).toBeNull();
+    expect((await saved('anagram:stats')).data.normal).toEqual(stats(1, 0, 0));
+    expect(await saved('anagram:save')).toBeNull();
   });
 
   it('at 0:00 the round ends: the result line, Play again and New, and the buttons are off', async () => {
@@ -376,16 +391,9 @@ describe('Anagrams screen', () => {
   });
 
   it('the app going to the background pauses the round, and it stays paused when the app returns', async () => {
-    const listeners: ((s: string) => void)[] = [];
-    const subscribe = (_: string, l: (s: string) => void) => {
-      listeners.push(l);
-      return { remove: () => {} };
-    };
-    // Two listeners: the screen's clock and GameRoute's (playtime) clock.
-    (AppState.addEventListener as jest.Mock).mockImplementationOnce(subscribe).mockImplementationOnce(subscribe);
+    const appState = appStates();
     words('plate');
     await open();
-    const appState = (s: string) => act(async () => listeners.forEach((l) => l(s)));
     press('Start');
     await tick(3000);
 
@@ -436,7 +444,7 @@ describe('Anagrams screen', () => {
     expect(selected('Normal')).toBeFalsy();
   });
 
-  it('the picker shows the best of each level this session', async () => {
+  it('the picker shows the best of each level', async () => {
     words('plate', 'house');
     await open();
     press('Start');
@@ -494,5 +502,368 @@ describe('accessibility', () => {
     const line = screen.getByText('Time! · 0 words');
     expect(line.props.accessibilityLiveRegion).toBe('polite');
     expect(within(screen.getByTestId('result')).getByLabelText('Play again')).toBeTruthy();
+  });
+});
+
+// ---- A4: save, stats, abandon ----
+
+const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
+const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
+const stats = (played: number, best: number, totalWords: number) => ({ played, best, totalWords }) satisfies LevelStats;
+const seedStats = (level: Level, s: LevelStats) => seed('anagram:stats', { ...EMPTY_STATS, [level]: s });
+
+// A started round as it is stored: PLATE in the rack order T L P E A, P and A placed (rack indices 2 and 4), three words
+// solved, one skip, 42 s run: 60 - 42 - 5 = 13 s left.
+const SAVE = {
+  level: 'normal',
+  word: 'plate',
+  rack: 'tlpea',
+  answer: [2, 4, null, null, null],
+  solved: 3,
+  skips: 1,
+  used: ['house', 'water', 'light', 'plate'],
+  elapsedMs: 42_000,
+};
+
+describe('resume', () => {
+  it('opens a saved round directly, paused, with its level, word, rack, answer, score and time; Continue goes on', async () => {
+    await seed('anagram:save', SAVE);
+    await open();
+
+    expect(screen.getByText('Paused')).toBeTruthy();
+    expect(screen.queryByLabelText('Start')).toBeNull();
+    expect(screen.getByLabelText('Normal · Score 3')).toBeTruthy();
+    expect(screen.getByLabelText('Time 0:13')).toBeTruthy();
+    expect(screen.getByLabelText('Best 3')).toBeTruthy();
+    expect(rack()).toEqual([]);
+    expect(pickWord).not.toHaveBeenCalled();
+    await tick(5000);
+    expect(screen.getByLabelText('Time 0:13')).toBeTruthy();
+
+    press('Continue');
+
+    expect(rack()).toEqual(['T', 'L', 'E']);
+    expect(screen.getByLabelText('Answer letter P, slot 1')).toBeTruthy();
+    expect(screen.getByLabelText('Answer letter A, slot 2')).toBeTruthy();
+    expect(screen.getByLabelText('Empty slot 3')).toBeTruthy();
+    await tick(1000);
+    expect(screen.getByLabelText('Time 0:12')).toBeTruthy();
+
+    // The clock stood at the saved time: a Pause stores that time plus the second that ran.
+    press('Pause');
+    await settle();
+    expect((await saved('anagram:save')).data.elapsedMs).toBe(43_000);
+  });
+
+  it.each([
+    ['a bad save', { ...SAVE, word: 'plat' }],
+    ['one with no time left', { ...SAVE, elapsedMs: 55_000 }],
+  ])('ignores %s and shows a new ready round of the stored level', async (_, data) => {
+    await seed('anagram:save', data);
+    await seed('anagram:settings', { level: 'easy' });
+    words('bake');
+    await open();
+
+    expect(screen.getByLabelText('Start')).toBeTruthy();
+    expect(screen.queryByText('Paused')).toBeNull();
+    expect(screen.getByLabelText('Easy · Score 0')).toBeTruthy();
+    expect(screen.getByLabelText('Time 1:00')).toBeTruthy();
+    press('Start');
+    expect(rack()).toEqual(['E', 'K', 'A', 'B']);
+  });
+});
+
+describe('saving', () => {
+  it('Pause saves the round: word, rack, answer, score, skips, words shown and the time', async () => {
+    words('plate');
+    await open();
+    press('Start');
+    await tick(2000);
+    tap('p');
+
+    press('Pause');
+    await settle();
+
+    expect(await saved('anagram:save')).toEqual({
+      version: 1,
+      data: {
+        level: 'normal',
+        word: 'plate',
+        rack: 'tlpea',
+        answer: [2, null, null, null, null],
+        solved: 0,
+        skips: 0,
+        used: ['plate'],
+        elapsedMs: 2000,
+      },
+    });
+  });
+
+  it('navigating away from the screen saves the paused round', async () => {
+    words('plate');
+    await open();
+    press('Start');
+    await tick(3000);
+
+    await act(async () => router.push('/'));
+    await settle();
+
+    expect((await saved('anagram:save')).data).toMatchObject({ word: 'plate', elapsedMs: 3000 });
+  });
+
+  it('the app going to the background saves the paused round', async () => {
+    const appState = appStates();
+    words('plate');
+    await open();
+    press('Start');
+    await tick(3000);
+
+    await appState('background');
+    await settle();
+
+    expect((await saved('anagram:save')).data).toMatchObject({ word: 'plate', elapsedMs: 3000 });
+  });
+
+  it('the app going to the background during the solution of the last skip ends the round: counted, no save, a fresh round on reopen', async () => {
+    const appState = appStates();
+    words('plate', 'house');
+    await open();
+    press('Start');
+    await tick(56_000);
+    press('Skip');
+
+    await appState('background');
+    await settle();
+
+    expect((await saved('anagram:stats')).data.normal).toEqual(stats(1, 0, 0));
+    expect(await saved('anagram:save')).toBeNull();
+
+    screen.unmount();
+    await settle();
+    words('water');
+    await open();
+
+    expect(screen.getByLabelText('Start')).toBeTruthy();
+    expect(screen.queryByText('Paused')).toBeNull();
+    expect(screen.getByLabelText('Time 1:00')).toBeTruthy();
+    expect(screen.getByLabelText('Normal · Score 0')).toBeTruthy();
+  });
+
+  it('a ready round writes no save, not even when the screen is left', async () => {
+    await open();
+    press('New');
+    press('Cancel');
+
+    screen.unmount();
+    await settle();
+
+    expect(await saved('anagram:save')).toBeNull();
+  });
+
+  it('the end of the round removes the save and stores the stats', async () => {
+    words('plate', 'house');
+    await open();
+    press('Start');
+    await tick(2000);
+    press('Pause');
+    await settle();
+    expect(await saved('anagram:save')).not.toBeNull();
+    press('Continue');
+    tap('plate');
+
+    await tick(58_000);
+    await settle();
+
+    expect(screen.getByText('Time! · 1 word · New best!')).toBeTruthy();
+    expect(await saved('anagram:save')).toBeNull();
+    expect((await saved('anagram:stats')).data).toEqual({ ...EMPTY_STATS, normal: stats(1, 1, 1) });
+  });
+});
+
+describe('level', () => {
+  it('picking a level stores it, and reopening shows it marked in the picker', async () => {
+    words('plate', 'bake');
+    await open();
+
+    press('New');
+    press('Hard');
+    await settle();
+    expect(await saved('anagram:settings')).toEqual({ version: 1, data: { level: 'hard' } });
+
+    screen.unmount();
+    await settle();
+    await open();
+
+    expect(screen.getByLabelText('Hard · Score 0')).toBeTruthy();
+    press('New');
+    expect(selected('Hard')).toBe(true);
+    expect(selected('Normal')).toBeFalsy();
+  });
+});
+
+describe('abandon', () => {
+  it('picking a level with a started round counts it: played +1, its words in best and total, the save gone', async () => {
+    await seedStats('normal', stats(1, 1, 1));
+    words('plate', 'house', 'water');
+    await open();
+    press('Start');
+    tap('plate');
+    tap('house');
+    expect(screen.getByLabelText('Normal · Score 2')).toBeTruthy();
+
+    press('New');
+    await settle();
+    expect(await saved('anagram:save')).not.toBeNull();
+    press('Hard');
+    await settle();
+
+    expect((await saved('anagram:stats')).data).toEqual({ ...EMPTY_STATS, normal: stats(2, 2, 3) });
+    expect(await saved('anagram:save')).toBeNull();
+    expect(screen.getByLabelText('Start')).toBeTruthy();
+    expect(screen.getByLabelText('Hard · Score 0')).toBeTruthy();
+  });
+
+  it('a paused round is counted too', async () => {
+    words('plate');
+    await open();
+    press('Start');
+    tap('p');
+    press('Pause');
+
+    press('New');
+    press('Easy');
+    await settle();
+
+    expect((await saved('anagram:stats')).data).toEqual({ ...EMPTY_STATS, normal: stats(1, 0, 0) });
+    expect(await saved('anagram:save')).toBeNull();
+  });
+
+  it('a ready round changes nothing', async () => {
+    await open();
+
+    press('New');
+    press('Easy');
+    await settle();
+
+    expect(await saved('anagram:stats')).toBeNull();
+    expect(await saved('anagram:save')).toBeNull();
+  });
+
+  it('a finished round is not counted again when the picker is used', async () => {
+    await open();
+    press('Start');
+    await tick(60_000);
+    await settle();
+    expect((await saved('anagram:stats')).data.normal.played).toBe(1);
+
+    press('New after game');
+    press('Easy');
+    await settle();
+
+    expect((await saved('anagram:stats')).data.normal.played).toBe(1);
+  });
+});
+
+describe('stats', () => {
+  it('the Best box and the picker read the stored bests', async () => {
+    await seed('anagram:stats', { ...EMPTY_STATS, normal: stats(4, 23, 50), hard: stats(1, 7, 7) });
+    await open();
+
+    expect(screen.getByLabelText('Best 23')).toBeTruthy();
+
+    press('New');
+    expect(screen.getByText('5 letters · Best 23')).toBeTruthy();
+    expect(screen.getByText('6 letters · Best 7')).toBeTruthy();
+    expect(screen.getByText('4 letters')).toBeTruthy();
+  });
+
+  it('New best! comes from the stored best: a tie is not one, a higher score is', async () => {
+    await seedStats('normal', stats(1, 1, 1));
+    words('plate', 'house', 'water');
+    await open();
+    press('Start');
+    tap('plate');
+    await tick(60_000);
+    expect(screen.getByText('Time! · 1 word')).toBeTruthy();
+
+    words('plate', 'house', 'water');
+    press('Play again');
+    press('Start');
+    tap('plate');
+    tap('house');
+    await tick(60_000);
+    await settle();
+
+    expect(screen.getByText('Time! · 2 words · New best!')).toBeTruthy();
+    expect(screen.getByLabelText('Best 2')).toBeTruthy();
+    expect((await saved('anagram:stats')).data.normal).toEqual(stats(3, 2, 4));
+  });
+});
+
+describe('stats panel', () => {
+  it('opens from the header on the current level with its numbers; the switch shows another level; Close goes back', async () => {
+    await seed('anagram:settings', { level: 'hard' });
+    await seed('anagram:stats', { ...EMPTY_STATS, normal: stats(4, 23, 50), hard: stats(1, 7, 7) });
+    await open();
+
+    press('Stats');
+
+    expect(screen.queryByLabelText('Start')).toBeNull();
+    expect(selected('Hard stats')).toBe(true);
+    expect(selected('Normal stats')).toBeFalsy();
+    expect(screen.getByLabelText('Played: 1')).toBeTruthy();
+    expect(screen.getByLabelText('Best: 7')).toBeTruthy();
+    expect(screen.getByLabelText('Average: 7')).toBeTruthy();
+    expect(screen.getByLabelText('Words: 7')).toBeTruthy();
+
+    press('Normal stats');
+
+    expect(selected('Normal stats')).toBe(true);
+    expect(screen.getByLabelText('Played: 4')).toBeTruthy();
+    expect(screen.getByLabelText('Best: 23')).toBeTruthy();
+    expect(screen.getByLabelText('Average: 13')).toBeTruthy();
+    expect(screen.getByLabelText('Words: 50')).toBeTruthy();
+
+    press('Easy stats');
+
+    expect(screen.getByLabelText('Played: 0')).toBeTruthy();
+    expect(screen.getByLabelText('Best: —')).toBeTruthy();
+    expect(screen.getByLabelText('Average: —')).toBeTruthy();
+    expect(screen.getByLabelText('Words: —')).toBeTruthy();
+
+    press('Close');
+
+    expect(screen.getByLabelText('Start')).toBeTruthy();
+    expect(screen.queryByLabelText('Played: 0')).toBeNull();
+  });
+
+  it('opening it pauses a running round and saves it; Close leaves it paused', async () => {
+    words('plate');
+    await open();
+    press('Start');
+    await tick(2000);
+    tap('p');
+
+    press('Stats');
+    await tick(1000);
+    await settle();
+    expect((await saved('anagram:save')).data).toMatchObject({ answer: [2, null, null, null, null], elapsedMs: 2000 });
+    press('Close');
+
+    expect(screen.getByText('Paused')).toBeTruthy();
+    expect(screen.getByLabelText('Time 0:58')).toBeTruthy();
+    press('Continue');
+    await tick(1000);
+    expect(screen.getByLabelText('Time 0:57')).toBeTruthy();
+  });
+
+  it('opening it from the picker closes the picker', async () => {
+    await open();
+
+    press('New');
+    press('Stats');
+
+    expect(screen.queryByText('Pick a level')).toBeNull();
+    expect(screen.getByLabelText('Played: 0')).toBeTruthy();
   });
 });

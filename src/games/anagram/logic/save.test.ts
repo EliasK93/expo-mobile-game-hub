@@ -36,7 +36,7 @@ describe('toSave', () => {
   });
 
   it('saves a paused round', () => {
-    expect(toSave(pause(started()), 1000)).not.toBeNull();
+    expect(toSave(pause(started(), 1000), 1000)).not.toBeNull();
   });
 
   it('saves nothing for a round that ran out of time', () => {
