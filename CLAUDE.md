@@ -90,7 +90,7 @@ src/
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
 - [Make 24](docs/make24.md): complete (M1-M5), released 2026-10-19
 - [Snake](docs/snake.md): complete (S1-S4), released 2026-10-20
-- [Anagram Sprint](docs/anagram.md): concept agreed 2026-10-21; next A1 (word data)
+- [Anagram Sprint](docs/anagram.md): A1 (word data) done 2026-10-21; next A2 (logic)
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
