@@ -2,7 +2,7 @@
 
 Read this before working on Anagrams. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Anagrams lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-21):** A1 (the word data), A2 (the logic), A3 (playable in the browser) and A4 (save, stats, abandon) are done. Next is A5 (polish). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
+**Status (2026-10-21):** A1 (the word data), A2 (the logic), A3 (playable in the browser), A4 (save, stats, abandon) and A5 (polish) are done. Next is the hub's Release milestone (the APK with the Android checks below). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
 
 ## Overview
 
@@ -20,7 +20,7 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **Levels by word length** (user): **Easy** 4 letters · **Normal** 5 · **Hard** 6. Every word in a round has the level's length. Picked on New (a level picker like Snake's); the last level is stored; the default is **Normal**.
 - **Letters:** the scrambled letters sit as tiles in a row (the *rack*); above it, an *answer row* with one empty slot per letter.
   - Tapping a rack tile moves its letter into the next empty answer slot. Tapping a letter in the answer row sends it back to the rack (proposed).
-  - When the row is full, the word is checked at once (proposed, no Check button), on every tap that fills it, also one that fills a hole left by sending a letter back: if the letters spell **any accepted word** (not only the one the round picked, e.g. TAPER for PATER), it counts and the next word appears; otherwise the answer row flashes red briefly and the letters stay, so the player can fix them.
+  - When the row is full, the word is checked at once (proposed, no Check button), on every tap that fills it, also one that fills a hole left by sending a letter back: if the letters spell **any accepted word** (not only the one the round picked, e.g. TAPER for PATER), it counts and the next word appears; otherwise the answer row turns red and shakes once, and the letters stay, so the player can fix them.
   - **Shuffle** reorders the rack's remaining tiles; it always changes the order when the letters allow it (not for one tile left or the same letter throughout), and with nothing placed it never shows an accepted word. **Clear** sends every answer letter back (proposed).
 - **Skip costs time** (user): **Skip** shows the solution in the answer row for a moment and moves on; it costs **5 seconds** of the countdown. A skip never counts as solved. The clock keeps running while the solution shows (about 1 s, in grey in the answer row), and player actions (letters, Clear, Shuffle, Skip) are ignored meanwhile, so a double tap on Skip cannot cost 10 s. A skip that uses up the last seconds also shows the solution for about 1 s and then the round ends (no next word).
 - **Scramble:** the rack's order is never itself an accepted word (re-shuffle until it isn't), and no word repeats within a round (proposed).
@@ -32,7 +32,14 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **Stats per level** (proposed): rounds played, best, average (whole words, rounded), words solved in total. Played counts every finished or abandoned started round.
 - **Stats panel:** from the header "Stats" button only (`StatsHeaderButton`), the whole screen below the header: an **Easy · Normal · Hard** switch (`selected`/`muted`) opening on the current level, the shared `StatsNumbers` row (Played, Best, Average, Words; `—` for Best, Average and Words while nothing is played at that level) and Close. A running round is paused while it is open.
 - **Save and resume:** a started, unfinished round is saved whenever it pauses (as in Snake) and resumes paused when Anagrams opens. A finished round deletes the save.
-- **Look: Pencil & Paper:** letter tiles like Make 24's cards, in the hub palette and `glyph-style`; a solved word flashes in the `accent` colour, a wrong full answer in the conflict red (both brief; reduced motion: colour only, no movement). No sound, no vibration.
+- **Look: Pencil & Paper:** letter tiles like Make 24's cards, in the hub palette and `glyph-style`. No sound, no vibration.
+- **Feedback (as built in A5):**
+  - **Solved:** the new empty answer slots (their outline) and the Score box (its background) turn a muted green (`solvedLine` / `solvedTint` in `constants/theme.ts`) and fade back to normal over 600 ms (`FLASH_MS` in `ui/use-anagram.ts`); the score number pops once (scale 1 → 1.15 → 1, 250 ms, `POP_MS`). A second solve restarts it; typing never waits for it. A pause or the round's end drops it at once; a skip does not start it.
+  - **Wrong:** the full row turns the conflict red and stays red until it is changed; it shakes once (300 ms, `SHAKE_MS`) each time it turns wrong, not again on Pause and Continue.
+  - **Reduce motion** (`hooks/use-reduced-motion`, read once in the screen): the green is held for 600 ms and then goes, with no fade and no pop; a wrong row only turns red, with no shake.
+  - **Score title:** `Normal · Score` stays; its font shrinks from 14 to 12 px when the box is narrower than 104 px (`NARROW_BOX` in `ui/score-box.tsx`), so it is not clipped at 320 px.
+  - **Announcements:** a hidden polite live region says "Solved" (while the solved feedback runs) and "Not a word" (while the row is wrong); the Time box has none.
+  - **Fit:** the letter block is at least `LAYER_HEIGHT` (112 px) high, so the paused layer and a two-line result fit with six tiles at 320×568.
 - **Input:** taps only. No on-screen or physical keyboard (proposed: the tiles are the keyboard; web uses mouse clicks).
 
 ## Decisions (decided 2026-10-21), with reasons
@@ -56,6 +63,9 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **The skipped solution shows in the answer row in grey** (`textSecondary`) (user, 2026-10-21). Reason: it sits where the player's own letters go, and grey says "not yours".
 - **The home tile shows TAE over EAT, the bottom row in accent blue** (user, 2026-10-21). Reason: scrambled over solved says what the game is at a glance.
 - **Pausing a round with no time left ends it** (decided in A4, 2026-10-21). `pause(game, elapsedMs)` ends a running round whose countdown is used up (the solution of the last skip is on show) instead of pausing it, so a paused round always has time left. Reason: a save without time left is rejected by `fromSave`, so pausing there (Pause button, screen off, leaving the screen, the picker or panel opening) would lose the round and never count it.
+- **Solved feedback is a muted green that fades out over 600 ms, with one pop of the score** (user, 2026-10-21, after trying A5 in the browser). Reason: the first version, a blue (`accent`) flash, "looked like a bug because it just flashes up"; a green that fades reads as "done". The first fade took 800 ms and was "a little too long and interrupted the flow", so it is 600 ms (the pop stays 250 ms).
+- **Wrong is red until changed, plus one shake** (user, 2026-10-21: "good"). Reason: the red alone is easy to miss in a 60-second sprint; the shake says "no" once without moving anything for good.
+- **The narrow Score title gets a smaller font, and keeps its words** (2026-10-21). Reason: `Normal · Score` names the level, which the player needs; a smaller font (14 → 12 px under a 104 px box) is cheaper than a shorter title.
 - **Heavy work ahead of time:** the word lists are built once by a build test and shipped as data (hub rule); the app only picks and shuffles.
 
 ## Architecture and storage keys
@@ -102,14 +112,18 @@ src/games/anagram/
     anagram-screen.tsx  # the layout: header Stats button, boxes Score · Time · Best, New + Pause, the letter block (answer
                         # row, rack, Dim layers for ready/paused/result), Shuffle · Clear · Skip; the picker and the stats
                         # panel each replace all of it; an empty area while loading
-    letters.tsx         # LetterFace (Make 24's card look, a FaceState normal/wrong/revealed/solved), AnswerRow, Rack,
-                        # tileSize(width, n) (n tiles fit the content width, 24..64 px)
-    score-box.tsx, level-picker.tsx, dim.tsx   # copies of Snake's (the score box takes a number or a string)
+    letters.tsx         # LetterFace (Make 24's card look, a FaceState normal/wrong/revealed/solved), AnswerRow (the wrong
+                        # shake, the solved outline fade), Rack, tileSize(width, n) (n tiles fit the content width, 24..64 px)
+    use-solved-fade.ts  # useSolvedFade(flash, restart, reduceMotion): one Animated.Value, 1 = green to 0 = normal over
+                        # FLASH_MS (JS driver: colours); used by the answer slots and the Score box
+    score-box.tsx, level-picker.tsx, dim.tsx   # copies of Snake's (the score box takes a number or a string; A5 added
+                        # the solved background fade, the score pop and the narrow title to it)
     stats-panel.tsx     # copy of Snake's: Easy · Normal · Hard switch (opens on the current level), StatsNumbers (Played,
                         # Best, Average, Words; `—` for Best, Average and Words while nothing is played) and Close
     tile.tsx            # home art: TAE over EAT (accent)
 ```
 - Best (the box, the picker and "New best!") comes from the stored stats.
+- Theme tokens (A5, `constants/theme.ts`, light and dark): `solvedTint` (the Score box at full green) and `solvedLine` (the slot outline at full green). Contrast measured: the box title on the tint 4.54:1 light / 4.69:1 dark, the outline 3.88:1 on the light page and 7.90:1 on the dark one.
 
 - Rebuilding the words (SCOWL 2020.12.07, an outside download the user releases): the header of `logic/build-words.test.ts` has the download and unpack steps; then `$env:ANAGRAM_BUILD = '<SCOWL final folder>'`, `npx.cmd jest src/games/anagram/logic/build-words.test.ts`, `Remove-Item Env:ANAGRAM_BUILD`. The build prints the counts per SCOWL size and length (the tuning aid) and the dropped `word <- stem` list. `ANSWER_MAX`, `ACCEPTED_MAX` and `SIZES` in that file are the knobs; the gate skips the build and runs only the data test.
 - `logic/` holds every rule: what a tap does, checking, skipping, the countdown arithmetic, the round end. The UI runs the clock and draws.
@@ -149,7 +163,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
 - [x] A2. **Logic, test first** (done 2026-10-21). `words` (with `scramble` and `permutations`), `game` (place/unplace/clear/shuffleRack, auto-check, any accepted anagram, skip −5 s, countdown to 0 ends the round, no repeats, pause/resume, finished rounds don't change), `stats`, `save` (round trips, bad data rejected, loads paused). The shuffle and the scramble check their result against `accepted` (tests over all answers and many seeds). Re-check: `npx.cmd jest src/games/anagram/logic`.
 - [x] A3. **Playable** (done 2026-10-21). Route, registry entry with `GameRoute`, home tile, the rack and answer row, Start, Pause/Continue (letters hidden), Skip, Shuffle, Clear, the countdown, Score/Best (session only until A4 stored them), result line + Play again, the level picker. Route tests with fake timers. Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suite `Anagrams screen`, plus `home tile` and `accessibility`) and `npx.cmd jest src/games/anagram/logic/game.test.ts`; the user checked it in the browser (2026-10-21) and renamed the game "Anagrams".
 - [x] A4. **Save, stats, abandon** (done 2026-10-21). A started round is saved whenever it pauses and resumes paused; the last level is stored; picking a level abandons a round in play and counts it; the header Stats panel; Best and New best! from the stored stats; pausing during the last skip's solution ends and counts the round (see Decisions). Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suites `resume`, `saving`, `level`, `abandon`, `stats`, `stats panel`) and `npx.cmd jest src/games/anagram/logic/game.test.ts`; the user checked it in the browser (2026-10-21).
-- [ ] A5. **Polish.** Fit at 360×640 and 320×568 (the tile size follows the width only, nothing guards the height yet), accessibility, dark mode, flash colours and timings. Still to do from the spec: the solved flash (accent) and the brief wrong flash (the wrong row is colour only and stays red until edited). The user checks it in the browser.
+- [x] A5. **Polish** (done 2026-10-21). Fit at 360×640 and 320×568 for all three levels, the solved green fade with the score pop (600 ms), the wrong-row shake, reduce motion, the narrow Score title, the live region; the user checked it in the browser (2026-10-21) and changed the solved flash from blue to a green fade and from 800 to 600 ms (see Decisions). Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suite `polish`: `solved feedback` (green, fade, pop, reduce motion, a second solve, no flash on wrong or skip, pausing ends it), `wrong shake`, `announcements`, `narrow screens` (the Score title size; `it.each` easy/normal/hard fit at 360×640 and 320×568)).
 
 Then the hub's Release milestone: the APK is built and tested once, after A5, with the Android checks below.
 
@@ -158,7 +172,11 @@ Then the hub's Release milestone: the APK is built and tested once, after A5, wi
 - [ ] Taps on the letter tiles register quickly and reliably, also fast sequences; no double placement.
 - [ ] Six letter tiles fit one row on the phone, readable, nothing under the navigation bar.
 - [ ] The countdown pauses in the background and with the screen off, the letters are hidden then, and the round comes back paused after closing the app.
-- [ ] The solved/wrong flashes are visible in light and dark mode.
+- [ ] The solved green and the wrong red are visible in light and dark mode.
+- [ ] The solved fade (slots and Score box) and the score pop run smoothly on the phone (the colour fade runs on the JS thread, the pop on the native one).
+- [ ] With "Remove animations" on in the phone's accessibility settings: no shake, no fade and no pop; the solved green still shows for a moment and goes.
+- [ ] TalkBack announces "Solved" after a word and "Not a word" for a wrong row.
+- [ ] The Score title `Normal · Score` fits on a narrow phone with the largest system font.
 - [ ] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
 - [ ] The Anagrams home tile (and its title) looks right next to the other games.
 - [ ] The three score boxes fit on a narrow phone: `Normal · Score` is not clipped or wrapped.
@@ -173,6 +191,6 @@ None.
 
 ## Known shortcuts
 
-The `ponytail:` comments in `src/games/anagram/logic/`.
+The `ponytail:` comments in `src/games/anagram/` (A5 added none to `ui/`). Re-check: `Get-ChildItem src/games/anagram -Recurse -File | Select-String -Pattern 'ponytail:'`.
 
 - `logic/save.ts`, `fromStats`: stats with any bad field fall back to empty as a whole; keep the good levels if a format change ever needs it. Re-check: `Select-String -Path src/games/anagram/logic/save.ts -Pattern 'ponytail:'`.
