@@ -1,4 +1,5 @@
 import words from '../data/words.json';
+import { permutations } from './words';
 
 const fs = jest.requireActual<{ readFileSync(path: string, encoding: 'utf8'): string }>('fs');
 const lists = words as Record<string, { answers: string[]; accepted: string[] }>;
@@ -19,13 +20,6 @@ const wordsIn = (file: string) =>
     .filter((line) => line !== '' && !line.startsWith('#'));
 const excluded = wordsIn('excluded.txt');
 const kept = wordsIn('keep.txt');
-
-const permutations = function* (letters: string): Generator<string> {
-  if (letters.length <= 1) return yield letters;
-  for (let i = 0; i < letters.length; i++) {
-    for (const rest of permutations(letters.slice(0, i) + letters.slice(i + 1))) yield letters[i] + rest;
-  }
-};
 
 describe('anagram word lists', () => {
   it('has exactly the lengths 4, 5 and 6', () => {
