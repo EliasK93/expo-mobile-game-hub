@@ -1,6 +1,6 @@
 /**
  * The "Pencil & Paper" palette, light and dark: graphite on notebook paper, blue ink, pencil-yellow selection.
- * Every colour in the app comes from here. The Sudoku cell tokens, the 2048 ramp, the Minesweeper and Snake tokens are part of it, so one place sets the whole look.
+ * Every colour in the app comes from here. The Sudoku cell tokens, the 2048 ramp, the Minesweeper and Snake tokens and Anagrams' solved green are part of it, so one place sets the whole look.
  * `cellSameValue` and `cellHint` have no counterpart in the palette mock-up; they are derived (see comments).
  */
 
@@ -21,6 +21,8 @@ export const Colors = {
     cellConflict: '#F8DCDA',
     digitConflict: '#C62828',
     cellHint: '#BFD0F5', // accent-blue tint: yellow is the selection, so the hint cannot be yellow too
+    solvedTint: '#D5E8D4', // Anagrams, a word solved: the Score box fades from this muted green (4.5:1 under textSecondary, 12.5:1 under text)
+    solvedLine: '#3E8E4E', // and the new empty slots' outline (3.9:1 on the paper)
     rampBoard: '#BBADA0', // 2048: the board frame, the empty cell, the tiles by value (ramp2 … ramp2048, rampSuper above 2048) and the numbers
     rampEmpty: '#CDC1B4',
     ramp2: '#EEE4DA',
@@ -79,6 +81,8 @@ export const Colors = {
     cellConflict: '#3A1F1F',
     digitConflict: '#FF8A80',
     cellHint: '#34507F',
+    solvedTint: '#264030', // 4.7:1 under textSecondary, 9.6:1 under text
+    solvedLine: '#6FBF7F', // 7.9:1 on the dark background
     rampBoard: '#4A443D',
     rampEmpty: '#5A534B',
     ramp2: '#6B6157',

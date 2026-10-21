@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, View } from 'react-native';
 
 import { glyphStyle } from '@/components/glyph-style';
 import { ThemedText } from '@/components/themed-text';
@@ -6,8 +7,11 @@ import { MaxContentWidth, Spacing, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { isWrong, type Game } from '../logic/game';
+import { useSolvedFade } from './use-solved-fade';
 
 const GAP = Spacing.two;
+export const SHAKE_MS = 300; // a wrong row shakes once; the same length as the solved flash
+const SHAKE_PX = 8;
 const MIN_TILE = 24; // a very narrow screen gets small tiles and an overflowing row, never a zero or negative tile
 const MAX_TILE = 64;
 
@@ -64,14 +68,54 @@ export function LetterFace({
 }
 
 // The answer row: one place per letter. A placed letter is a button that sends it back; an empty place is an outlined
-// box; a skipped word's solution shows in the grey of revealed text and cannot be tapped.
-type AnswerProps = { game: Game; size: number; live: boolean; onUnplace: (slot: number) => void };
+// box (green, fading out, while `flash` is on); a skipped word's solution shows in grey and cannot be tapped. A row that
+// turns wrong shakes once, not with reduced motion (the red alone shows it).
+type AnswerProps = {
+  game: Game;
+  size: number;
+  live: boolean;
+  flash: boolean;
+  reduceMotion: boolean;
+  onUnplace: (slot: number) => void;
+};
 
-export function AnswerRow({ game, size, live, onUnplace }: AnswerProps) {
+export function AnswerRow({ game, size, live, flash, reduceMotion, onUnplace }: AnswerProps) {
   const theme = useTheme();
+  const fade = useSolvedFade(flash, game.solved, reduceMotion);
+  const outline = fade.interpolate({ inputRange: [0, 1], outputRange: [theme.gridLine, theme.solvedLine] });
   const wrong = isWrong(game);
+  const [shake] = useState(() => new Animated.Value(0)); // 0 -> 1 over one shake
+  const wasWrong = useRef(wrong); // starts as the row is: the row mounts again after a pause, which is no new wrong
+  useEffect(() => {
+    const turnedWrong = wrong && !wasWrong.current;
+    wasWrong.current = wrong;
+    if (!turnedWrong || reduceMotion) return;
+    shake.setValue(0);
+    const run = Animated.timing(shake, {
+      toValue: 1,
+      duration: SHAKE_MS,
+      useNativeDriver: Platform.OS !== 'web', // react-native-web has no native driver
+    });
+    run.start();
+    return () => run.stop();
+  }, [wrong, reduceMotion, shake]);
+
   return (
-    <View testID="answer-row" style={styles.row}>
+    <Animated.View
+      testID="answer-row"
+      style={[
+        styles.row,
+        {
+          transform: [
+            {
+              translateX: shake.interpolate({
+                inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                outputRange: [0, -SHAKE_PX, SHAKE_PX, -SHAKE_PX, SHAKE_PX, 0],
+              }),
+            },
+          ],
+        },
+      ]}>
       {game.answer.map((k, slot) => {
         const n = slot + 1;
         if (game.revealed !== null) {
@@ -86,13 +130,18 @@ export function AnswerRow({ game, size, live, onUnplace }: AnswerProps) {
         }
         if (k === null) {
           return (
-            <View
+            <Animated.View
               key={slot}
               accessible
               accessibilityLabel={`Empty slot ${n}`}
               style={[
                 styles.empty,
-                { width: size, height: size, borderColor: theme.gridLine, borderRadius: Math.round(size * 0.08) },
+                {
+                  width: size,
+                  height: size,
+                  borderColor: outline,
+                  borderRadius: Math.round(size * 0.08),
+                },
               ]}
             />
           );
@@ -109,7 +158,7 @@ export function AnswerRow({ game, size, live, onUnplace }: AnswerProps) {
           </Pressable>
         );
       })}
-    </View>
+    </Animated.View>
   );
 }
 

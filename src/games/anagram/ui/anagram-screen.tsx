@@ -6,9 +6,10 @@ import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { formatTime } from '@/lib/timer';
 
-import { canAct } from '../logic/game';
+import { canAct, isWrong } from '../logic/game';
 import { LENGTH } from '../logic/words';
 import { Dim } from './dim';
 import { levelName, LevelPicker } from './level-picker';
@@ -17,8 +18,12 @@ import { ScoreBox } from './score-box';
 import { StatsPanel } from './stats-panel';
 import { useAnagram } from './use-anagram';
 
+// The tallest layer over the letters (a 44 px title or two 24 px lines, the gap, a 48 px button); Hard at 320 px has 104.
+export const LAYER_HEIGHT = Math.max(44 + Spacing.three + 48, 2 * 24 + Spacing.three + 48);
+
 export function AnagramScreen() {
   const a = useAnagram();
+  const reduceMotion = useReducedMotion(); // read here once: the boxes and the answer row mount again, and the read is async
   const { game, newBest } = a;
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -55,12 +60,25 @@ export function AnagramScreen() {
   // Ready and paused hide the letters: the clock isn't running, and no thinking time for free.
   const hidden = status === 'ready' || status === 'paused';
   const line = `Time! · ${game.solved} ${game.solved === 1 ? 'word' : 'words'}${newBest ? ' · New best!' : ''}`;
+  // What a screen reader says about the letters; "Solved" goes away with the flash, so a solve after it is announced again.
+  const announcement = a.solvedFlash ? 'Solved' : isWrong(game) ? 'Not a word' : '';
 
   return (
     <ThemedView testID="game-area" style={container}>
       {header}
+      <ThemedText
+        testID="announce"
+        accessibilityLiveRegion="polite" // Android: TalkBack reads a change; the web maps it to aria-live
+        style={styles.announce}>
+        {announcement}
+      </ThemedText>
       <ThemedView style={styles.row}>
-        <ScoreBox title={`${levelName(game.level)} · Score`} value={game.solved} />
+        <ScoreBox
+          title={`${levelName(game.level)} · Score`}
+          value={game.solved}
+          flash={a.solvedFlash}
+          reduceMotion={reduceMotion}
+        />
         {/* Whole seconds rounded up, so 0:00 shows only at the very end. */}
         <ScoreBox title="Time" value={formatTime(Math.ceil(a.remaining / 1000) * 1000)} />
         <ScoreBox title="Best" value={a.best} />
@@ -69,11 +87,19 @@ export function AnagramScreen() {
         <Button compact flex label="New" onPress={a.openPicker} />
         <Button compact flex label="Pause" disabled={status !== 'running'} onPress={a.pause} />
       </ThemedView>
-      {/* The block has the height of the two rows, so the dim layers have a spot while the letters are hidden. */}
-      <View style={[styles.block, { height: 2 * size + Spacing.three }]}>
+      {/* The block has the height of the two rows, so the dim layers have a spot while the letters are hidden; never less
+          than the tallest layer needs (see LAYER_HEIGHT). */}
+      <View testID="letter-block" style={[styles.block, { height: Math.max(2 * size + Spacing.three, LAYER_HEIGHT) }]}>
         {!hidden && (
           <>
-            <AnswerRow game={game} size={size} live={live} onUnplace={a.unplace} />
+            <AnswerRow
+              game={game}
+              size={size}
+              live={live}
+              flash={a.solvedFlash}
+              reduceMotion={reduceMotion}
+              onUnplace={a.unplace}
+            />
             <Rack game={game} size={size} live={live} onPlace={a.place} />
           </>
         )}
@@ -125,4 +151,7 @@ const styles = StyleSheet.create({
   buttons: { width: '80%', flexDirection: 'row', gap: Spacing.two },
   result: { width: '100%', alignItems: 'center', gap: Spacing.three },
   line: { textAlign: 'center', paddingHorizontal: Spacing.two },
+  // Read by screen readers, not seen: out of the layout (absolute), one pixel, clipped, transparent text. Not opacity 0:
+  // Android treats an invisible view as not there for TalkBack.
+  announce: { position: 'absolute', width: 1, height: 1, overflow: 'hidden', color: 'transparent' },
 });

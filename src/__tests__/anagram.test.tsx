@@ -1,9 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
-import { AppState, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Animated, AppState, Dimensions, StyleSheet } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { COMPACT_HEIGHT } from '@/components/button';
+import { Colors, Spacing } from '@/constants/theme';
+import { LAYER_HEIGHT } from '@/games/anagram/ui/anagram-screen';
+import { SHAKE_MS } from '@/games/anagram/ui/letters';
+import { POP_MS, SCORE_BOX_HEIGHT } from '@/games/anagram/ui/score-box';
+import { FLASH_MS } from '@/games/anagram/ui/use-anagram';
 import { EMPTY_STATS, type LevelStats } from '@/games/anagram/logic/stats';
 import { pickWord, scramble, type Level } from '@/games/anagram/logic/words';
 import { settle } from '@/test-utils/settle';
@@ -23,6 +28,7 @@ const RACKS: Record<string, string> = {
   water: 'tewra',
   light: 'gthli',
   bake: 'ekab',
+  garden: 'dnegra',
 };
 // The next words, in order: the first for the round on screen or the next new round, then one per word shown.
 const words = (...list: string[]) => {
@@ -865,5 +871,292 @@ describe('stats panel', () => {
 
     expect(screen.queryByText('Pick a level')).toBeNull();
     expect(screen.getByLabelText('Played: 0')).toBeTruthy();
+  });
+});
+
+// ---- A5: polish ----
+
+describe('polish', () => {
+  // The slots' outline and the Score box's background are animated colours: they read back as rgba() strings.
+  const rgba = (hex: string) => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, 1)`;
+  };
+  const { cellConflict } = Colors.light;
+  const [backgroundElement, gridLine, solvedTint, solvedLine] = [
+    Colors.light.backgroundElement,
+    Colors.light.gridLine,
+    Colors.light.solvedTint,
+    Colors.light.solvedLine,
+  ].map(rgba);
+  const style = (label: string) => StyleSheet.flatten(screen.getByLabelText(label).props.style);
+  const slotBorder = (n: number) => style(`Empty slot ${n}`).borderColor;
+  const boxBackground = (label: string) => style(label).backgroundColor;
+  const announced = () => screen.getByTestId('announce').props.children;
+
+  // The window the screen is laid out in; the Jest default is 750 wide.
+  const win = Dimensions.get('window');
+  const screenSize = Dimensions.get('screen');
+  const resize = (width: number, height: number) =>
+    act(() => Dimensions.set({ window: { ...win, width, height }, screen: { ...screenSize, width, height } }));
+
+  // The reduce-motion tests set the answer on the jest.fn itself (spyOn returns an existing mock as it is), so restoring does
+  // not undo it: every test starts with the setting off.
+  beforeEach(() => jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false));
+
+  afterEach(() => {
+    resize(win.width, win.height);
+    jest.restoreAllMocks(); // the Animated and AccessibilityInfo spies; the module mocks above are jest.fn()s
+  });
+
+  describe('solved feedback', () => {
+    // The Animated calls of one kind: the colour fade (JS driven) and the score's pop (native driven).
+    const runs = (timing: jest.SpyInstance, duration: number) =>
+      timing.mock.calls.filter(([, c]) => c.duration === duration).map(([, c]) => c);
+
+    it(`turns the new empty slots and the Score box muted green and fades them back over ${FLASH_MS} ms; typing does not wait`, async () => {
+      words('plate', 'house');
+      await open();
+      press('Start');
+      expect(slotBorder(1)).toBe(gridLine);
+      expect(boxBackground('Normal · Score 0')).toBe(backgroundElement);
+
+      tap('plate');
+
+      for (const slot of [1, 2, 3, 4, 5]) expect(slotBorder(slot)).toBe(solvedLine);
+      expect(boxBackground('Normal · Score 1')).toBe(solvedTint);
+      press('Letter H');
+      expect(screen.getByLabelText('Answer letter H, slot 1')).toBeTruthy();
+      await tick(FLASH_MS / 2);
+      expect(slotBorder(2)).not.toBe(solvedLine); // on its way back
+      expect(slotBorder(2)).not.toBe(gridLine);
+      expect(boxBackground('Normal · Score 1')).not.toBe(solvedTint);
+      expect(boxBackground('Normal · Score 1')).not.toBe(backgroundElement);
+
+      await tick(FLASH_MS / 2);
+
+      expect(slotBorder(2)).toBe(gridLine);
+      expect(boxBackground('Normal · Score 1')).toBe(backgroundElement);
+    });
+
+    it('runs the fade on the JS driver and the score pops once on the native one', async () => {
+      words('plate', 'house');
+      await open();
+      press('Start');
+      const timing = jest.spyOn(Animated, 'timing');
+
+      tap('plate');
+
+      // the slots and the box fade (colours cannot use the native driver)
+      expect(runs(timing, FLASH_MS)).toHaveLength(2);
+      expect(runs(timing, FLASH_MS).every((c) => c.useNativeDriver === false && c.toValue === 0)).toBe(true);
+      expect(runs(timing, POP_MS)).toHaveLength(1);
+      expect(runs(timing, POP_MS)[0].useNativeDriver).toBe(true); // the scale only: jest runs as a native platform
+    });
+
+    it(`with reduce motion on the green stays for ${FLASH_MS} ms and goes: no fade, no pop`, async () => {
+      jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+      words('plate', 'house');
+      await open();
+      press('Start');
+      const timing = jest.spyOn(Animated, 'timing');
+
+      tap('plate');
+
+      expect(boxBackground('Normal · Score 1')).toBe(solvedTint);
+      expect(slotBorder(1)).toBe(solvedLine);
+      await tick(FLASH_MS - 1);
+      expect(boxBackground('Normal · Score 1')).toBe(solvedTint);
+      expect(slotBorder(1)).toBe(solvedLine);
+      await tick(1);
+
+      expect(boxBackground('Normal · Score 1')).toBe(backgroundElement);
+      expect(slotBorder(1)).toBe(gridLine);
+      expect(runs(timing, FLASH_MS)).toHaveLength(0);
+      expect(runs(timing, POP_MS)).toHaveLength(0);
+    });
+
+    it('a second solve during the fade starts it again', async () => {
+      words('plate', 'house', 'water');
+      await open();
+      press('Start');
+      tap('plate');
+      await tick(FLASH_MS / 2);
+      expect(boxBackground('Normal · Score 1')).not.toBe(solvedTint);
+
+      tap('house');
+
+      expect(boxBackground('Normal · Score 2')).toBe(solvedTint);
+      expect(slotBorder(1)).toBe(solvedLine);
+      // half a fade after the second solve, the first fade would be over by now (a full one after the first)
+      await tick(FLASH_MS / 2);
+      expect(boxBackground('Normal · Score 2')).not.toBe(backgroundElement);
+      expect(boxBackground('Normal · Score 2')).not.toBe(solvedTint);
+      await tick(FLASH_MS / 2);
+      expect(boxBackground('Normal · Score 2')).toBe(backgroundElement);
+    });
+
+    it('a wrong row and a skip do not flash', async () => {
+      words('plate', 'house', 'water');
+      await open();
+      press('Start');
+
+      tap('tlpea');
+      expect(boxBackground('Normal · Score 0')).toBe(backgroundElement);
+      press('Clear');
+      press('Skip');
+      await tick(1000);
+
+      expect(boxBackground('Normal · Score 0')).toBe(backgroundElement);
+      expect(slotBorder(1)).toBe(gridLine);
+    });
+
+    it('pausing ends the flash at once', async () => {
+      words('plate', 'house');
+      await open();
+      press('Start');
+      tap('plate');
+
+      press('Pause');
+      press('Continue');
+
+      expect(slotBorder(1)).toBe(gridLine);
+      expect(boxBackground('Normal · Score 1')).toBe(backgroundElement);
+    });
+  });
+
+  describe('wrong shake', () => {
+    // The shake is one Animated.timing of SHAKE_MS; the spy is made after the screen is open and the round started.
+    const shakes = (timing: jest.SpyInstance) => timing.mock.calls.filter(([, c]) => c.duration === SHAKE_MS).length;
+
+    it('a wrong row shakes once each time it turns wrong, and stays red; Pause and Continue do not shake it again', async () => {
+      words('plate', 'house');
+      await open();
+      press('Start');
+      const timing = jest.spyOn(Animated, 'timing');
+
+      tap('tlpea');
+
+      expect(shakes(timing)).toBe(1);
+      expect(StyleSheet.flatten(screen.getByTestId('answer-row').props.style).transform).toHaveLength(1); // the row is bound to it
+      expect(faceColor('answer-face-0')).toBe(cellConflict);
+      press('Pause');
+      press('Continue');
+      expect(shakes(timing)).toBe(1);
+      expect(faceColor('answer-face-0')).toBe(cellConflict);
+      press('Answer letter P, slot 3');
+      press('Letter P');
+      expect(shakes(timing)).toBe(2);
+    });
+
+    it('a right word does not shake', async () => {
+      words('plate', 'house');
+      await open();
+      press('Start');
+      const timing = jest.spyOn(Animated, 'timing');
+
+      tap('plate');
+
+      expect(shakes(timing)).toBe(0);
+    });
+
+    it('with reduce motion on the row only turns red', async () => {
+      jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);
+      words('plate', 'house');
+      await open();
+      press('Start');
+      const timing = jest.spyOn(Animated, 'timing');
+
+      tap('tlpea');
+
+      expect(shakes(timing)).toBe(0);
+      expect(faceColor('answer-face-0')).toBe(cellConflict);
+    });
+  });
+
+  describe('announcements', () => {
+    it('a polite live region says "Not a word" for a wrong row and "Solved" for the flash; the Time box has none', async () => {
+      words('plate', 'house');
+      await open();
+      press('Start');
+      expect(screen.getByTestId('announce').props.accessibilityLiveRegion).toBe('polite');
+      expect(announced()).toBe('');
+
+      tap('tlpea');
+      expect(announced()).toBe('Not a word');
+      press('Answer letter P, slot 3');
+      expect(announced()).toBe('');
+      press('Clear');
+      tap('plate');
+      expect(announced()).toBe('Solved');
+      await tick(FLASH_MS);
+
+      expect(announced()).toBe('');
+      expect(screen.getByLabelText(/^Time /).props.accessibilityLiveRegion).toBeUndefined();
+    });
+  });
+
+  describe('narrow screens', () => {
+    const titleSize = () => StyleSheet.flatten(screen.getByText('Normal · Score').props.style).fontSize;
+
+    it('the Score title has the same size at 360 as at the 750 px default, and a smaller one at 320', async () => {
+      await open();
+      const full = titleSize();
+      screen.unmount();
+      await settle();
+
+      resize(360, 640);
+      await open();
+      expect(titleSize()).toBe(full);
+      screen.unmount();
+      await settle();
+
+      resize(320, 568);
+      await open();
+      expect(titleSize()).toBeLessThan(full);
+      expect(screen.getByText('Normal · Score')).toBeTruthy(); // still the whole title
+    });
+
+    const HEADER = 56; // the navigation header's usual height
+
+    it.each([
+      ['easy', 'bake', 4],
+      ['normal', 'plate', 5],
+      ['hard', 'garden', 6],
+    ] as const)(
+      '%s: the tile and block sizes at 360×640 and 320×568 give one row of tiles, a block that holds the layers, and a stack that fits the height',
+      async (level, word, n) => {
+        for (const [width, height] of [
+          [360, 640],
+          [320, 568],
+        ]) {
+          resize(width, height);
+          await seed('anagram:settings', { level });
+          words(word);
+          await open();
+          press('Start');
+
+          const sizes = screen.getAllByTestId(/^rack-face-/).map((f) => StyleSheet.flatten(f.props.style).width);
+          expect(sizes).toHaveLength(n);
+          const size = sizes[0];
+          expect(sizes.every((s) => s === size)).toBe(true);
+          expect(n * size + (n - 1) * Spacing.two).toBeLessThanOrEqual(width - 2 * Spacing.two); // one row
+          expect(size).toBeGreaterThanOrEqual(40); // and readable
+          expect(screen.getAllByLabelText(/^Empty slot/)).toHaveLength(n);
+
+          const block = StyleSheet.flatten(screen.getByTestId('letter-block').props.style).height;
+          expect(block).toBeGreaterThanOrEqual(2 * size + Spacing.three);
+          expect(block).toBeGreaterThanOrEqual(LAYER_HEIGHT);
+          // padding, the boxes, the New row, the letter block, the button row, and the gaps between the four
+          const stack = 2 * Spacing.two + SCORE_BOX_HEIGHT + COMPACT_HEIGHT + block + 48 + 3 * Spacing.three;
+          expect(stack).toBeLessThanOrEqual(height - HEADER);
+
+          await tick(60_000);
+          expect(screen.getByTestId('result')).toBeTruthy();
+          screen.unmount();
+          await settle();
+        }
+      },
+    );
   });
 });

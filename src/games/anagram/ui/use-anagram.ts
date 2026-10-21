@@ -35,6 +35,7 @@ import { EMPTY_STATS, isNewBest, recordRound, type Stats } from '../logic/stats'
 import type { Level } from '../logic/words';
 
 const REVEAL_MS = 1000; // how long the solution of a skipped word shows
+export const FLASH_MS = 600; // how long the solved feedback lasts (the green fades out over it)
 
 // The screen's state. The round and the stats live in refs as well as in state, so the handlers stay stable functions,
 // and every transition, save and stats write is computed outside any state updater (a transition that returns the same
@@ -46,8 +47,17 @@ export function useAnagram() {
   const [panel, setPanel] = useState(false); // the stats panel covers the game
   const [newBest, setNewBest] = useState(false); // the round that just ended set a new best
   const [lastLevel, setLastLevel] = useState<Level>('normal'); // the setting: marks the picker, not the round on screen
+  const [solvedFlash, setSolvedFlash] = useState(false); // a word was just solved: the new slots and the Score box flash
   const gameRef = useRef<Game | null>(null);
   const statsRef = useRef(stats);
+  const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const flash = useCallback((on: boolean) => {
+    clearTimeout(flashTimer.current);
+    setSolvedFlash(on);
+    if (on) flashTimer.current = setTimeout(() => setSolvedFlash(false), FLASH_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(flashTimer.current), []);
 
   const put = useCallback((g: Game) => {
     gameRef.current = g;
@@ -110,9 +120,12 @@ export function useAnagram() {
       const next = transition(g);
       if (next === g) return;
       put(next);
+      // A solved word starts the flash; a pause or the end drops it.
+      if (next.solved > g.solved) flash(true);
+      else if (next.status !== 'running') flash(false);
       if (next.status === 'over') finish(next);
     },
-    [put, finish],
+    [put, finish, flash],
   );
 
   // The countdown ends the round at 0:00 (tick does nothing while a solution shows or the round isn't running). The
@@ -132,9 +145,10 @@ export function useAnagram() {
     (level: Level) => {
       put(newRound(level, Math.random));
       setNewBest(false);
+      flash(false);
       reset();
     },
-    [put, reset],
+    [put, reset, flash],
   );
 
   // The picker and the panel replace the letters; the panel also closes the picker.
@@ -162,6 +176,7 @@ export function useAnagram() {
     remaining: game && game.status !== 'over' ? remainingMs(game, elapsedMs) : 0,
     best: game ? Math.max(stats[game.level].best, game.solved) : 0,
     newBest,
+    solvedFlash,
     picking,
     panel,
     lastLevel,
