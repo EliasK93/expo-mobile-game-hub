@@ -2,7 +2,7 @@
 
 Read this before working on Anagrams. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Anagrams lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-21):** A1 (the word data), A2 (the logic) and A3 (playable in the browser, session-only Best) are done. Next is A4 (save, stats, abandon). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
+**Status (2026-10-21):** A1 (the word data), A2 (the logic), A3 (playable in the browser) and A4 (save, stats, abandon) are done. Next is A5 (polish). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
 
 ## Overview
 
@@ -30,7 +30,7 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **Round end:** at 0:00 the rack is dimmed with a result line and a primary **Play again** (same level) and **New** (the picker): `Time! · 12 words`, plus ` · New best!` when the score beats the level's stored best (0 is never a best).
 - **Abandon:** picking a level while a started round runs or is paused ends it and records it with its score (Snake's rule). A round that hasn't started just goes.
 - **Stats per level** (proposed): rounds played, best, average (whole words, rounded), words solved in total. Played counts every finished or abandoned started round.
-- **Stats panel:** from the header "Stats" button only (`StatsHeaderButton`), the whole screen below the header: an **Easy · Normal · Hard** switch (`selected`/`muted`) opening on the current level, the shared `StatsNumbers` row (Played, Best, Average, Words) and Close. A running round is paused while it is open.
+- **Stats panel:** from the header "Stats" button only (`StatsHeaderButton`), the whole screen below the header: an **Easy · Normal · Hard** switch (`selected`/`muted`) opening on the current level, the shared `StatsNumbers` row (Played, Best, Average, Words; `—` for Best, Average and Words while nothing is played at that level) and Close. A running round is paused while it is open.
 - **Save and resume:** a started, unfinished round is saved whenever it pauses (as in Snake) and resumes paused when Anagrams opens. A finished round deletes the save.
 - **Look: Pencil & Paper:** letter tiles like Make 24's cards, in the hub palette and `glyph-style`; a solved word flashes in the `accent` colour, a wrong full answer in the conflict red (both brief; reduced motion: colour only, no movement). No sound, no vibration.
 - **Input:** taps only. No on-screen or physical keyboard (proposed: the tiles are the keyboard; web uses mouse clicks).
@@ -55,9 +55,10 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **The last skip shows its solution, then the round ends** (user, 2026-10-21). The rule: the round ends at 0:00, but a solution on show is shown to its end first (`tick` does nothing while one shows, `endReveal` ends the round). Pausing drops the solution; Continue at 0:00 ends the round on the next tick. Reason: ending at once would hide the word the player just gave up on.
 - **The skipped solution shows in the answer row in grey** (`textSecondary`) (user, 2026-10-21). Reason: it sits where the player's own letters go, and grey says "not yours".
 - **The home tile shows TAE over EAT, the bottom row in accent blue** (user, 2026-10-21). Reason: scrambled over solved says what the game is at a glance.
+- **Pausing a round with no time left ends it** (decided in A4, 2026-10-21). `pause(game, elapsedMs)` ends a running round whose countdown is used up (the solution of the last skip is on show) instead of pausing it, so a paused round always has time left. Reason: a save without time left is rejected by `fromSave`, so pausing there (Pause button, screen off, leaving the screen, the picker or panel opening) would lose the round and never count it.
 - **Heavy work ahead of time:** the word lists are built once by a build test and shipped as data (hub rule); the app only picks and shuffles.
 
-## Architecture and storage keys (the logic and the UI are built, storage comes in A4)
+## Architecture and storage keys
 
 ```
 src/games/anagram/
@@ -77,12 +78,13 @@ src/games/anagram/
                         # Actions: newRound(level, random), start, pause, resume, place(game, i, random) (checks a full row),
                         # unplace(game, slot), clear, shuffleRack(game, random), skip(game, elapsedMs, random) (sets
                         # revealed; a skip that uses up the countdown reveals the word and picks no next one),
+                        # pause(game, elapsedMs) (a running round with no time left ends instead of pausing),
                         # endReveal(game, elapsedMs) (clears revealed, then ends the round if no time is left),
                         # tick(game, elapsedMs) (ends the round at 0:00, a no-op while revealed). canAct (running with
                         # nothing revealed) is the one rule for what the player can do, the UI uses it too; isWrong (full
                         # row while running) is derived, isInPlay (running or paused) is the abandon/save rule. Everything
-                        # is a no-op unless the round is running (start: ready only, resume: paused only); a finished
-                        # round never changes.
+                        # is a no-op unless the round is running (start: ready only, resume: paused only, pause: running
+                        # only); a finished round never changes.
     stats.ts            # per level { played, best, totalWords }; EMPTY_STATS, recordRound, isNewBest, average
     save.ts             # keys and versions; Settings (default Normal); toSave (null unless in play), fromSave (loads
                         # paused, revealed null), fromStats, fromSettings
@@ -90,18 +92,24 @@ src/games/anagram/
     words-data.test.ts  # the data check, in the gate: pins the exact counts per length (update COUNTS after a rebuild)
     *.test.ts           # next to each module (words, game, stats, save)
   ui/
-    use-anagram.ts      # copied from Snake's use-snake.ts without the storage: the round in a ref and in state, `act` for
-                        # transitions, useGameClock (enabled while running and the picker is closed; onStop pauses), a tick
-                        # effect on elapsedMs, the 1 s reveal timeout (endReveal), session stats (recordRound/isNewBest), begin
-    anagram-screen.tsx  # the layout: boxes Score · Time · Best, New + Pause, the letter block (answer row, rack, Dim
-                        # layers for ready/paused/result), Shuffle · Clear · Skip; the picker replaces all of it
+    use-anagram.ts      # copied from Snake's use-snake.ts: the round in a ref and in state (null until storage is read), `act`
+                        # for transitions, useGameClock (enabled while running and the picker and the stats panel are closed;
+                        # onStop pauses with the time reached, then saves), a tick effect on elapsedMs, the 1 s reveal timeout
+                        # (endReveal). Storage: loads save, stats and settings together (a saved round opens paused at its
+                        # time); `finish` (isNewBest, recordRound, replaceSaveWithStats: the save goes first) on the round end
+                        # and on abandoning; pickLevel abandons a round in play, stores the level (lastLevel marks the
+                        # picker) and begins a new one; openPanel closes the picker
+    anagram-screen.tsx  # the layout: header Stats button, boxes Score · Time · Best, New + Pause, the letter block (answer
+                        # row, rack, Dim layers for ready/paused/result), Shuffle · Clear · Skip; the picker and the stats
+                        # panel each replace all of it; an empty area while loading
     letters.tsx         # LetterFace (Make 24's card look, a FaceState normal/wrong/revealed/solved), AnswerRow, Rack,
                         # tileSize(width, n) (n tiles fit the content width, 24..64 px)
     score-box.tsx, level-picker.tsx, dim.tsx   # copies of Snake's (the score box takes a number or a string)
-    stats-panel.tsx     # A4
+    stats-panel.tsx     # copy of Snake's: Easy · Normal · Hard switch (opens on the current level), StatsNumbers (Played,
+                        # Best, Average, Words; `—` for Best, Average and Words while nothing is played) and Close
     tile.tsx            # home art: TAE over EAT (accent)
 ```
-- Best (the box, the picker and "New best!") is kept for the visit only until A4 stores the stats.
+- Best (the box, the picker and "New best!") comes from the stored stats.
 
 - Rebuilding the words (SCOWL 2020.12.07, an outside download the user releases): the header of `logic/build-words.test.ts` has the download and unpack steps; then `$env:ANAGRAM_BUILD = '<SCOWL final folder>'`, `npx.cmd jest src/games/anagram/logic/build-words.test.ts`, `Remove-Item Env:ANAGRAM_BUILD`. The build prints the counts per SCOWL size and length (the tuning aid) and the dropped `word <- stem` list. `ANSWER_MAX`, `ACCEPTED_MAX` and `SIZES` in that file are the knobs; the gate skips the build and runs only the data test.
 - `logic/` holds every rule: what a tap does, checking, skipping, the countdown arithmetic, the round end. The UI runs the clock and draws.
@@ -139,8 +147,8 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
 
 - [x] A1. **Word data** (done 2026-10-21). SCOWL downloaded once (released by the user); `data/words.json` built by the env-gated build test (decisions above); `keep.txt`, `excluded.txt` and `SCOWL-LICENSE.txt` shipped with it. Re-check: `npx.cmd jest src/games/anagram/logic/words-data.test.ts` (suite `anagram word lists`: lengths, lower case, sorted, no duplicates, answers ⊆ accepted, excluded words not answers but accepted, keep words are answers, inflected forms accepted but not answers, every answer has a non-word letter order, exact counts).
 - [x] A2. **Logic, test first** (done 2026-10-21). `words` (with `scramble` and `permutations`), `game` (place/unplace/clear/shuffleRack, auto-check, any accepted anagram, skip −5 s, countdown to 0 ends the round, no repeats, pause/resume, finished rounds don't change), `stats`, `save` (round trips, bad data rejected, loads paused). The shuffle and the scramble check their result against `accepted` (tests over all answers and many seeds). Re-check: `npx.cmd jest src/games/anagram/logic`.
-- [x] A3. **Playable** (done 2026-10-21). Route, registry entry with `GameRoute`, home tile, the rack and answer row, Start, Pause/Continue (letters hidden), Skip, Shuffle, Clear, the countdown, Score/Best (session only until A4), result line + Play again, the level picker. Route tests with fake timers. Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suite `Anagram Sprint screen`, plus `home tile` and `accessibility`) and `npx.cmd jest src/games/anagram/logic/game.test.ts`; the user checked it in the browser (2026-10-21) and renamed the game "Anagrams".
-- [ ] A4. **Save, stats, abandon.** Resume paused, last level, abandon rule, stats panel, bests from storage. Route tests; seed snippets for the user.
+- [x] A3. **Playable** (done 2026-10-21). Route, registry entry with `GameRoute`, home tile, the rack and answer row, Start, Pause/Continue (letters hidden), Skip, Shuffle, Clear, the countdown, Score/Best (session only until A4 stored them), result line + Play again, the level picker. Route tests with fake timers. Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suite `Anagrams screen`, plus `home tile` and `accessibility`) and `npx.cmd jest src/games/anagram/logic/game.test.ts`; the user checked it in the browser (2026-10-21) and renamed the game "Anagrams".
+- [x] A4. **Save, stats, abandon** (done 2026-10-21). A started round is saved whenever it pauses and resumes paused; the last level is stored; picking a level abandons a round in play and counts it; the header Stats panel; Best and New best! from the stored stats; pausing during the last skip's solution ends and counts the round (see Decisions). Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suites `resume`, `saving`, `level`, `abandon`, `stats`, `stats panel`) and `npx.cmd jest src/games/anagram/logic/game.test.ts`; the user checked it in the browser (2026-10-21).
 - [ ] A5. **Polish.** Fit at 360×640 and 320×568 (the tile size follows the width only, nothing guards the height yet), accessibility, dark mode, flash colours and timings. Still to do from the spec: the solved flash (accent) and the brief wrong flash (the wrong row is colour only and stays red until edited). The user checks it in the browser.
 
 Then the hub's Release milestone: the APK is built and tested once, after A5, with the Android checks below.
@@ -156,6 +164,8 @@ Then the hub's Release milestone: the APK is built and tested once, after A5, wi
 - [ ] The three score boxes fit on a narrow phone: `Normal · Score` is not clipped or wrapped.
 - [ ] In the result, taps on the dimmed letters do nothing, and Play again and New are tappable.
 - [ ] Screen turned off during the 1 s solution of a skip: the round comes back paused, no grey solution row stuck.
+- [ ] A round sent to the background mid-word and the app killed from the app switcher comes back paused at the same word, rack, answer, score and time.
+- [ ] Screen turned off (or the app sent to the background) during the solution of the last skip: the round ends and is counted in the stats (Played +1); reopening shows a fresh ready round, not a paused one.
 
 ## Open decisions
 
