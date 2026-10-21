@@ -33,7 +33,7 @@ const TEXT: Record<FaceState, ThemeColor> = {
 
 // What a letter tile looks like, in one place (the game and the home tile both draw with it): Make 24's card look, a paper
 // card with a thicker bottom edge. A wrong row is drawn in the conflict colours.
-export function LetterFace({
+function LetterFace({
   letter,
   size,
   state = 'normal',

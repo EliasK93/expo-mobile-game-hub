@@ -12,7 +12,7 @@ import { Mine } from './mine';
 
 // What a cell looks like, in one place (the board and the home tile both draw with it). Covered cells and flags are raised
 // (light top and left edge, dark bottom and right), opened cells are flat with a grid line.
-export function CellFace({ view, size }: { view: CellView; size: number }) {
+function CellFace({ view, size }: { view: CellView; size: number }) {
   const theme = useTheme();
   const raised = view === 'covered' || view === 'flag' || view === 'wrongFlag';
   const edge = Math.max(1, Math.round(size * 0.12));

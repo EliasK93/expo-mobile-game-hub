@@ -31,7 +31,7 @@ export type CardState = 'normal' | 'selected' | 'hint';
 
 // What a card looks like, in one place (the board and the home tile both draw with it): a paper card with a thicker
 // bottom edge. The selected card is pencil yellow, a hinted one the blue hint tint (yellow already means selected).
-export function CardFace({
+function CardFace({
   text,
   size,
   state = 'normal',

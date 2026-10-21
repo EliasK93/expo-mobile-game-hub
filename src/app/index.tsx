@@ -75,6 +75,6 @@ const styles = StyleSheet.create({
   // Three tiles per row: each cell is a third of the width, with its own padding as the gap.
   grid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -Spacing.two },
   cell: { width: '33.333%', padding: Spacing.two, gap: Spacing.one },
-  art: { aspectRatio: 1, borderRadius: Spacing.three, overflow: 'hidden' },
+  art: { aspectRatio: 1 }, // the tile draws its own rounded corners
   name: { textAlign: 'center' },
 });

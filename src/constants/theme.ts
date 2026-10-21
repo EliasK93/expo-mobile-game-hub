@@ -1,6 +1,6 @@
 /**
  * The "Pencil & Paper" palette, light and dark: graphite on notebook paper, blue ink, pencil-yellow selection.
- * Every colour in the app comes from here. The Sudoku cell tokens, the 2048 ramp, the Minesweeper and Snake tokens and Anagrams' solved green are part of it, so one place sets the whole look.
+ * Every colour in the app comes from here. The Sudoku cell tokens, the 2048 ramp, the Minesweeper and Snake tokens, Anagrams' solved green and the home tiles' glyph accents are part of it, so one place sets the whole look.
  * `cellSameValue` and `cellHint` have no counterpart in the palette mock-up; they are derived (see comments).
  */
 
@@ -64,6 +64,12 @@ export const Colors = {
     snakeBody: '#5F6368',
     snakeHead: '#5B7FC7',
     snakeApple: '#C9594F',
+    glyphSudoku: '#3C5CCC', // The home tiles: each game's accent, for its glyph and (at 16%) its tile. Ratios are glyph vs tint over the paper: 4.5:1
+    glyph2048: '#C0622A', // 3.3:1
+    glyphMinesweeper: '#C0412A', // 4.0:1
+    glyphMake24: '#9A7A0A', // 3.2:1
+    glyphSnake: '#1F7A6E', // 4.0:1
+    glyphAnagram: '#7B5CC4', // 3.9:1
   },
   dark: {
     text: '#ECECEA',
@@ -124,6 +130,12 @@ export const Colors = {
     snakeBody: '#B8B9B6',
     snakeHead: '#7F9AD6',
     snakeApple: '#D9786F',
+    glyphSudoku: '#8EA8F2', // 20% tint over the dark background: 5.2:1
+    glyph2048: '#D8874F', // 4.6:1
+    glyphMinesweeper: '#D0624C', // 3.6:1
+    glyphMake24: '#C6A744', // 5.2:1
+    glyphSnake: '#5CBFB1', // 5.5:1
+    glyphAnagram: '#B29CF0', // 5.2:1
   },
 } as const;
 

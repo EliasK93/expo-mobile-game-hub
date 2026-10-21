@@ -1,43 +1,16 @@
-import { useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { Circle, Path } from 'react-native-svg';
 
-import { ThemedView } from '@/components/themed-view';
+import { GlyphTile, lineProps } from '@/components/glyph-tile';
+import { useTheme } from '@/hooks/use-theme';
 
-import type { CellView } from '../logic/game';
-import { CellFace } from './cell';
-
-// The tile on home: a mini 5×5 board drawn with the game's own cell look: an opened corner with a 1 and a 2, covered cells
-// and a flag. Fills the square it is given, and measures itself to size the cells.
-const C = 'covered';
-const GRID: CellView[][] = [
-  [0, 0, 1, C, C],
-  [0, 0, 1, C, 'flag'],
-  [1, 1, 2, C, C],
-  [C, C, C, C, C],
-  [C, C, C, C, C],
-];
-
+// The tile on home: a mine, in the game's accent on the shared glyph tile.
 export function MinesweeperTile() {
-  const [side, setSide] = useState(0); // 0 until the first layout: nothing is drawn then
-  const onLayout = (e: LayoutChangeEvent) => setSide(e.nativeEvent.layout.width);
+  const { glyphMinesweeper: c, background } = useTheme();
   return (
-    <ThemedView type="backgroundElement" style={styles.tile}>
-      <View onLayout={onLayout} style={styles.board}>
-        {side > 0 &&
-          GRID.map((row, r) => (
-            <View key={r} style={styles.row}>
-              {row.map((view, c) => (
-                <CellFace key={c} view={view} size={side / GRID.length} />
-              ))}
-            </View>
-          ))}
-      </View>
-    </ThemedView>
+    <GlyphTile color={c}>
+      <Path d="M50 29V71M29 50H71M35.2 35.2L64.8 64.8M64.8 35.2L35.2 64.8" {...lineProps(c)} />
+      <Circle cx={50} cy={50} r={14} fill={c} />
+      <Circle cx={44.5} cy={44.5} r={3.5} fill={background} opacity={0.75} />
+    </GlyphTile>
   );
 }
-
-const styles = StyleSheet.create({
-  tile: { flex: 1, padding: '12%', justifyContent: 'center' },
-  board: { width: '100%', aspectRatio: 1 },
-  row: { flexDirection: 'row' },
-});

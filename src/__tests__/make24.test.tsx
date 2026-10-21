@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { StyleSheet } from 'react-native';
 
 import { Colors } from '@/constants/theme';
@@ -59,23 +59,6 @@ const SOLVE: (number | Op)[] = [2, '/', 0, 1, '-', 0, 3, '/', 0];
 afterEach(async () => {
   jest.useRealTimers();
   await settle();
-});
-
-describe('home tile', () => {
-  it('lays the four cards out as two rows of two, also when the measured side is fractional', async () => {
-    renderRouter('./src/app', { initialUrl: '/' });
-    await settle();
-
-    // A fractional width is what a scaled browser display measures; wrapping used to put every card on its own row.
-    fireEvent(screen.getByTestId('make24-tile-grid'), 'layout', {
-      nativeEvent: { layout: { width: 100.4, height: 100.4 } },
-    });
-
-    const cardsIn = (row: number) =>
-      within(screen.getByTestId(`make24-tile-row-${row}`)).getAllByTestId(/^make24-tile-card-/);
-    expect(cardsIn(0)).toHaveLength(2);
-    expect(cardsIn(1)).toHaveLength(2);
-  });
 });
 
 describe('opening', () => {

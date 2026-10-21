@@ -478,27 +478,6 @@ describe('Anagrams screen', () => {
   });
 });
 
-describe('home tile', () => {
-  it('lays the letters out as two rows of three, also when the measured side is fractional', async () => {
-    renderRouter('./src/app', { initialUrl: '/' });
-    await settle();
-
-    // A fractional width is what a scaled browser display measures; a wrapping row put letters on their own rows.
-    const side = 101.333;
-    fireEvent(screen.getByTestId('anagram-tile-grid'), 'layout', {
-      nativeEvent: { layout: { width: side, height: side } },
-    });
-
-    for (const row of [0, 1]) {
-      const faces = within(screen.getByTestId(`anagram-tile-row-${row}`)).getAllByTestId(/^anagram-tile-letter-/);
-      expect(faces).toHaveLength(3);
-      const sizes = faces.map((f) => StyleSheet.flatten(f.props.style).width);
-      expect(sizes[0] * 3).toBeLessThanOrEqual(side);
-      expect(sizes[0]).toBe(Math.floor(sizes[0]));
-    }
-  });
-});
-
 describe('accessibility', () => {
   it('the result line is a polite live region', async () => {
     await open();
