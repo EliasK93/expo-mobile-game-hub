@@ -9,7 +9,7 @@ Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: 
 Minesweeper is the fourth game in the hub: open every cell that hides no mine. A number tells how many of the 8 neighbours hide a mine; flags mark the mines you have found. One wrong tap on a mine ends the game.
 - It lives in `src/games/minesweeper/`.
 - Its route is `src/app/minesweeper.tsx` (route `/minesweeper`, game id `'minesweeper'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
-- Its entry is in `src/games/registry.ts`, with a `Tile` for the art on home.
+- Its entry is in `src/games/registry.ts`, with a `Tile` for the glyph on home.
 - Components are named `Minesweeper…` (e.g. `MinesweeperScreen`, `MinesweeperTile`).
 
 It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's levels, picker and timer; 2048's stats panel, header Stats button, save and abandon rules; 2048's screen that measures itself. The look leans towards the original Windows Minesweeper (3D cells, smiley, red LED counters), drawn in the hub's own colours.
@@ -153,8 +153,8 @@ src/games/minesweeper/
                     # rejects states no game can reach), fromStats, fromSettings (default beginner)
   ui/
     minesweeper-screen.tsx, board.tsx, cell.tsx, top-bar.tsx (LED boxes + face), face.tsx, mine.tsx/flag.tsx (drawn),
-    use-minesweeper.ts, level-picker.tsx, colors.ts (number -> token, one place), format.ts (led, levelName), tile.tsx (home art,
-    drawn with the board's CellFace); stats-panel.tsx (M3). logic/game.ts also has cellViews(game): what each cell shows
+    use-minesweeper.ts, level-picker.tsx, colors.ts (number -> token, one place), format.ts (led, levelName), tile.tsx (home glyph:
+    a mine, red, on the hub's GlyphTile); stats-panel.tsx (M3). logic/game.ts also has cellViews(game): what each cell shows
     (number, covered, flag, wrong flag, mine, hit), so the loss and win display are game rules, not UI
 ```
 
@@ -175,7 +175,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `stats`: played, wins, win %, best time, streaks, abandon = loss;
   - `save`: round trips (also unmined), bad data rejected, finished games rejected.
 - [x] M2. **Playable.** Done 2026-10-18, checked by the user in the browser (level sizes and the Dig/Flag look changed after the check, see Decisions). Re-check: `npx jest src/__tests__/minesweeper.test.tsx src/games/minesweeper` (e.g. tests named with `long press`, `Flag mode`, `dizzy`, `cool face`, `timer`, `12 × 18`). Accessibility labels (cells, face, LEDs) came with M2, because the route tests find the cells by them.
-  - The route, the registry entry with `GameRoute`, the colour tokens, the home tile (a mini board with covered and opened cells, a couple of numbers, a flag; the user checks the look).
+  - The route, the registry entry with `GameRoute`, the colour tokens, the home tile (then a mini board with covered and opened cells, a couple of numbers, a flag; a glyph since 2026-10-21: a mine, red, `glyphMinesweeper`, on the hub's `GlyphTile`, so all home tiles look like one set, see CLAUDE.md, Stack; the user checks the look).
   - The board for the three levels with the 3D bevel, tap/long press, the Dig/Flag switch, the top bar (LED counters, drawn face), the timer, the level picker on the face, the loss and win display on the board.
   - Route tests: open by tap, flag by long press, flag mode, flood fill, loss, win, the picker and an Expert game, the LED values.
   - The user checks it in the browser.
@@ -196,7 +196,7 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 - [x] The 3D bevel, numbers, mines, flags and face look right in light and dark mode; numbers and LED digits are vertically centred (shared glyph style).
 - [x] The timer pauses in the background and with the screen off, and an unfinished game comes back directly after closing the app, at the same time.
 - [x] The header Stats button sits clear of the screen edge; the picker and the stats panel fit without scrolling.
-- [x] The Minesweeper home tile looks right next to the other games.
+- [x] The Minesweeper home tile looks right next to the other games. (Checked for the old mini-board tile; the glyph tile is covered by the hub-wide glyph check in CLAUDE.md.)
 - [x] A finger on a covered cell sinks it and makes the face surprised; lifting it or sliding away brings both back. After a win or loss the stats panel opens about 1 second later.
 - [x] With TalkBack on, the cells are read with their state, double tap opens, and double-tap-and-hold flags.
 

@@ -9,7 +9,7 @@ Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the 
 Make 24 is the fifth game in the hub, the classic "24 game": four numbers from 1 to 13; combine all four with + − × ÷ to make exactly 24. Each number is used exactly once, in any order, with any bracketing. Example: 3 3 8 8 → 8 ÷ (3 − 8 ÷ 3) = 24.
 - It lives in `src/games/make24/`.
 - Its route is `src/app/make24.tsx` (route `/make24`, game id `'make24'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
-- Its entry is in `src/games/registry.ts` (title "Make 24"), with a `Tile` for the art on home.
+- Its entry is in `src/games/registry.ts` (title "Make 24"), with a `Tile` for the glyph on home.
 - Components are named `Make24…` (e.g. `Make24Screen`, `Make24Tile`). Identifiers can't start with a digit, so the prefix is the whole name.
 
 It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-18). It follows the patterns the other games established; Minesweeper (`docs/minesweeper.md`) is the most recent finished game and the best reference for structure, tests and workflow.
@@ -127,7 +127,7 @@ src/games/make24/
   data/puzzles.json
   ui/
     make24-screen.tsx, use-make24.ts, cards.tsx (2 x 2 grid, card size, text size), operators.tsx, level-picker.tsx,
-    stats-panel.tsx, tile.tsx (home art)
+    stats-panel.tsx, tile.tsx (home glyph: the four operators, yellow, on the hub's GlyphTile)
 ```
 
 The selected card and operator may live in the UI hook instead of `Game` if that is simpler; decide in M1's plan. Whatever decides a rule (what a tap does, the result, solved) stays in `logic/`.
@@ -153,13 +153,13 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
 - [x] M3. **Playable.** Done 2026-10-19, checked by the user in the browser ("all good"). Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `opening`, `selecting`, `combining`, `finishing`, `level picker`, `timer`). Built as:
   - Rows from top: `Easy · 0:42` (labelled `Time 0:42`), the message line (fixed height, up to two lines), the 2 × 2 cards, the operator row (`Plus`, `Minus`, `Times`, `Divided by`), the action row (fixed height: compact Undo · Hint · Give up · New while playing; New · primary Next once finished). The picker replaces everything below the top line; the clock pauses while it is open.
   - Cards: the size is the smaller of what fits the width and the measured height (48 to 200); text size `min(size × 0.5, (size − 8) / (0.6 × length))`. A hinted card is `cellHint` (Sudoku's hint tint) and wins over selected; the label carries both (`Card 8, selected, hint`). Cards are disabled once the puzzle is finished. The raised edge is a thicker bottom border (`gridLine` and `backgroundSelected` are the same colour).
-  - The home tile shows 3 3 8 8 as paper cards on `backgroundSelected`, so they stand out.
+  - ~~The home tile shows 3 3 8 8 as paper cards on `backgroundSelected`, so they stand out.~~ Replaced 2026-10-21: the home tile is a glyph, the four operators in yellow (`glyphMake24`) on the hub's `GlyphTile`, because all home tiles became glyphs of one style (see CLAUDE.md, Stack).
   - `pool.ts` `pickPuzzle(level, order, random)` wraps `nextPuzzle` over the shipped pool; the orders live in memory until M4 stores them. Route tests swap it with `jest.mock` + `requireActual`.
-  - The route, the registry entry with `GameRoute`, the home tile (four paper cards, e.g. 3 3 8 8; the user checks the look).
+  - The route, the registry entry with `GameRoute`, the home tile (then four paper cards, 3 3 8 8; a glyph since 2026-10-21; the user checks the look).
   - The cards, operators, combine flow, Undo, Hint, Give up, the message line, the timer, the result line + Next, the level picker on New.
   - Route tests: combine and solve, − and ÷ order, ÷ 0, not 24, undo, hint, give up, next, the picker.
   - The user checks it in the browser.
-- [x] M4. **Save, stats, abandon, order.** Done 2026-10-19, checked by the user in the browser. Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `resume`, `saving`, `order`, `stats`, `abandon`, `stats panel and picker`). The stats panel has no result line and no new-game buttons (the result line stays on the board). The browser check found the home tile wrapping its cards into one column at phone width (fractional measured width); the card size is now floored and the gap takes the rest.
+- [x] M4. **Save, stats, abandon, order.** Done 2026-10-19, checked by the user in the browser. Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `resume`, `saving`, `order`, `stats`, `abandon`, `stats panel and picker`). The stats panel has no result line and no new-game buttons (the result line stays on the board). The browser check found the home tile wrapping its cards into one column at phone width (fractional measured width); the card size was floored and the gap took the rest (that tile and its `home tile` test are gone since the glyph tiles of 2026-10-21).
   - Resume directly, the last used level, the shuffled order, the abandon rule, the stats panel from the header (shared components), bests in the picker.
   - Route tests for each, with the AsyncStorage mock; a seed snippet for the user.
   - The user checks it in the browser.
@@ -177,7 +177,7 @@ Then the hub's Release milestone: the APK is built and tested once, after M5, wi
 - [x] Cards, operators, the action row and the message line fit without scrolling; nothing sits under the navigation bar.
 - [x] The timer pauses in the background and with the screen off; an unfinished puzzle comes back directly after closing the app, with its steps and time.
 - [x] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
-- [x] The Make 24 home tile looks right next to the other games.
+- [x] The Make 24 home tile looks right next to the other games. (Checked for the old paper-cards tile; the glyph tile is covered by the hub-wide glyph check in CLAUDE.md.)
 - [x] With TalkBack on, cards and operators are read with their value and state, and a new message ("Can't divide by 0", "Try …", the result line) is read out by itself.
 
 ## Open decisions

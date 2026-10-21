@@ -4,7 +4,7 @@ Read this before working on Sudoku. The hub-wide rules (gate, tests, git, Herdr,
 
 ## Overview
 
-Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its route in `src/app/sudoku.tsx` (the screen wrapped in the hub's `GameRoute`, which records playtime) and its entry in `src/games/registry.ts` (with its `Tile`, the art on home).
+Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its route in `src/app/sudoku.tsx` (the screen wrapped in the hub's `GameRoute`, which records playtime) and its entry in `src/games/registry.ts` (with its `Tile`, the glyph on home).
 
 ## Spec (v1)
 
@@ -34,7 +34,7 @@ Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its ro
   - Save version 2 adds `level`; older saves are rejected and Sudoku starts fresh (user, 2026-10-17: saved data doesn't need to survive during development, so the old `classic` bucket and version 1 loader were removed). Stats buckets: the level number as text (`"3"`).
   - Hint: the "Hint" button highlights the cells involved (theme token `cellHint`, a blue tint because the selection is yellow) and explains; "Apply" makes the move with `setValue`, so Undo works, and "Close" drops it. While a hint is shown, the hint panel (explanation, Apply, Close) takes the place of the number pad, the Undo/Redo/Notes/Erase row and the Hint / New game row (decided 2026-10-16, like the level picker replacing the grid), so its buttons stay on screen even with a three-line explanation; the grid stays visible for the highlighted cells, and Apply or Close brings the pad back. Undo, a move or New game close the hint too (in the hook; with the pad hidden only Apply and Close can do it from the screen). Hints reason from the real candidates, not the notes. A wrong digit you entered is reported first ("This 4 is wrong.") and Apply erases it; that is the one place the solution is compared. Showing a hint already sets `hinted`: such a win counts as solved but stays out of best and average time.
   - Stats in the picker (decided 2026-10-16, replaces the lines on home): each level button shows "5 solved · Best 3:10" from `sudoku:stats` under its name; a level with only hinted wins shows just "2 solved", a level without wins shows nothing. No average is shown (it is still stored). The stats are read when Sudoku opens and refreshed when a win is recorded. Home shows no stats.
-  - Tile (decided 2026-10-16): `ui/tile.tsx`, a small 3×3 Sudoku in the theme colours with a few digits, one cell selected (yellow) and two digits in blue ink.
+  - Tile: `ui/tile.tsx`, a glyph (a 3×3 grid with a filled centre cell, blue, `glyphSudoku`) on the hub's `GlyphTile` (user, 2026-10-21). It replaces the tile decided 2026-10-16, a small 3×3 Sudoku with a few digits and a yellow selected cell, because all home tiles became glyphs of one style (see CLAUDE.md, Stack).
   - The in-game "New game" button and the "Continue" button of the Continue prompt use the hub Button's `primary` (accent) variant; every other Sudoku button is plain.
 
 ## Architecture
@@ -82,7 +82,7 @@ The shipped pool: 1000 puzzles per level as 81-character strings, read only by `
 | `use-sudoku.ts` | The hook that holds the state and wires `logic/` to storage and the shared clock (`hooks/use-game-clock`, which handles app focus and foreground) |
 | `grid.tsx` | The 9x9 grid: selection, highlighting, conflicts, notes, hint cells |
 | `number-pad.tsx` | Digits, Undo, Redo, Notes, Erase |
-| `tile.tsx` | `SudokuTile`, the art on home (registry `Tile`) |
+| `tile.tsx` | `SudokuTile`, the glyph on home (registry `Tile`) |
 
 ### Storage keys
 
@@ -127,7 +127,7 @@ Verified only in the web preview so far; test them on the phone (add as they com
 - [x] The hint highlight colour is clear in light and dark mode.
 - [x] With the Pencil & Paper palette (2026-10-16), the selected cell (yellow), same-digit cells, hint cells (blue), conflicts (red) and entered digits (blue ink) are clearly different from each other in light and dark mode on the phone.
 
-- [x] Digits in the home tile, the grid and the pencil notes are vertically centred in their cells (not sitting low). Shared style: `glyphStyle` in `src/components/glyph-style.ts`.
+- [x] Digits in the grid and the pencil notes are vertically centred in their cells (not sitting low; the home tile, which used to show digits, is a glyph since 2026-10-21). Shared style: `glyphStyle` in `src/components/glyph-style.ts`.
 
 ## Open decisions
 
@@ -143,5 +143,4 @@ Deliberate shortcuts marked with a `ponytail:` comment in `src/games/sudoku/**` 
 |---|---|---|
 | `logic/generate.ts` (`generateLevel`) | No cap on `attempts`: it runs until it succeeds. Hard needed up to about 190 grids on the development PC (`measure.test.ts`), so a bad seed range can run for long | Generation runs anywhere other than the offline pool build, or the build hangs |
 | `logic/puzzles-data.test.ts` (`SAMPLE_EVERY`) | Rates only every 10th puzzle (100 per level, about 1.6 s) because all 5000 take about 16 s | After a pool rebuild: set `SAMPLE_EVERY` to 1 to check them all |
-| `ui/tile.tsx` (`digit`) | The digits on the home tile have a fixed font size (22) instead of one measured from the tile | A tile looks cramped or empty at some screen width |
 | `logic/techniques.ts` (`combinations`) | The subset and fish techniques rebuild their combinations on every scan (many small arrays); fine while a Hard puzzle takes about 1 s on the development PC (`measure.test.ts`) | If the phone is too slow for hints: precompute the candidate cells per unit |

@@ -9,7 +9,7 @@ Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the ga
 Snake is the sixth game in the hub and its first real-time game: a snake moves across a grid one cell per tick; swipe to turn it; eat apples to grow; hitting a wall or its own body ends the game.
 - It lives in `src/games/snake/`.
 - Its route is `src/app/snake.tsx` (route `/snake`, game id `'snake'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
-- Its entry is in `src/games/registry.ts` (title "Snake"), with a `Tile` for the art on home.
+- Its entry is in `src/games/registry.ts` (title "Snake"), with a `Tile` for the glyph on home.
 - Components are named `Snake…` (e.g. `SnakeScreen`, `SnakeTile`, `SnakeBoard`).
 
 It follows the patterns the other games established. The most recent finished games are Make 24 (`docs/make24.md`: structure, workflow, hook, picker, stats panel, result line + primary button on the board) and 2048 (`docs/2048.md`: swipes with `PanResponder`, the Score/Best boxes, accessibility actions for the four directions). Minesweeper (`docs/minesweeper.md`) is the reference for a board drawn in its own colour tokens and for the abandon rule.
@@ -85,7 +85,7 @@ src/games/snake/
   ui/
     snake-screen.tsx, use-snake.ts (game in a ref and in state, the tick timer, saves and stats outside state updaters,
     copied from Make 24's use-make24.ts), board.tsx (PanResponder swipes, grid, snake, apple, dim + overlays),
-    score-box.tsx (copy of 2048's), level-picker.tsx, stats-panel.tsx, tile.tsx (home art)
+    score-box.tsx (copy of 2048's), level-picker.tsx, stats-panel.tsx, tile.tsx (home glyph: the bent snake with the apple, teal, on the hub's GlyphTile)
 ```
 
 - `logic/` is pure TypeScript (no React/RN/Expo imports; ESLint enforces it). All rules live there: what a turn does, a step, eating, growing, dying, winning, the speed. The UI only runs the timer and draws.
@@ -104,7 +104,7 @@ Storage keys, all versioned (`{ version, data }`, version 1 each):
 - `hooks/use-game-clock` (with the new `running`), `hooks/use-theme`.
 - `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`: the save is deleted before the stats are written), `lib/random` (`Random`, `mulberry32`), `lib/guards` (`isCount`, `isRecord`, `isMs`), `lib/timer` (`formatTime`).
 - Tests: `src/test-utils/settle.ts` (`settle()`), `src/test-utils/button-look.ts` (`buttonLook`).
-- Copy (don't import across games): 2048's `board.tsx` swipe handling and `score-box.tsx`; Make 24's `use-make24.ts`, `level-picker.tsx`, `stats-panel.tsx` and its result line; Minesweeper's `tile.tsx` (a tile that measures itself and draws a mini board).
+- Copy (don't import across games): 2048's `board.tsx` swipe handling and `score-box.tsx`; Make 24's `use-make24.ts`, `level-picker.tsx`, `stats-panel.tsx` and its result line; Minesweeper's `tile.tsx` (then a tile that measured itself and drew a mini board; both tiles are glyphs since 2026-10-21).
 
 ## Lessons from the other games built into this design
 
@@ -131,7 +131,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `save`: round trips; bad data rejected (cells off the board, a snake that isn't connected or overlaps itself, the apple on the snake, a bad dir); finished games rejected; loads paused.
 - [x] S2. **Playable.** Done 2026-10-20, checked by the user in the browser (speeds and colours kept at their starting values). Re-check: `npx jest src/__tests__/snake.test.tsx src/__tests__/use-game-clock.test.tsx` (e.g. test names containing `a swipe just before a tick does not delay it`, `its own body ends it`, `leaving the screen pauses it`, `the app going to the background pauses it`, `running is true exactly while the clock counts`). Until S3, Best lives only for the session, so the first scoring game shows "New best!", and picking a level drops a running game without recording it.
   - **Hub:** `useGameClock` exposes `running` (own commit, with its test).
-  - The route, the registry entry with `GameRoute`, the home tile (a mini board with a short snake and an apple; the user checks the look), the colour tokens.
+  - The route, the registry entry with `GameRoute`, the home tile (then a mini board with a short snake and an apple; a glyph since 2026-10-21: the bent snake with the apple, teal, `glyphSnake`, on the hub's `GlyphTile`, see CLAUDE.md, Stack; the user checks the look), the colour tokens.
   - The board with swipes, the tick loop, Pause/Continue, the Score/Best boxes (Best from this session only until S3), the level picker on New, the result line with Play again.
   - Route tests: start by swipe, turns, eating, the wall and the body, pause/continue, pausing on blur, game over, play again, the picker; ticks with fake timers.
   - The user checks it in the browser and tunes the speeds and colours.
@@ -153,7 +153,7 @@ Then the hub's Release milestone: the APK is built and tested once, after S4, wi
 - [x] The board, the score boxes and the button row fit without scrolling; nothing sits under the navigation bar.
 - [x] The snake, its head and the apple are clearly visible in light and dark mode.
 - [x] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
-- [x] The Snake home tile looks right next to the other games.
+- [x] The Snake home tile looks right next to the other games. (Checked for the old mini-board tile; the glyph tile is covered by the hub-wide glyph check in CLAUDE.md.)
 
 ## Open decisions
 
