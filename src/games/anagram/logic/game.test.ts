@@ -3,6 +3,7 @@ import words from '../data/words.json';
 import {
   ROUND_MS,
   SKIP_MS,
+  canAct,
   clear,
   endReveal,
   isInPlay,
@@ -322,25 +323,50 @@ describe('skip', () => {
     expect(s.answer).toEqual([null, null, null, null, null]);
   });
 
-  it('ends the round when the countdown reaches 0', () => {
-    const s = skip(running(), 56_000, random());
-    expect(s.status).toBe('over');
+  it('a skip that uses up the countdown shows the solution and picks no next word; endReveal then ends the round', () => {
+    const g = place(running(), 0, random());
+    const s = skip(g, 56_000, random());
+    expect(s.status).toBe('running');
+    expect(s.revealed).toBe(g.word);
+    expect(s.word).toBe(g.word);
+    expect(s.used).toEqual([g.word]);
+    expect(s.answer).toEqual([null, null, null, null, null]);
     expect(s.skips).toBe(1);
     expect(s.solved).toBe(0);
     expect(remainingMs(s, 56_000)).toBe(0);
+    const over = endReveal(s, 57_000);
+    expect(over.status).toBe('over');
+    expect(over.revealed).toBeNull();
+    expect(over.solved).toBe(0);
   });
 
-  it('with exactly 5 s left it ends the round, with a little more it does not', () => {
-    expect(skip(running(), 55_000, random()).status).toBe('over');
-    expect(skip(running(), 54_999, random()).status).toBe('running');
+  it('with exactly 5 s left the skip reveals and then ends the round, with a little more it moves on', () => {
+    const last = skip(running(), 55_000, random());
+    expect(last.revealed).not.toBeNull();
+    expect(last.word).toBe(running().word);
+    expect(endReveal(last, 55_000).status).toBe('over');
+    const more = skip(running(), 54_999, random());
+    expect(more.word).not.toBe(running().word);
+    expect(endReveal(more, 54_999).status).toBe('running');
   });
 
   it('many skips never repeat a word', () => {
     const r = mulberry32(4);
     let g = running('easy', 4);
-    for (let k = 0; k < 100; k++) g = endReveal({ ...skip(g, 0, r), skips: 0 }); // skips reset: they would end the round
+    for (let k = 0; k < 100; k++) g = endReveal({ ...skip(g, 0, r), skips: 0 }, 0); // skips reset: they would end the round
     expect(g.used).toHaveLength(101);
     expect(new Set(g.used).size).toBe(101);
+  });
+});
+
+describe('canAct', () => {
+  it('is true only in a running round with nothing revealed', () => {
+    const g = running();
+    expect(canAct(g)).toBe(true);
+    expect(canAct(skip(g, 0, random()))).toBe(false);
+    expect(canAct(pause(g))).toBe(false);
+    expect(canAct(newRound('normal', random()))).toBe(false);
+    expect(canAct({ ...g, status: 'over' })).toBe(false);
   });
 });
 
@@ -355,22 +381,34 @@ describe('revealed', () => {
   });
 
   it('endReveal clears the solution and the taps work again', () => {
-    const s = endReveal(skip(running(), 0, random()));
+    const s = endReveal(skip(running(), 0, random()), 1_000);
     expect(s.revealed).toBeNull();
+    expect(s.status).toBe('running');
     expect(place(s, 0, random()).answer[0]).toBe(0);
   });
 
   it('endReveal does nothing when nothing is revealed', () => {
     const g = running();
-    expect(endReveal(g)).toBe(g);
+    expect(endReveal(g, 0)).toBe(g);
+    expect(endReveal(g, 99_000)).toBe(g); // ending the round is tick's job
   });
 
-  it('the clock keeps running while the solution shows: tick still ends the round, with nothing revealed', () => {
+  it('tick does nothing while a solution shows, even at 0:00; endReveal then ends the round', () => {
     const s = skip(running(), 0, random());
-    const over = tick(s, 55_000);
+    expect(tick(s, 55_000)).toBe(s);
+    expect(tick(s, 99_000)).toBe(s);
+    const over = endReveal(s, 55_000);
     expect(over.status).toBe('over');
     expect(over.revealed).toBeNull();
-    expect(endReveal(over)).toBe(over);
+    expect(endReveal(over, 55_000)).toBe(over);
+  });
+
+  it('pausing during the solution of the last skip clears it; continuing at 0:00 ends the round on the next tick', () => {
+    const s = skip(running(), 56_000, random());
+    const back = resume(pause(s));
+    expect(back.revealed).toBeNull();
+    expect(back.status).toBe('running');
+    expect(tick(back, 56_000).status).toBe('over');
   });
 });
 
@@ -417,7 +455,7 @@ describe('no-ops', () => {
     clear(g),
     shuffleRack(g, random()),
     skip(g, 0, random()),
-    endReveal(g),
+    endReveal(g, 0),
     tick(g, 0),
   ];
 

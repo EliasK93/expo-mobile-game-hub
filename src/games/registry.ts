@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 
 import { Game2048Tile } from './2048/ui/tile';
+import { AnagramTile } from './anagram/ui/tile';
 import { Make24Tile } from './make24/ui/tile';
 import { MinesweeperTile } from './minesweeper/ui/tile';
 import { SnakeTile } from './snake/ui/tile';
@@ -17,4 +18,5 @@ export const games: Game[] = [
   { id: 'minesweeper', title: 'Minesweeper', route: '/minesweeper', Tile: MinesweeperTile },
   { id: 'make24', title: 'Make 24', route: '/make24', Tile: Make24Tile },
   { id: 'snake', title: 'Snake', route: '/snake', Tile: SnakeTile },
+  { id: 'anagram', title: 'Anagrams', route: '/anagram', Tile: AnagramTile },
 ];
