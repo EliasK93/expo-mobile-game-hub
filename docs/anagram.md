@@ -1,15 +1,15 @@
-# Anagram Sprint
+# Anagrams
 
-Read this before working on Anagram Sprint. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Anagram Sprint lives here and nowhere else. Where this document and the repository disagree, the repository wins.
+Read this before working on Anagrams. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Anagrams lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-21):** A1 (the word data) and A2 (the logic) are done; there is no UI yet. Next is A3 (playable). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when A3 is planned.
+**Status (2026-10-21):** A1 (the word data), A2 (the logic) and A3 (playable in the browser, session-only Best) are done. Next is A4 (save, stats, abandon). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
 
 ## Overview
 
-Anagram Sprint is the sixth game in the hub: a scrambled word appears as letter tiles; tap the letters in the right order to spell a word; solve as many as you can in 60 seconds.
+Anagrams is the sixth game in the hub: a scrambled word appears as letter tiles; tap the letters in the right order to spell a word; solve as many as you can in 60 seconds.
 - It lives in `src/games/anagram/`.
 - Its route is `src/app/anagram.tsx` (route `/anagram`, game id `'anagram'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
-- Its entry is in `src/games/registry.ts` (title "Anagram Sprint"; if it wraps badly on the 3-column home grid, the user decides on a shorter title in A3), with a `Tile` for the art on home.
+- Its entry is in `src/games/registry.ts` (title "Anagrams", see Decisions), with a `Tile` for the art on home.
 - Components are named `Anagram…` (e.g. `AnagramScreen`, `AnagramTile`, `AnagramRack`).
 
 It follows the patterns the other games established. Snake (`docs/snake.md`) is the closest model: levels picked on New, Score/Best boxes, a timed run that pauses whenever the player can't see it, save on pause, result line + Play again, stats per level. Make 24 (`docs/make24.md`) is the model for tapping cards to build an answer, and for shipped data built by an env-gated build test.
@@ -22,16 +22,16 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
   - Tapping a rack tile moves its letter into the next empty answer slot. Tapping a letter in the answer row sends it back to the rack (proposed).
   - When the row is full, the word is checked at once (proposed, no Check button), on every tap that fills it, also one that fills a hole left by sending a letter back: if the letters spell **any accepted word** (not only the one the round picked, e.g. TAPER for PATER), it counts and the next word appears; otherwise the answer row flashes red briefly and the letters stay, so the player can fix them.
   - **Shuffle** reorders the rack's remaining tiles; it always changes the order when the letters allow it (not for one tile left or the same letter throughout), and with nothing placed it never shows an accepted word. **Clear** sends every answer letter back (proposed).
-- **Skip costs time** (user): **Skip** shows the solution in the answer row for a moment and moves on; it costs **5 seconds** of the countdown. A skip never counts as solved. The clock keeps running while the solution shows (proposed: about 1 s), and player actions (letters, Clear, Shuffle, Skip) are ignored meanwhile, so a double tap on Skip cannot cost 10 s.
+- **Skip costs time** (user): **Skip** shows the solution in the answer row for a moment and moves on; it costs **5 seconds** of the countdown. A skip never counts as solved. The clock keeps running while the solution shows (about 1 s, in grey in the answer row), and player actions (letters, Clear, Shuffle, Skip) are ignored meanwhile, so a double tap on Skip cannot cost 10 s. A skip that uses up the last seconds also shows the solution for about 1 s and then the round ends (no next word).
 - **Scramble:** the rack's order is never itself an accepted word (re-shuffle until it isn't), and no word repeats within a round (proposed).
 - **Start:** a new round shows the level and a primary **Start**; the letters appear and the countdown starts on Start (proposed: no letters to study before the clock runs).
 - **Pause:** a **Pause** button while the round runs. Paused, the letters are **hidden** (no thinking time for free) and a primary **Continue** shows. Leaving the screen, the app going to the background and the screen turning off all pause the round, and coming back shows it paused (Snake's rule, via `useGameClock`'s `running`).
-- **Score boxes:** **Score** (words solved this round, its title naming the level, e.g. `Normal · Score`) and **Best** (the level's best round), copied from Snake's boxes. The countdown shows next to them or above the rack (decided in A3 with the layout).
+- **Score boxes:** three boxes in a row, **Score** (words solved this round, its title naming the level, e.g. `Normal · Score`) · **Time** (the countdown, whole seconds rounded up) · **Best** (the level's best round), copied from Snake's boxes.
 - **Round end:** at 0:00 the rack is dimmed with a result line and a primary **Play again** (same level) and **New** (the picker): `Time! · 12 words`, plus ` · New best!` when the score beats the level's stored best (0 is never a best).
 - **Abandon:** picking a level while a started round runs or is paused ends it and records it with its score (Snake's rule). A round that hasn't started just goes.
 - **Stats per level** (proposed): rounds played, best, average (whole words, rounded), words solved in total. Played counts every finished or abandoned started round.
 - **Stats panel:** from the header "Stats" button only (`StatsHeaderButton`), the whole screen below the header: an **Easy · Normal · Hard** switch (`selected`/`muted`) opening on the current level, the shared `StatsNumbers` row (Played, Best, Average, Words) and Close. A running round is paused while it is open.
-- **Save and resume:** a started, unfinished round is saved whenever it pauses (as in Snake) and resumes paused when Anagram Sprint opens. A finished round deletes the save.
+- **Save and resume:** a started, unfinished round is saved whenever it pauses (as in Snake) and resumes paused when Anagrams opens. A finished round deletes the save.
 - **Look: Pencil & Paper:** letter tiles like Make 24's cards, in the hub palette and `glyph-style`; a solved word flashes in the `accent` colour, a wrong full answer in the conflict red (both brief; reduced motion: colour only, no movement). No sound, no vibration.
 - **Input:** taps only. No on-screen or physical keyboard (proposed: the tiles are the keyboard; web uses mouse clicks).
 
@@ -50,9 +50,14 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **Inflected forms are accepted but never puzzles** (user, 2026-10-21): regular plurals and past tenses, and `-ing`, doubled-consonant `-ed`, `-ier`/`-iest` and e-drop `-er`/`-est` forms, are dropped from the answers when the stem is a common word (cats ← cat, making ← make, jugged ← jug, hazier ← hazy, safest ← safe). Reason: scrambling "walked" when "walk" is a puzzle is a cheaper, duller puzzle. For the inflection rules (not plurals and past tenses) a stem of two letters or fewer does not count (it would drop being, west, ring).
 - **Plain `-er`/`-est` are not dropped** (user, 2026-10-21). Reason: they hit base words (corner, forest, number, butter). The few real words the rules still wrongly drop are listed in `data/keep.txt` and stay answers.
 - **Excluded words stay accepted** (user, 2026-10-21). `data/excluded.txt` lists words never used as puzzles. Only the clearly offensive, crude, obscure, archaic or foreign ones are excluded; the milder borderline words stay (user's call). Reason: a typed real word must still count.
+- **The title is "Anagrams"** (user, 2026-10-21): registry title, header and home tile. Reason: "Anagram Sprint" wrapped badly on the 3-column home grid. File names, the id `anagram` and the `Anagram…` component names stay.
+- **The countdown is a third box: Score · Time · Best** (user, 2026-10-21). Reason: it stays in sight above the letters and needs no extra layout row; whole seconds rounded up, so 0:00 shows only at the very end.
+- **The last skip shows its solution, then the round ends** (user, 2026-10-21). The rule: the round ends at 0:00, but a solution on show is shown to its end first (`tick` does nothing while one shows, `endReveal` ends the round). Pausing drops the solution; Continue at 0:00 ends the round on the next tick. Reason: ending at once would hide the word the player just gave up on.
+- **The skipped solution shows in the answer row in grey** (`textSecondary`) (user, 2026-10-21). Reason: it sits where the player's own letters go, and grey says "not yours".
+- **The home tile shows TAE over EAT, the bottom row in accent blue** (user, 2026-10-21). Reason: scrambled over solved says what the game is at a glance.
 - **Heavy work ahead of time:** the word lists are built once by a build test and shipped as data (hub rule); the app only picks and shuffles.
 
-## Architecture and storage keys (planned)
+## Architecture and storage keys (the logic and the UI are built, storage comes in A4)
 
 ```
 src/games/anagram/
@@ -71,9 +76,13 @@ src/games/anagram/
                         # No time inside: remainingMs(game, elapsedMs) = ROUND_MS - elapsed - skips x SKIP_MS (60000, 5000).
                         # Actions: newRound(level, random), start, pause, resume, place(game, i, random) (checks a full row),
                         # unplace(game, slot), clear, shuffleRack(game, random), skip(game, elapsedMs, random) (sets
-                        # revealed), endReveal, tick(game, elapsedMs). isWrong (full row while running) is derived, isInPlay
-                        # (running or paused) is the abandon/save rule. Everything is a no-op unless the round is running
-                        # (start: ready only, resume: paused only); a finished round never changes.
+                        # revealed; a skip that uses up the countdown reveals the word and picks no next one),
+                        # endReveal(game, elapsedMs) (clears revealed, then ends the round if no time is left),
+                        # tick(game, elapsedMs) (ends the round at 0:00, a no-op while revealed). canAct (running with
+                        # nothing revealed) is the one rule for what the player can do, the UI uses it too; isWrong (full
+                        # row while running) is derived, isInPlay (running or paused) is the abandon/save rule. Everything
+                        # is a no-op unless the round is running (start: ready only, resume: paused only); a finished
+                        # round never changes.
     stats.ts            # per level { played, best, totalWords }; EMPTY_STATS, recordRound, isNewBest, average
     save.ts             # keys and versions; Settings (default Normal); toSave (null unless in play), fromSave (loads
                         # paused, revealed null), fromStats, fromSettings
@@ -81,9 +90,18 @@ src/games/anagram/
     words-data.test.ts  # the data check, in the gate: pins the exact counts per length (update COUNTS after a rebuild)
     *.test.ts           # next to each module (words, game, stats, save)
   ui/
-    anagram-screen.tsx, use-anagram.ts (copied from Snake's use-snake.ts), rack.tsx, score-box.tsx (copy of
-    Snake's), level-picker.tsx, stats-panel.tsx, tile.tsx (home art)
+    use-anagram.ts      # copied from Snake's use-snake.ts without the storage: the round in a ref and in state, `act` for
+                        # transitions, useGameClock (enabled while running and the picker is closed; onStop pauses), a tick
+                        # effect on elapsedMs, the 1 s reveal timeout (endReveal), session stats (recordRound/isNewBest), begin
+    anagram-screen.tsx  # the layout: boxes Score · Time · Best, New + Pause, the letter block (answer row, rack, Dim
+                        # layers for ready/paused/result), Shuffle · Clear · Skip; the picker replaces all of it
+    letters.tsx         # LetterFace (Make 24's card look, a FaceState normal/wrong/revealed/solved), AnswerRow, Rack,
+                        # tileSize(width, n) (n tiles fit the content width, 24..64 px)
+    score-box.tsx, level-picker.tsx, dim.tsx   # copies of Snake's (the score box takes a number or a string)
+    stats-panel.tsx     # A4
+    tile.tsx            # home art: TAE over EAT (accent)
 ```
+- Best (the box, the picker and "New best!") is kept for the visit only until A4 stores the stats.
 
 - Rebuilding the words (SCOWL 2020.12.07, an outside download the user releases): the header of `logic/build-words.test.ts` has the download and unpack steps; then `$env:ANAGRAM_BUILD = '<SCOWL final folder>'`, `npx.cmd jest src/games/anagram/logic/build-words.test.ts`, `Remove-Item Env:ANAGRAM_BUILD`. The build prints the counts per SCOWL size and length (the tuning aid) and the dropped `word <- stem` list. `ANSWER_MAX`, `ACCEPTED_MAX` and `SIZES` in that file are the knobs; the gate skips the build and runs only the data test.
 - `logic/` holds every rule: what a tap does, checking, skipping, the countdown arithmetic, the round end. The UI runs the clock and draws.
@@ -121,9 +139,9 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
 
 - [x] A1. **Word data** (done 2026-10-21). SCOWL downloaded once (released by the user); `data/words.json` built by the env-gated build test (decisions above); `keep.txt`, `excluded.txt` and `SCOWL-LICENSE.txt` shipped with it. Re-check: `npx.cmd jest src/games/anagram/logic/words-data.test.ts` (suite `anagram word lists`: lengths, lower case, sorted, no duplicates, answers ⊆ accepted, excluded words not answers but accepted, keep words are answers, inflected forms accepted but not answers, every answer has a non-word letter order, exact counts).
 - [x] A2. **Logic, test first** (done 2026-10-21). `words` (with `scramble` and `permutations`), `game` (place/unplace/clear/shuffleRack, auto-check, any accepted anagram, skip −5 s, countdown to 0 ends the round, no repeats, pause/resume, finished rounds don't change), `stats`, `save` (round trips, bad data rejected, loads paused). The shuffle and the scramble check their result against `accepted` (tests over all answers and many seeds). Re-check: `npx.cmd jest src/games/anagram/logic`.
-- [ ] A3. **Playable.** Route, registry entry with `GameRoute`, home tile, the rack and answer row, Start, Pause/Continue (letters hidden), Skip, Shuffle, Clear, the countdown, Score/Best (session only until A4), result line + Play again, the level picker. Route tests with fake timers. The user checks it in the browser (also the title on the tile). Open question to confirm with the user: a skip that reaches 0:00 ends the round at once without showing the solution (`skip` returns `over` with `revealed` null).
+- [x] A3. **Playable** (done 2026-10-21). Route, registry entry with `GameRoute`, home tile, the rack and answer row, Start, Pause/Continue (letters hidden), Skip, Shuffle, Clear, the countdown, Score/Best (session only until A4), result line + Play again, the level picker. Route tests with fake timers. Re-check: `npx.cmd jest src/__tests__/anagram.test.tsx` (suite `Anagram Sprint screen`, plus `home tile` and `accessibility`) and `npx.cmd jest src/games/anagram/logic/game.test.ts`; the user checked it in the browser (2026-10-21) and renamed the game "Anagrams".
 - [ ] A4. **Save, stats, abandon.** Resume paused, last level, abandon rule, stats panel, bests from storage. Route tests; seed snippets for the user.
-- [ ] A5. **Polish.** Fit at 360×640 and 320×568, accessibility, dark mode, flash colours and timings. The user checks it in the browser.
+- [ ] A5. **Polish.** Fit at 360×640 and 320×568 (the tile size follows the width only, nothing guards the height yet), accessibility, dark mode, flash colours and timings. Still to do from the spec: the solved flash (accent) and the brief wrong flash (the wrong row is colour only and stays red until edited). The user checks it in the browser.
 
 Then the hub's Release milestone: the APK is built and tested once, after A5, with the Android checks below.
 
@@ -134,11 +152,14 @@ Then the hub's Release milestone: the APK is built and tested once, after A5, wi
 - [ ] The countdown pauses in the background and with the screen off, the letters are hidden then, and the round comes back paused after closing the app.
 - [ ] The solved/wrong flashes are visible in light and dark mode.
 - [ ] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
-- [ ] The Anagram Sprint home tile (and its title) looks right next to the other games.
+- [ ] The Anagrams home tile (and its title) looks right next to the other games.
+- [ ] The three score boxes fit on a narrow phone: `Normal · Score` is not clipped or wrapped.
+- [ ] In the result, taps on the dimmed letters do nothing, and Play again and New are tappable.
+- [ ] Screen turned off during the 1 s solution of a skip: the round comes back paused, no grey solution row stuck.
 
 ## Open decisions
 
-- Where the countdown sits and how the skipped solution shows: settled in A3 with the layout.
+None.
 
 ## Known shortcuts
 
