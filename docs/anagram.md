@@ -6,7 +6,7 @@ Read this before working on Anagrams. The hub-wide rules are in `CLAUDE.md`: the
 
 ## Overview
 
-Anagrams is the sixth game in the hub: a scrambled word appears as letter tiles; tap the letters in the right order to spell a word; solve as many as you can in 60 seconds.
+Anagrams is a timed word game: a scrambled word appears as letter tiles; tap the letters in the right order to spell a word; solve as many as you can in 60 seconds.
 - It lives in `src/games/anagram/`.
 - Its route is `src/app/anagram.tsx` (route `/anagram`, game id `'anagram'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
 - Its entry is in `src/games/registry.ts` (title "Anagrams", see Decisions), with a `Tile` for the glyph on home.

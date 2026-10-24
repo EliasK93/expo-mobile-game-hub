@@ -6,7 +6,7 @@ Read this before working on Snake. The hub-wide rules are in `CLAUDE.md`: the ga
 
 ## Overview
 
-Snake is the sixth game in the hub and its first real-time game: a snake moves across a grid one cell per tick; swipe to turn it; eat apples to grow; hitting a wall or its own body ends the game.
+Snake is the hub's first real-time game: a snake moves across a grid one cell per tick; swipe to turn it; eat apples to grow; hitting a wall or its own body ends the game.
 - It lives in `src/games/snake/`.
 - Its route is `src/app/snake.tsx` (route `/snake`, game id `'snake'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
 - Its entry is in `src/games/registry.ts` (title "Snake"), with a `Tile` for the glyph on home.

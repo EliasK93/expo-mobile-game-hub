@@ -6,7 +6,7 @@ Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: 
 
 ## Overview
 
-Minesweeper is the fourth game in the hub: open every cell that hides no mine. A number tells how many of the 8 neighbours hide a mine; flags mark the mines you have found. One wrong tap on a mine ends the game.
+Minesweeper is the classic mine-clearing puzzle: open every cell that hides no mine. A number tells how many of the 8 neighbours hide a mine; flags mark the mines you have found. One wrong tap on a mine ends the game.
 - It lives in `src/games/minesweeper/`.
 - Its route is `src/app/minesweeper.tsx` (route `/minesweeper`, game id `'minesweeper'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
 - Its entry is in `src/games/registry.ts`, with a `Tile` for the glyph on home.

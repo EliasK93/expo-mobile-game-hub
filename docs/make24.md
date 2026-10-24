@@ -6,7 +6,7 @@ Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the 
 
 ## Overview
 
-Make 24 is the fifth game in the hub, the classic "24 game": four numbers from 1 to 13; combine all four with + − × ÷ to make exactly 24. Each number is used exactly once, in any order, with any bracketing. Example: 3 3 8 8 → 8 ÷ (3 − 8 ÷ 3) = 24.
+Make 24 is the classic "24 game": four numbers from 1 to 13; combine all four with + − × ÷ to make exactly 24. Each number is used exactly once, in any order, with any bracketing. Example: 3 3 8 8 → 8 ÷ (3 − 8 ÷ 3) = 24.
 - It lives in `src/games/make24/`.
 - Its route is `src/app/make24.tsx` (route `/make24`, game id `'make24'`), the screen wrapped in the hub's `GameRoute`, which records playtime.
 - Its entry is in `src/games/registry.ts` (title "Make 24"), with a `Tile` for the glyph on home.
