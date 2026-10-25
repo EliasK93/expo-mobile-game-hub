@@ -23,7 +23,22 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
+        env:
+          TESTS_BADGE_FILE: ${{ runner.temp }}/tests.json # runner.temp is not available in job-level env
       - uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_COMMENTS: false # comments would need pull-requests: write
+      # Pushes the Jest counts to the public Gist behind the README's tests badge. Runs on push to main only, and also
+      # when tests failed (so the badge turns red). The Gist is written with the user's token, not GITHUB_TOKEN.
+      - name: Update tests badge
+        if: always() && github.event_name == 'push'
+        env:
+          GIST_ID: 9036b9ad1f3d5277a608c6fe48c090c9
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          TESTS_BADGE_FILE: ${{ runner.temp }}/tests.json
+        run: |
+          [ -f "$TESTS_BADGE_FILE" ] || exit 0 # tsc failed before Jest ran
+          jq -n --rawfile c "$TESTS_BADGE_FILE" '{files: {"tests.json": {content: $c}}}' \
+            | curl -sf -X PATCH -H "Authorization: Bearer $GIST_TOKEN" -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/gists/$GIST_ID" -d @- > /dev/null
