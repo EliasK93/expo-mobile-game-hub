@@ -23,13 +23,13 @@ It follows the patterns the other games established. The most recent finished ga
   - Eating the apple grows the snake by one (the tail stays this tick) and places a new apple.
   - **Walls kill** (user): moving off the board ends the game.
   - Moving into the snake's own body ends the game. Moving into the cell the tail leaves in the same tick is allowed (the classic rule), unless the snake grows in that tick.
-- **Steering: swipes only** (user). Swipe on the board or on the free area below it, with 2048's `PanResponder` setup (take the gesture after 4 px, a swipe from 8 px, the longer axis wins). In the web preview a mouse drag is a swipe. No arrow buttons, no keyboard.
+- **Steering: swipes only** (user). Swipe on the board or on the free area below it, with the shared `hooks/use-swipe` (2048's `PanResponder` setup: take the gesture after 4 px, a swipe from 8 px, the longer axis wins). In the web preview a mouse drag is a swipe. No arrow buttons, no keyboard.
   - A swipe queues a turn. Up to **2 turns** wait in the queue, one is applied per tick, so a quick "up, left" both register between two ticks.
   - A turn into the opposite direction of the current one (or of the last queued one) is ignored, and so is a turn into the same direction.
 - **Start: the first swipe starts the game** (user). A new game shows the snake and the apple, waiting; the first swipe that is not "down" (into its own body) sets the direction and starts the ticks. Before that the game is *unstarted*.
 - **Speed levels** (user): **Slow · Normal · Fast**, on the same board. The level sets the starting tick interval; the snake **gets gently faster** (user): every 5 apples the interval shrinks by 5 %, down to a floor. Final values (S4): Slow 220 ms → floor 150 ms, Normal 160 ms → floor 100 ms, Fast 110 ms → floor 70 ms. The interval is computed from the level and the apples eaten (`logic/`), never stored.
 - **Pause:** a **Pause** button while the game runs. Paused, the board dims and shows **Paused** with a primary **Continue**; the snake waits and continues in its direction. Swipes do nothing while paused. Leaving the screen, the app going to the background and the screen turning off all **pause** the game (it never runs unseen), and coming back shows it paused.
-- **Score:** the apples eaten (length − 3). Two boxes above the board, **Score** and **Best** (the level's best score), copied from 2048's score boxes. The Score box's title names the level, e.g. `Normal · Score` (user: the screen shows the level nowhere else). Best is live: the stored best, or the current score once it is higher. **No timer on screen** (user); the game's time is still measured (for the "Longest game" stat), only while the snake runs.
+- **Score:** the apples eaten (length − 3). Two boxes above the board, **Score** and **Best** (the level's best score), the shared `components/score-box` (also 2048's). The Score box's title names the level, e.g. `Normal · Score` (user: the screen shows the level nowhere else). Best is live: the stored best, or the current score once it is higher. **No timer on screen** (user); the game's time is still measured (for the "Longest game" stat), only while the snake runs.
 - **Level picker on New** (like Make 24's): the three levels, the last used one marked (`selected`), each with `Best 23` once it has one, plus Cancel. The last level is stored; the default is **Normal**.
 - **Abandon:** picking a level while a **started** game is running (running or paused) ends it and records it like a game over, with its score (played +1, its score counts for best and average). An unstarted game just goes.
 - **Game over** (user: result line + Play again, like Make 24): the board stays, dimmed, with a result line and a primary **Play again** (a new game of the same level) and **New** (the picker).
@@ -84,8 +84,8 @@ src/games/snake/
     *.test.ts
   ui/
     snake-screen.tsx, use-snake.ts (game in a ref and in state, the tick timer, saves and stats outside state updaters,
-    copied from Make 24's use-make24.ts), board.tsx (PanResponder swipes, grid, snake, apple, dim + overlays),
-    score-box.tsx (copy of 2048's), level-picker.tsx, stats-panel.tsx, tile.tsx (home glyph: the bent snake with the apple, teal, on the hub's GlyphTile)
+    copied from Make 24's use-make24.ts), board.tsx (grid, snake, apple, Dim + overlays; swipes from the shared useSwipe),
+    stats-panel.tsx (the numbers on the shared StatsPanel), tile.tsx (home glyph: the bent snake with the apple, teal, on the hub's GlyphTile)
 ```
 
 - `logic/` is pure TypeScript (no React/RN/Expo imports; ESLint enforces it). All rules live there: what a turn does, a step, eating, growing, dying, winning, the speed. The UI only runs the timer and draws.
@@ -100,11 +100,11 @@ Storage keys, all versioned (`{ version, data }`, version 1 each):
 
 ## Shared hub pieces to use (never copy)
 
-- `components/button` (`primary`, `compact`, `selected` = the accent look, `muted` = grey text for the inactive options of a switch), `components/stats-numbers` (`StatsNumbers`), `components/stats-header-button` (`StatsHeaderButton`), `components/game-route` (`GameRoute`), `components/glyph-style`, themed text/view.
-- `hooks/use-game-clock` (with `running`), `hooks/use-theme`.
-- `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`: the save is deleted before the stats are written), `lib/random` (`Random`, `mulberry32`), `lib/guards` (`isCount`, `isRecord`, `isMs`), `lib/timer` (`formatTime`).
-- Tests: `src/test-utils/settle.ts` (`settle()`), `src/test-utils/button-look.ts` (`buttonLook`).
-- Copy (don't import across games): 2048's `board.tsx` swipe handling and `score-box.tsx`; Make 24's `use-make24.ts`, `level-picker.tsx`, `stats-panel.tsx` and its result line; Minesweeper's `tile.tsx` (a glyph on the hub's `GlyphTile`).
+- `components/button` (`primary`, `compact`, `selected` = the accent look, `muted` = grey text for the inactive options of a switch), `components/stats-numbers` (`StatsNumbers`), `components/stats-header-button` (`StatsHeaderButton`), `components/option-picker` (`OptionPicker`: the level picker), `components/stats-panel` (`StatsPanel`), `components/dim` (`Dim`: Paused and Game over on the board), `components/score-box` (`ScoreBox`: Score and Best), `components/game-route` (`GameRoute`), `components/glyph-style`, themed text/view.
+- `hooks/use-game-clock` (with `running`), `hooks/use-swipe` (`useSwipe`: the swipe area and the "Turn" accessibility actions), `hooks/use-theme`.
+- `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`: the save is deleted before the stats are written), `lib/random` (`Random`, `mulberry32`), `lib/guards` (`isCount`, `isRecord`, `isMs`), `lib/timer` (`formatTime`), `lib/text` (`capitalize`).
+- Tests: `src/test-utils/settle.ts` (`settle()`), `src/test-utils/button-look.ts` (`buttonLook`), `src/test-utils/storage.ts` (`seed`, `saved`), `src/test-utils/events.ts` (`tick`, `press`, `disabled`, `selected`).
+- Copy (don't import across games): Make 24's `use-make24.ts` and its result line; Minesweeper's `tile.tsx` (a glyph on the hub's `GlyphTile`).
 
 ## Lessons from the other games built into this design
 

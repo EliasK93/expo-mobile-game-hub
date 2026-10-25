@@ -26,7 +26,7 @@ It follows the patterns the other games established. Snake (`docs/snake.md`) is 
 - **Scramble:** the rack's order is never itself an accepted word (re-shuffle until it isn't), and no word repeats within a round.
 - **Start:** a new round shows the level and a primary **Start**; the letters appear and the countdown starts on Start (no letters to study before the clock runs).
 - **Pause:** a **Pause** button while the round runs. Paused, the letters are **hidden** (no thinking time for free) and a primary **Continue** shows. Leaving the screen, the app going to the background and the screen turning off all pause the round, and coming back shows it paused (Snake's rule, via `useGameClock`'s `running`).
-- **Score boxes:** three boxes in a row, **Score** (words solved this round, its title naming the level, e.g. `Normal · Score`) · **Time** (the countdown, whole seconds rounded up) · **Best** (the level's best round), copied from Snake's boxes.
+- **Score boxes:** three boxes in a row, **Score** (words solved this round, its title naming the level, e.g. `Normal · Score`) · **Time** (the countdown, whole seconds rounded up) · **Best** (the level's best round), its own animated box on the shared score box's look and height (`components/score-box`).
 - **Round end:** at 0:00 the rack is dimmed with a result line and a primary **Play again** (same level) and **New** (the picker): `Time! · 12 words`, plus ` · New best!` when the score beats the level's stored best (0 is never a best).
 - **Abandon:** picking a level while a started round runs or is paused ends it and records it with its score (Snake's rule). A round that hasn't started just goes.
 - **Stats per level**: rounds played, best, average (whole words, rounded), words solved in total. Played counts every finished or abandoned started round.
@@ -116,9 +116,9 @@ src/games/anagram/
                         # shake, the solved outline fade), Rack, tileSize(width, n) (n tiles fit the content width, 24..64 px)
     use-solved-fade.ts  # useSolvedFade(flash, restart, reduceMotion): one Animated.Value, 1 = green to 0 = normal over
                         # FLASH_MS (JS driver: colours); used by the answer slots and the Score box
-    score-box.tsx, level-picker.tsx, dim.tsx   # copies of Snake's (the score box takes a number or a string; A5 added
-                        # the solved background fade, the score pop and the narrow title to it)
-    stats-panel.tsx     # copy of Snake's: Easy · Normal · Hard switch (opens on the current level), StatsNumbers (Played,
+    score-box.tsx       # the animated ScoreBox (solved background fade, score pop, narrow title); it takes its styles
+                        # from the shared components/score-box.tsx
+    stats-panel.tsx     # the numbers on the shared StatsPanel: Easy · Normal · Hard switch (opens on the current level), StatsNumbers (Played,
                         # Best, Average, Words; `—` for Best, Average and Words while nothing is played) and Close
     tile.tsx            # home glyph: A and Z under a swap arrow (violet), on the hub's GlyphTile
 ```
@@ -137,11 +137,11 @@ Storage keys, all versioned (`{ version, data }`, version 1 each):
 
 ## Shared hub pieces to use (never copy)
 
-- `components/button` (`primary`, `compact`, `selected`, `muted`), `components/stats-numbers`, `components/stats-header-button`, `components/game-route`, `components/glyph-style`, themed text/view.
+- `components/button` (`primary`, `compact`, `selected`, `muted`), `components/option-picker` (`OptionPicker`: the level picker), `components/stats-panel` (`StatsPanel`), `components/stats-numbers`, `components/stats-header-button`, `components/dim` (`Dim`: the ready, paused and result layers), `components/score-box` (`scoreBoxStyles`, `SCORE_BOX_HEIGHT`), `components/game-route`, `components/glyph-style`, themed text/view.
 - `hooks/use-game-clock` (with `running`), `hooks/use-reduced-motion`, `hooks/use-theme`.
-- `lib/storage` (incl. `replaceSaveWithStats`), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards`, `lib/timer` (`formatTime`).
-- Tests: `src/test-utils/settle.ts`, `src/test-utils/button-look.ts`.
-- Copy (don't import across games): Snake's `use-snake.ts`, `score-box.tsx`, `level-picker.tsx`, `stats-panel.tsx`, result line; Make 24's card look and its env-gated build test pattern (`logic/build-puzzles.test.ts`).
+- `lib/storage` (incl. `replaceSaveWithStats`), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards`, `lib/timer` (`formatTime`), `lib/text` (`capitalize`).
+- Tests: `src/test-utils/settle.ts`, `src/test-utils/button-look.ts`, `src/test-utils/storage.ts` (`seed`, `saved`), `src/test-utils/events.ts` (`tick`, `press`, `disabled`, `selected`).
+- Copy (don't import across games): Snake's `use-snake.ts` and result line; Make 24's card look and its env-gated build test pattern (`logic/build-puzzles.test.ts`).
 
 ## Lessons from the other games built into this design
 

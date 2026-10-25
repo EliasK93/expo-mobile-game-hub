@@ -89,10 +89,10 @@ It is a separate game, not a drill inside a shared "Brain" game (user). It follo
 - **Card text size from card size and text length** (`−11/3` is five characters; 2048's `numberSize` idea), with the shared `glyphStyle` for Android centring.
 - **Panels replace controls; they never stack:** the stats panel takes the whole screen below the header; the level picker takes the place of the cards and controls.
 - **Shared hub pieces to use, never copy:**
-  - `components/button` (`primary`, `compact`, `selected` = the accent look, `muted` = grey text for the inactive options of a switch), `components/stats-numbers` (`StatsNumbers`), `components/stats-header-button` (`StatsHeaderButton`: width and right margin solved), `components/game-route`, `components/glyph-style`, themed text/view;
+  - `components/button` (`primary`, `compact`, `selected` = the accent look, `muted` = grey text for the inactive options of a switch), `components/stats-numbers` (`StatsNumbers`), `components/stats-header-button` (`StatsHeaderButton`: width and right margin solved), `components/option-picker` (`OptionPicker`: the level picker), `components/stats-panel` (`StatsPanel`: switch, numbers, Close), `components/game-route`, `components/glyph-style`, themed text/view;
   - `hooks/use-game-clock`, `hooks/use-theme`;
-  - `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`: the save is deleted before the stats are written, so a crash can't count a game twice), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards` (`isCount`, `isRecord`, `isMs`), `lib/timer` (`formatTime`), `lib/stats` (`winPercent`).
-  - Copy (don't import across games) the per-game patterns: Minesweeper's `use-minesweeper.ts` (game in a ref and in state, stable handlers, saves and stats writes outside state updaters, `persist` on clock stop), its level picker and stats panel.
+  - `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`: the save is deleted before the stats are written, so a crash can't count a game twice), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards` (`isCount`, `isRecord`, `isMs`), `lib/timer` (`formatTime`), `lib/stats` (`winPercent`), `lib/text` (`capitalize`).
+  - Copy (don't import across games) the per-game pattern: Minesweeper's `use-minesweeper.ts` (game in a ref and in state, stable handlers, saves and stats writes outside state updaters, `persist` on clock stop). The level picker and the stats panel are shared now: the screen keeps its levels list, `stats-panel.tsx` its numbers.
 - **No side effects inside React state updaters.** Keep the current game in a ref; save and write stats outside the updater (2048's review).
 - **Tests go through the real route** (`renderRouter`) with the AsyncStorage mock only.
   - Random is predictable: the logic takes a `Random` (`mulberry32` in logic tests); the UI passes `Math.random`.
@@ -125,8 +125,8 @@ src/games/make24/
     build-puzzles.test.ts, puzzles-data.test.ts
   data/puzzles.json
   ui/
-    make24-screen.tsx, use-make24.ts, cards.tsx (2 x 2 grid, card size, text size), operators.tsx, level-picker.tsx,
-    stats-panel.tsx, tile.tsx (home glyph: the four operators, yellow, on the hub's GlyphTile)
+    make24-screen.tsx, use-make24.ts, cards.tsx (2 x 2 grid, card size, text size), operators.tsx,
+    stats-panel.tsx (the numbers on the shared StatsPanel), tile.tsx (home glyph: the four operators, yellow, on the hub's GlyphTile)
 ```
 
 Storage keys, all versioned (`{ version, data }`, version 1 each):

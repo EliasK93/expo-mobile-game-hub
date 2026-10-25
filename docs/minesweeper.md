@@ -79,7 +79,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 - **No chording** (user). Reason: kept simple; every cell is opened by hand.
 - **Look: classic 3D bevel in hub colours; smiley face as the New game button; graphics drawn from Views; red LED counters** (user). Reason: recognisably Minesweeper, but in the Pencil & Paper palette with dark mode. Drawn shapes look the same on the web and on the phone (emoji differ between platforms and ignore the theme).
 - **Game end: the board stays, then the stats panel opens; a header Stats button** (user). Reason: the same pattern as 2048, confirmed on the phone. The board stays for 1 second (`PANEL_DELAY_MS`), so the explosion or the sunglasses are seen first; the face or the header Stats button within that second cancels the automatic opening.
-- **The stats numbers row and the header Stats button are generic hub components** (`components/stats-numbers.tsx`, `components/stats-header-button.tsx`), shared with 2048. Reason: a second copy would have repeated the small-screen rule and the header button's width and margin; both components know no game, so a game can still be copied out as a standalone app with the generic hub files. The stats panels and pickers stay per game.
+- **The stats numbers row and the header Stats button are generic hub components** (`components/stats-numbers.tsx`, `components/stats-header-button.tsx`), shared with 2048. Reason: a second copy would have repeated the small-screen rule and the header button's width and margin; both components know no game, so a game can still be copied out as a standalone app with the generic hub files. The level picker and the stats panel started as per-game copies and are now shared too (`components/option-picker.tsx`, `components/stats-panel.tsx`, once five games used them); the screen keeps its levels list, `stats-panel.tsx` its numbers and result line.
 - **Resume directly** (user). Reason: like 2048. The timer only runs while the screen is open, so there's nothing to protect with a prompt.
 - **An abandoned started game counts as a loss** (user). Reason: keeps win % and streaks honest, like 2048.
 - **Stats: played, wins, win %, best time, streaks; best times also in the picker** (user). Reason: 2048's stats plus Sudoku's best time per level.
@@ -127,9 +127,9 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - The face has the label "New game". The LED boxes have the labels "Mines left 7" and "Time 42 seconds".
 - **Saved data may be rejected during development:** a changed format bumps the version, and old data simply starts a fresh game (no migration code).
 - **Shared hub pieces:**
-  - `components/button` (`primary`, `compact`, `COMPACT_HEIGHT`), `components/game-route`, `components/glyph-style`;
+  - `components/button` (`primary`, `compact`, `COMPACT_HEIGHT`), `components/game-route`, `components/glyph-style`, `components/option-picker` (the level picker, opened by the face), `components/stats-panel` (with `stats-numbers`);
   - `hooks/use-game-clock`, `hooks/use-theme`;
-  - `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards`, `lib/timer` (`formatTime`);
+  - `lib/storage` (`save`, `load`, `remove`, `replaceSaveWithStats`), `lib/random` (`Random`, `mulberry32`, `shuffle`), `lib/guards`, `lib/timer` (`formatTime`), `lib/text` (`capitalize` for level names);
   - the theme tokens.
 
 ## Architecture and storage keys
@@ -151,8 +151,9 @@ src/games/minesweeper/
                     # rejects states no game can reach), fromStats, fromSettings (default beginner)
   ui/
     minesweeper-screen.tsx, board.tsx, cell.tsx, top-bar.tsx (LED boxes + face), face.tsx, mine.tsx/flag.tsx (drawn),
-    use-minesweeper.ts, level-picker.tsx, colors.ts (number -> token, one place), format.ts (led, levelName), tile.tsx (home glyph:
-    a mine, red, on the hub's GlyphTile); stats-panel.tsx. logic/game.ts also has cellViews(game): what each cell shows
+    use-minesweeper.ts, colors.ts (number -> token, one place), format.ts (led, clampLed), tile.tsx (home glyph:
+    a mine, red, on the hub's GlyphTile); stats-panel.tsx (the numbers and result line on the shared StatsPanel).
+    The level picker is the shared OptionPicker, called from the screen. logic/game.ts also has cellViews(game): what each cell shows
     (number, covered, flag, wrong flag, mine, hit), so the loss and win display are game rules, not UI
 ```
 
