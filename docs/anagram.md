@@ -2,7 +2,7 @@
 
 Read this before working on Anagrams. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Anagrams lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-21):** A1 (the word data), A2 (the logic), A3 (playable in the browser), A4 (save, stats, abandon) and A5 (polish) are done. Next is the hub's Release milestone (the APK with the Android checks below). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
+**Status (2026-10-25):** A1 (the word data), A2 (the logic), A3 (playable in the browser), A4 (save, stats, abandon) and A5 (polish) are done; released 2026-10-25 (APK, every Android check below passed on the phone). The decisions marked "(user)" are settled; the ones marked "proposed" are part of the agreed concept unless the user changes them when the milestone that uses them is planned.
 
 ## Overview
 
@@ -169,21 +169,21 @@ Then the hub's Release milestone: the APK is built and tested once, after A5, wi
 
 ## Android checks
 
-- [ ] Taps on the letter tiles register quickly and reliably, also fast sequences; no double placement.
-- [ ] Six letter tiles fit one row on the phone, readable, nothing under the navigation bar.
-- [ ] The countdown pauses in the background and with the screen off, the letters are hidden then, and the round comes back paused after closing the app.
-- [ ] The solved green and the wrong red are visible in light and dark mode.
-- [ ] The solved fade (slots and Score box) and the score pop run smoothly on the phone (the colour fade runs on the JS thread, the pop on the native one).
-- [ ] With "Remove animations" on in the phone's accessibility settings: no shake, no fade and no pop; the solved green still shows for a moment and goes.
-- [ ] TalkBack announces "Solved" after a word and "Not a word" for a wrong row.
-- [ ] The Score title `Normal · Score` fits on a narrow phone with the largest system font.
-- [ ] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
-- [ ] The Anagrams home glyph (A and Z under the swap arrow, violet) and its title look right next to the other games; the A and Z are centred in a sans font.
-- [ ] The three score boxes fit on a narrow phone: `Normal · Score` is not clipped or wrapped.
-- [ ] In the result, taps on the dimmed letters do nothing, and Play again and New are tappable.
-- [ ] Screen turned off during the 1 s solution of a skip: the round comes back paused, no grey solution row stuck.
-- [ ] A round sent to the background mid-word and the app killed from the app switcher comes back paused at the same word, rack, answer, score and time.
-- [ ] Screen turned off (or the app sent to the background) during the solution of the last skip: the round ends and is counted in the stats (Played +1); reopening shows a fresh ready round, not a paused one.
+- [x] Taps on the letter tiles register quickly and reliably, also fast sequences; no double placement.
+- [x] Six letter tiles fit one row on the phone, readable, nothing under the navigation bar.
+- [x] The countdown pauses in the background and with the screen off, the letters are hidden then, and the round comes back paused after closing the app.
+- [x] The solved green and the wrong red are visible in light and dark mode.
+- [x] The solved fade (slots and Score box) and the score pop run smoothly on the phone (the colour fade runs on the JS thread, the pop on the native one).
+- [x] With "Remove animations" on in the phone's accessibility settings: no shake, no fade and no pop; the solved green still shows for a moment and goes.
+- [x] TalkBack announces "Solved" after a word and "Not a word" for a wrong row.
+- [x] The Score title `Normal · Score` fits on a narrow phone with the largest system font.
+- [x] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
+- [x] The Anagrams home glyph (A and Z under the swap arrow, violet) and its title look right next to the other games; the A and Z are centred in a sans font.
+- [x] The three score boxes fit on a narrow phone: `Normal · Score` is not clipped or wrapped.
+- [x] In the result, taps on the dimmed letters do nothing, and Play again and New are tappable.
+- [x] Screen turned off during the 1 s solution of a skip: the round comes back paused, no grey solution row stuck.
+- [x] A round sent to the background mid-word and the app killed from the app switcher comes back paused at the same word, rack, answer, score and time.
+- [x] Screen turned off (or the app sent to the background) during the solution of the last skip: the round ends and is counted in the stats (Played +1); reopening shows a fresh ready round, not a paused one.
 
 ## Open decisions
 

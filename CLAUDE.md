@@ -91,7 +91,7 @@ src/
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
 - [Make 24](docs/make24.md): complete (M1-M5), released 2026-10-19
 - [Snake](docs/snake.md): complete (S1-S4), released 2026-10-20
-- [Anagrams](docs/anagram.md): complete (A1-A5), ready for the APK
+- [Anagrams](docs/anagram.md): complete (A1-A5), released 2026-10-25
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
@@ -160,7 +160,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 Milestones that belong to one game live in its doc (`docs/<game>.md`, "Milestones"). Hub-wide:
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
-- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. The APK is built and tested once per finished game (after its last milestone), with that game's Android checks plus any open hub-wide ones as the checklist; not after intermediate milestones (user, 2026-10-16). Last passed: 2026-10-20 (Snake; before it 2026-10-19 for Make 24 and 2026-10-18 for Sudoku, 2048 and Minesweeper).
+- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. The APK is built and tested once per finished game (after its last milestone), with that game's Android checks plus any open hub-wide ones as the checklist; not after intermediate milestones (user, 2026-10-16). Last passed: 2026-10-25 (Anagrams and the glyph tiles; before it 2026-10-20 for Snake, 2026-10-19 for Make 24 and 2026-10-18 for Sudoku, 2048 and Minesweeper).
 
 ## Open decisions
 
@@ -185,5 +185,5 @@ Hub-wide things verified only in the web preview that must be tested on the phon
 - [x] The app is called "Game Hub" under its launcher icon; the icon (yellow background, 3×3 tile) is not cut off in the phone's icon shape and, with themed icons on, the monochrome version looks right; the splash screen shows the tile on the paper colour, not clipped, without a blue flash.
 - [x] Playtime pauses while the app is in the background and while the phone screen is off, and counts again on return: open Sudoku, send the app to the background for a minute, come back, and check that Playtime sorting only reflects the time the app was in front. Confirmed with Sudoku (2026-10-17).
 - [x] One selection look (2026-10-18): the selected sort chip, the stats switches (2048 sizes, Minesweeper levels), the last used picker option and Sudoku's Notes when on are blue with white text; the inactive options of a switch have grey text on light grey; all readable in light and dark mode.
-- [ ] The home glyph tiles (2026-10-21): crisp at the phone's density, in light and dark mode, the six colours told apart, the "2048" and A/Z text centred and in a sans font; TalkBack reads each tile's name once (not twice, not "unlabelled").
+- [x] The home glyph tiles (2026-10-21): crisp at the phone's density, in light and dark mode, the six colours told apart, the "2048" and A/Z text centred and in a sans font; TalkBack reads each tile's name once (not twice, not "unlabelled"). Confirmed 2026-10-25.
 - [x] The shared stats numbers row and header Stats button (2026-10-18): 2048's stats panel looks as before (values fit, smaller on a narrow phone), and the Stats button sits clear of the right edge in every game.
