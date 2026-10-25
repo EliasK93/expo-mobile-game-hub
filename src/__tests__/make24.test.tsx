@@ -350,7 +350,7 @@ describe('timer', () => {
   });
 });
 
-// ---- M4: save, stats, abandon, order ----
+// ---- Save, stats, abandon, order ----
 
 const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
 const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));

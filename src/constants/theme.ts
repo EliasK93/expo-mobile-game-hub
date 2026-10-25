@@ -59,7 +59,7 @@ export const Colors = {
     mineHit: '#E53935',
     mineFace: '#F2C230',
     mineFaceInk: '#1A1A1A', // the face's outline, eyes and mouth: dark in both modes, unlike `text`
-    snakeBoard: '#EFEDE5', // Snake: the board, its grid lines, the body (soft graphite), the head and the apple; the snake colours are muted like 2048's ramp (user, 2026-10-20)
+    snakeBoard: '#EFEDE5', // Snake: the board, its grid lines, the body (soft graphite), the head and the apple; the snake colours are muted like 2048's ramp
     snakeGrid: '#DAD8CF',
     snakeBody: '#5F6368',
     snakeHead: '#5B7FC7',

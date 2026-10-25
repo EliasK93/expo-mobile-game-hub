@@ -45,4 +45,33 @@ describe('storage', () => {
     await remove('test:key');
     expect(await load('test:key', 1)).toBeNull();
   });
+
+  describe('when the storage itself fails', () => {
+    // Once, so nothing needs restoring: restoreAllMocks would also wipe the storage mock's own implementations.
+    const fail = (method: 'getItem' | 'setItem' | 'removeItem') =>
+      jest.spyOn(AsyncStorage, method).mockRejectedValueOnce(new Error('disk full'));
+
+    it('load returns null when the read rejects', async () => {
+      fail('getItem');
+      expect(await load('test:key', 1)).toBeNull();
+    });
+
+    it('save resolves when the write rejects', async () => {
+      fail('setItem');
+      await expect(save('test:key', 1, 'x')).resolves.toBeUndefined();
+    });
+
+    it('remove resolves when the delete rejects', async () => {
+      fail('removeItem');
+      await expect(remove('test:key')).resolves.toBeUndefined();
+    });
+
+    it('replaceSaveWithStats resolves, keeps the save and writes no stats when the delete rejects', async () => {
+      await save('test:save', 1, 'game');
+      fail('removeItem');
+      await expect(replaceSaveWithStats('test:save', 'test:stats', 2, { won: 1 })).resolves.toBeUndefined();
+      expect(await load('test:save', 1)).toBe('game');
+      expect(await AsyncStorage.getItem('test:stats')).toBeNull();
+    });
+  });
 });

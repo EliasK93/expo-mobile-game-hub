@@ -359,7 +359,8 @@ describe('win', () => {
   });
 
   it('New game on it opens the size picker', () => {
-    fireEvent.press(screen.getByLabelText('New game after win'));
+    // The row above the board has its own New game button; this one is inside the overlay.
+    fireEvent.press(within(screen.getByTestId('win-overlay')).getByLabelText('New game'));
 
     expect(screen.getByText('Pick a size')).toBeTruthy();
   });
@@ -568,6 +569,21 @@ describe('the undo rule', () => {
 
     expect(screen.getByText('Score 5,000 · best tile 2048 · with undo')).toBeTruthy();
     expect((await saved('2048:stats')).data['4']).toEqual({ played: 2, wins: 1, bestScore: 100, bestTile: 64 });
+  });
+
+  it('Best follows a score that passes the stored best, and falls back to it after an Undo', async () => {
+    await seedStats(4, { played: 1, wins: 0, bestScore: 8, bestTile: 8 });
+    start(withTiles({ 0: 8, 1: 8 }));
+    await reopen();
+    expect(screen.getByLabelText('Best 8')).toBeTruthy();
+
+    swipe('left'); // 8 + 8: the score is 16, a new best while no Undo has been used
+    expect(screen.getByLabelText('Score 16')).toBeTruthy();
+    expect(screen.getByLabelText('Best 16')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Undo'));
+    expect(screen.getByLabelText('Score 0')).toBeTruthy();
+    expect(screen.getByLabelText('Best 8')).toBeTruthy();
   });
 });
 

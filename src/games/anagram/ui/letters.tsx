@@ -23,7 +23,7 @@ export function tileSize(width: number, n: number) {
 
 // normal = a letter; wrong = a full row that is no word; revealed = the solution of a skipped word; solved = the home tile's
 // answer row.
-export type FaceState = 'normal' | 'wrong' | 'revealed' | 'solved';
+type FaceState = 'normal' | 'wrong' | 'revealed' | 'solved';
 const TEXT: Record<FaceState, ThemeColor> = {
   normal: 'text',
   wrong: 'digitConflict',

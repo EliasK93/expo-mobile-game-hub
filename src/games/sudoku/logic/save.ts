@@ -47,7 +47,7 @@ export const toSave = (game: Game, elapsedMs: number, hinted: boolean, level: Le
   level,
 });
 
-export const isCells = (a: unknown, max: number): a is number[] =>
+const isCells = (a: unknown, max: number): a is number[] =>
   Array.isArray(a) && a.length === 81 && a.every((v) => Number.isInteger(v) && v >= 0 && v <= max);
 
 // Storage holds whatever was written, so check the shape before the UI trusts it. null = unusable save.

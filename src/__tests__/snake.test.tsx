@@ -320,7 +320,7 @@ describe('Snake screen', () => {
     swipe('left');
     await ticks(8);
 
-    fireEvent.press(result().getByLabelText('New after game'));
+    fireEvent.press(result().getByLabelText('New'));
 
     expect(screen.getByLabelText('Cancel')).toBeTruthy();
     expect(selected('Normal')).toBe(true);
@@ -374,7 +374,7 @@ describe('accessibility', () => {
   });
 });
 
-// ---- S3: save, stats, abandon ----
+// ---- Save, stats, abandon ----
 
 const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
 const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
@@ -613,7 +613,7 @@ describe('abandon', () => {
     await settle();
     expect((await saved('snake:stats')).data.normal.played).toBe(1);
 
-    press('New after game');
+    fireEvent.press(result().getByLabelText('New'));
     press('Slow');
     await settle();
 

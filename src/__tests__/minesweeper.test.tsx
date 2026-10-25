@@ -378,7 +378,7 @@ describe('level picker', () => {
   });
 });
 
-// ---- M3: save, stats, abandon ----
+// ---- Save, stats, abandon ----
 
 const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
 const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
@@ -818,7 +818,7 @@ describe('header Stats', () => {
   });
 });
 
-// ---- M4: polish ----
+// ---- Held cells, screen reader, picker with stats ----
 
 describe('a held cell', () => {
   it('shows the surprised face while a covered cell is pressed in, and the normal one when it is let go', () => {

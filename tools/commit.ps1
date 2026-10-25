@@ -10,7 +10,7 @@ for ($i = 1; $i -le 6; $i++) {
   $out = if ($Paths.Count -eq 0) { git commit @msgArgs 2>&1 | Out-String } else { git commit @msgArgs -- @Paths 2>&1 | Out-String }
   $rc = $LASTEXITCODE
   "try $i rc=$rc"
-  if ($rc -eq 0) { $out.Trim().Split("`n") | Where-Object { $_ -match '^\[main|Tests:' }; break }
+  if ($rc -eq 0) { $out.Trim().Split("`n") | Where-Object { $_ -match '^\[\S+ [0-9a-f]+\]|Tests:' }; break }
   if ($out -notmatch 'add_item') { $out; break }
 }
 git status --short

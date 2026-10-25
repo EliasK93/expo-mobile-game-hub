@@ -59,6 +59,8 @@ const tick = (ms: number) =>
     jest.advanceTimersByTime(ms);
   });
 const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
+// The result overlay has its own New and Play again; the row above the board has the other New.
+const result = () => within(screen.getByTestId('result'));
 const tap = (letters: string) => {
   for (const letter of letters) press(`Letter ${letter.toUpperCase()}`);
 };
@@ -302,7 +304,7 @@ describe('Anagrams screen', () => {
     expect(screen.getByText('Time! · 1 word · New best!')).toBeTruthy();
     expect(screen.getByLabelText('Time 0:00')).toBeTruthy();
     expect(screen.getByLabelText('Play again')).toBeTruthy();
-    expect(screen.getByLabelText('New after game')).toBeTruthy();
+    expect(result().getByLabelText('New')).toBeTruthy();
     for (const label of ['Pause', 'Shuffle', 'Clear', 'Skip', 'Letter H']) expect(disabled(label)).toBe(true);
     press('Letter H');
     expect(screen.queryByLabelText(/^Answer letter/)).toBeNull();
@@ -457,7 +459,7 @@ describe('Anagrams screen', () => {
     tap('plate');
     await tick(60_000);
 
-    press('New after game');
+    fireEvent.press(result().getByLabelText('New'));
 
     expect(screen.getByText('5 letters · Best 1')).toBeTruthy();
     expect(screen.getByText('4 letters')).toBeTruthy();
@@ -490,7 +492,7 @@ describe('accessibility', () => {
   });
 });
 
-// ---- A4: save, stats, abandon ----
+// ---- Save, stats, abandon ----
 
 const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
 const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
@@ -741,7 +743,7 @@ describe('abandon', () => {
     await settle();
     expect((await saved('anagram:stats')).data.normal.played).toBe(1);
 
-    press('New after game');
+    fireEvent.press(result().getByLabelText('New'));
     press('Easy');
     await settle();
 
@@ -853,9 +855,9 @@ describe('stats panel', () => {
   });
 });
 
-// ---- A5: polish ----
+// ---- Feedback, announcements and narrow screens ----
 
-describe('polish', () => {
+describe('feedback and layout', () => {
   // The slots' outline and the Score box's background are animated colours: they read back as rgba() strings.
   const rgba = (hex: string) => {
     const n = parseInt(hex.slice(1), 16);

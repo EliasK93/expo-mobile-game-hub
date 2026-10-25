@@ -2,6 +2,7 @@
   "name": "game-hub",
   "main": "expo-router/entry",
   "version": "1.0.0",
+  "description": "A hub of simple games for Android, built with Expo, React Native and TypeScript.",
   "license": "MIT",
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -38,7 +39,7 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "expo lint --fix",

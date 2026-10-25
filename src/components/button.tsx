@@ -68,7 +68,7 @@ export function Button({
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   button: { minHeight: 48, borderRadius: Spacing.two, alignItems: 'center', justifyContent: 'center' },
-  // ponytail: 36 is below the 48 px touch target, by the user's request for a slim row; revisit if taps miss on the phone (Android check).
+  // ponytail: 36 is below the 48 px touch target, a deliberate choice for the slim secondary row; revisit if taps miss on the phone (Android check).
   compact: { minHeight: COMPACT_HEIGHT },
   text: { alignSelf: 'stretch', textAlign: 'center' },
   dimmed: { opacity: 0.4 },

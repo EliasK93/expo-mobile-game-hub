@@ -1,6 +1,6 @@
 import { formatGrid, parseGrid } from './board';
-import { sparsePuzzle } from './sparse-puzzle';
 import { mulberry32 } from '@/lib/random';
+import { sparsePuzzle } from '@/test-utils/sparse-puzzle';
 import { rate, solveByLogic } from './rate';
 import { countSolutions, solve } from './solve';
 
@@ -57,7 +57,7 @@ describe('rate', () => {
     expect(formatGrid(result!.grid)).toBe(SOLUTION);
   });
 
-  // Frozen from the old generator (sparse puzzles, seeds 7*seed+givens), then checked here, not taken on trust:
+  // Fixed puzzles, one per level, found by sparse generation (seeds 7*seed+givens) and checked here, not taken on trust:
   // one solution, the recorded solution, the level, and (for level > 1) that the next level down gets stuck.
   it.each(KNOWN)(
     'known level %i puzzle: unique, rated at exactly that level, stuck one level lower',

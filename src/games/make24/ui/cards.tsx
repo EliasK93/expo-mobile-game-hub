@@ -27,7 +27,7 @@ const GLYPH_EM = 0.6;
 export const textSize = (size: number, text: string) =>
   Math.max(1, Math.floor(Math.min(size * 0.5, (size - MARGIN) / (GLYPH_EM * text.length))));
 
-export type CardState = 'normal' | 'selected' | 'hint';
+type CardState = 'normal' | 'selected' | 'hint';
 
 // What a card looks like, in one place (the board and the home tile both draw with it): a paper card with a thicker
 // bottom edge. The selected card is pencil yellow, a hinted one the blue hint tint (yellow already means selected).

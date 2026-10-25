@@ -1,6 +1,6 @@
 import { parseGrid } from './board';
-import { sparsePuzzle } from './sparse-puzzle';
 import { mulberry32 } from '@/lib/random';
+import { sparsePuzzle } from '@/test-utils/sparse-puzzle';
 import { LADDER, LEVEL_NAMES, applyStep, candidateGrid, findStep, type Move, type TechniqueName } from './techniques';
 
 const SOLUTION = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
@@ -331,7 +331,7 @@ describe('candidateGrid and applyStep', () => {
   });
 });
 
-// The strongest check on the techniques: on sparse puzzles (sparse-puzzle.ts), every placement
+// The strongest check on the techniques: on sparse puzzles (test-utils/sparse-puzzle.ts), every placement
 // and every elimination must agree with the brute-force solution.
 describe('soundness against the brute-force solution', () => {
   it.each([1, 2, 3, 4, 5, 6])('seed %i: no step contradicts the solution', (seed) => {

@@ -5,7 +5,7 @@ import { sizeOf, type Board, type Dir } from './board';
 export type Slide = { id: number; from: number; to: number };
 // The merged tile keeps the id of the tile nearer the edge; removedId is the other one.
 export type Merge = { id: number; removedId: number; at: number; value: number };
-export type MoveResult = { board: Board; moved: boolean; gained: number; slides: Slide[]; merges: Merge[] };
+type MoveResult = { board: Board; moved: boolean; gained: number; slides: Slide[]; merges: Merge[] };
 
 // The cells of line i, the cell at the edge the move goes to first.
 function lineCells(n: number, dir: Dir, i: number): number[] {

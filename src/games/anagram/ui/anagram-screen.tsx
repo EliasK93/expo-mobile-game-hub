@@ -128,8 +128,7 @@ export function AnagramScreen() {
               </ThemedText>
               <View style={styles.buttons}>
                 <Button primary flex label="Play again" onPress={a.playAgain} />
-                {/* The label differs from the row's New button, so each can be found on its own. */}
-                <Button flex label="New after game" text="New" onPress={a.openPicker} />
+                <Button flex label="New" onPress={a.openPicker} />
               </View>
             </View>
           </Dim>

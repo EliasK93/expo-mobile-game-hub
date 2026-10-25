@@ -157,8 +157,7 @@ export function SnakeBoard({ game, available, newBest, onSwipe, onResume, onPlay
               </ThemedText>
               <View style={styles.buttons}>
                 <Button primary label="Play again" onPress={onPlayAgain} />
-                {/* The label differs from the row's New button, so each can be found on its own. */}
-                <Button label="New after game" text="New" onPress={onNew} />
+                <Button label="New" onPress={onNew} />
               </View>
             </View>
           </Dim>
