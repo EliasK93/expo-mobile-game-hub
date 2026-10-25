@@ -6,7 +6,7 @@ import { AppState, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { parseGrid } from '@/games/sudoku/logic/board';
 import { pickPuzzle } from '@/games/sudoku/logic/pool';
-import { press, tick } from '@/test-utils/events';
+import { press, selected, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
 import { saved, seed } from '@/test-utils/storage';
 
@@ -219,6 +219,15 @@ describe('Level picker', () => {
       await reopen(() => seed('sudoku:stats', 1, STATS));
 
       expect(screen.queryByText(/Avg/)).toBeNull();
+    });
+
+    it('drops a stored entry of the wrong shape: no "undefined" or "NaN" in the picker, the good levels still show', async () => {
+      await reopen(() => seed('sudoku:stats', 1, { ...STATS, 2: { solved: 5 }, 5: { ...STATS[2], bestMs: 'fast' } }));
+
+      expect(screen.queryByText(/undefined|NaN/)).toBeNull();
+      expect(detail('Easy').queryByText(/solved/)).toBeNull();
+      expect(detail('Expert').queryByText(/solved/)).toBeNull();
+      expect(detail('Medium').getByText('2 solved')).toBeTruthy();
     });
   });
 
@@ -680,6 +689,121 @@ describe('Timer', () => {
     await appState('active');
     await tick(1000);
     expect(screen.getByText('0:03')).toBeTruthy();
+  });
+});
+
+describe('Stats panel', () => {
+  const STATS = {
+    2: { solved: 5, timedCount: 4, totalMs: 968_000, bestMs: 190_000 },
+    3: { solved: 2, timedCount: 0, totalMs: 0, bestMs: null }, // only hinted wins
+  };
+  const NAMES = ['Very easy', 'Easy', 'Medium', 'Hard', 'Expert'];
+  const numbers = (...values: [string, string][]) => {
+    for (const [name, value] of values) expect(screen.getByLabelText(`${name}: ${value}`)).toBeTruthy();
+  };
+  const winGame = async () => {
+    press(FIRST_EMPTY);
+    enter(5);
+    await tick(2000);
+    press(LAST_EMPTY);
+    enter(9);
+    await settle();
+  };
+
+  it('opens from the header on the level of the game on the board; the switch shows each level; Close goes back', async () => {
+    await reopen(() => seed('sudoku:stats', 1, STATS));
+    level('Easy');
+
+    press('Stats');
+
+    expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0);
+    for (const name of NAMES) expect(selected(`${name} stats`)).toBe(name === 'Easy');
+    expect(within(screen.getByLabelText('Very easy stats')).getByText('V. easy')).toBeTruthy(); // short text, full label
+    numbers(['Solved', '5'], ['Best', '3:10'], ['Average', '4:02'], ['Hinted', '1']);
+
+    press('Medium stats'); // only hinted wins: no times
+    expect(selected('Medium stats')).toBe(true);
+    numbers(['Solved', '2'], ['Best', '—'], ['Average', '—'], ['Hinted', '2']);
+
+    press('Very easy stats'); // nothing yet
+    numbers(['Solved', '0'], ['Best', '—'], ['Average', '—'], ['Hinted', '—']);
+
+    press('Close');
+    expect(screen.getByLabelText(FIRST_EMPTY)).toBeTruthy();
+    expect(screen.queryByLabelText('Close')).toBeNull();
+  });
+
+  it('shows a won game at once: solved, best and average time, nothing hinted', async () => {
+    await winGame();
+
+    press('Stats');
+
+    expect(selected('Medium stats')).toBe(true);
+    numbers(['Solved', '1'], ['Best', '0:02'], ['Average', '0:02'], ['Hinted', '—']);
+  });
+
+  it('counts a win after a hint as solved and hinted, with no time', async () => {
+    press('Hint');
+    press('Apply hint');
+    await tick(1000);
+    press(LAST_EMPTY);
+    enter(9);
+    await settle();
+
+    press('Stats');
+
+    numbers(['Solved', '1'], ['Best', '—'], ['Average', '—'], ['Hinted', '1']);
+  });
+
+  it('stops the clock while it is open, and Close goes on from the same time', async () => {
+    await tick(3000);
+    expect(screen.getByText('0:03')).toBeTruthy();
+
+    press('Stats');
+    await tick(10_000);
+    press('Close');
+
+    expect(screen.getByText('0:03')).toBeTruthy();
+    await tick(1000);
+    expect(screen.getByText('0:04')).toBeTruthy();
+  });
+
+  it('opened from the level picker over a game, it closes the picker; Close returns to the board', async () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    press('New game');
+
+    press('Stats');
+
+    expect(screen.queryByLabelText('Level: Easy')).toBeNull();
+    press('Close');
+    expect(screen.getByLabelText('Row 1, column 1, 5')).toBeTruthy();
+  });
+
+  it('opened on the level picker, with no game, it starts on the last used level; Close returns to the picker', async () => {
+    await reopen(() => seed('sudoku:settings', 1, { level: 5 }));
+
+    press('Stats');
+
+    expect(selected('Expert stats')).toBe(true);
+    expect(selected('Medium stats')).toBeFalsy();
+    press('Close');
+    expect(screen.getByLabelText('Level: Expert').props.accessibilityState.selected).toBe(true);
+  });
+
+  it('opened on the Continue prompt, it starts on the last used level; Close returns to the prompt', async () => {
+    fireEvent.press(screen.getByLabelText(FIRST_EMPTY));
+    enter(5);
+    await settle();
+    screen.unmount();
+    await seed('sudoku:settings', 1, { level: 4 });
+    await open();
+
+    press('Stats');
+
+    expect(selected('Hard stats')).toBe(true);
+    press('Close');
+    expect(screen.getByLabelText('Continue saved game')).toBeTruthy();
   });
 });
 

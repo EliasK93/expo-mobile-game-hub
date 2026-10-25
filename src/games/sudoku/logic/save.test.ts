@@ -1,6 +1,6 @@
 import { parseGrid } from './board';
 import { setValue, toggleNote, type Game } from './game';
-import { bucketOf, DEFAULT_LEVEL, fromSave, fromSettings, hasProgress, SAVE_VERSION, toSave } from './save';
+import { bucketOf, DEFAULT_LEVEL, fromSave, fromSettings, fromStats, hasProgress, SAVE_VERSION, toSave } from './save';
 
 const SOLUTION = parseGrid('534678912672195348198342567859761423426853791713924856961537284287419635345286179');
 const PUZZLE = parseGrid('.3467891267219534819834256785976142342685379171392485696153728428741963534528617.');
@@ -59,6 +59,47 @@ describe('toSave / fromSave', () => {
     ['the old classic level', { ...toSave(fresh, 0, false, 3), level: 'classic' }],
   ])('rejects %s', (_name, data) => {
     expect(fromSave(data)).toBeNull();
+  });
+});
+
+describe('fromStats', () => {
+  const GOOD = { solved: 5, timedCount: 4, totalMs: 968_000, bestMs: 190_000 };
+  const HINTED_ONLY = { solved: 2, timedCount: 0, totalMs: 0, bestMs: null };
+
+  it('keeps valid entries, also with no best time', () => {
+    const stats = { 2: GOOD, 3: HINTED_ONLY };
+    expect(fromStats(JSON.parse(JSON.stringify(stats)))).toEqual(stats);
+  });
+
+  it('takes fractional times: the clock does not count whole milliseconds', () => {
+    const stats = { 3: { solved: 1, timedCount: 1, totalMs: 1234.5, bestMs: 1234.5 } };
+    expect(fromStats(stats)).toEqual(stats);
+  });
+
+  it.each([
+    ['a missing field', { solved: 5 }],
+    ['a negative count', { ...GOOD, solved: -1 }],
+    ['a count that is a string', { ...GOOD, timedCount: '4' }],
+    ['a fractional count', { ...GOOD, solved: 1.5 }],
+    ['a total that is not a time', { ...GOOD, totalMs: NaN }],
+    ['a best time that is not a time', { ...GOOD, bestMs: 'fast' }],
+    ['a best time that is missing', { solved: 5, timedCount: 4, totalMs: 968_000 }],
+    ['null', null],
+  ])('drops an entry with %s and keeps the others', (_name, bad) => {
+    expect(fromStats({ 2: bad, 3: GOOD })).toEqual({ 3: GOOD });
+  });
+
+  it('drops a bucket that is not a level', () => {
+    expect(fromStats({ 3: GOOD, classic: GOOD, 6: GOOD, 0: GOOD })).toEqual({ 3: GOOD });
+  });
+
+  it.each([
+    ['null', null],
+    ['a string', 'x'],
+    ['an array', [GOOD]],
+    ['undefined', undefined],
+  ])('falls back to empty for %s', (_name, data) => {
+    expect(fromStats(data)).toEqual({});
   });
 });
 

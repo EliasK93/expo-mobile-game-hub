@@ -1,6 +1,7 @@
 import type { Grid } from './board';
 import type { Game } from './game';
-import { isMs, isRecord } from '@/lib/guards';
+import { isCount, isMs, isRecord } from '@/lib/guards';
+import type { Stats, StatsEntry } from './stats';
 import { LEVELS, type Level } from './techniques';
 
 // The saved game ("sudoku:save", version 2). The undo history is not saved.
@@ -31,6 +32,19 @@ const isLevel = (v: unknown): v is Level => LEVELS.includes(v as Level);
 // The last level used ("sudoku:settings"). Anything unusable falls back to the default.
 export function fromSettings(data: unknown): Level {
   return isRecord(data) && isLevel(data.level) ? data.level : DEFAULT_LEVEL;
+}
+
+const isEntry = (v: unknown): v is StatsEntry => {
+  if (!isRecord(v)) return false;
+  const e = v as Partial<Record<keyof StatsEntry, unknown>>;
+  return isCount(e.solved) && isCount(e.timedCount) && isMs(e.totalMs) && (e.bestMs === null || isMs(e.bestMs));
+};
+
+// Storage holds whatever was written, so check the shape before the UI trusts it. Only valid entries of the five
+// levels are kept; anything else is dropped, and a stats value that is not an object is empty.
+export function fromStats(data: unknown): Stats {
+  if (!isRecord(data)) return {};
+  return Object.fromEntries(LEVELS.map(bucketOf).flatMap((b) => (isEntry(data[b]) ? [[b, data[b]]] : [])));
 }
 
 // Any entered digit or note. Fresh games are not worth a "Continue?" prompt.

@@ -2,53 +2,24 @@ import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { OptionPicker } from '@/components/option-picker';
+import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { statsLine, type Stats } from '@/lib/stats';
 import { formatTime } from '@/lib/timer';
 
 import { bucketOf } from '../logic/save';
-import { LEVEL_NAMES, LEVELS, type Level } from '../logic/techniques';
+import type { StatsEntry } from '../logic/stats';
+import { LEVEL_NAMES, LEVELS } from '../logic/techniques';
 import { Grid } from './grid';
 import { NumberPad } from './number-pad';
+import { SudokuStatsPanel } from './stats-panel';
 import { useSudoku } from './use-sudoku';
 
-// The five levels (names from LEVEL_NAMES); the one used last is marked, and each shows its solved count and best time
-// once it has wins. Without onCancel there is no game to go back to.
-function LevelPicker({
-  lastLevel,
-  stats,
-  onPick,
-  onCancel,
-}: {
-  lastLevel: Level;
-  stats: Stats;
-  onPick: (l: Level) => void;
-  onCancel?: () => void;
-}) {
-  return (
-    <ThemedView style={styles.panel}>
-      <ThemedText type="subtitle" style={styles.heading}>
-        Pick a level
-      </ThemedText>
-      {LEVELS.map((l) => {
-        const e = stats[bucketOf(l)];
-        return (
-          <Button
-            key={l}
-            label={`Level: ${LEVEL_NAMES[l]}`}
-            text={l === lastLevel ? `${LEVEL_NAMES[l]} (last used)` : LEVEL_NAMES[l]}
-            detail={e && e.solved > 0 ? statsLine(e) : undefined}
-            selected={l === lastLevel}
-            onPress={() => onPick(l)}
-          />
-        );
-      })}
-      {onCancel && <Button label="Cancel" onPress={onCancel} />}
-    </ThemedView>
-  );
-}
+// "5 solved · Best 3:10". An entry with only hinted wins shows just the count.
+const statsLine = (e: StatsEntry): string =>
+  e.bestMs === null ? `${e.solved} solved` : `${e.solved} solved · Best ${formatTime(e.bestMs)}`;
 
 export function SudokuScreen() {
   const {
@@ -57,6 +28,7 @@ export function SudokuScreen() {
     lastLevel,
     stats,
     picking,
+    panel,
     hint,
     selected,
     notesMode,
@@ -73,6 +45,8 @@ export function SudokuScreen() {
     toggleNotes,
     openPicker,
     closePicker,
+    openPanel,
+    closePanel,
     pickLevel,
     showHint,
     applyHint,
@@ -82,16 +56,39 @@ export function SudokuScreen() {
   // The app draws edge to edge: keep the bottom free of Android's navigation bar. The Stack header covers the top.
   const container = [styles.container, { paddingBottom: Spacing.three + useSafeAreaInsets().bottom }];
 
-  if (status === 'loading') return <ThemedView style={container} />;
+  const header = <StatsHeaderButton visible={status !== 'loading'} onPress={openPanel} />;
+
+  if (status === 'loading') return <ThemedView style={container}>{header}</ThemedView>;
+
+  // The panel has the screen to itself, the clock is paused. Its switch opens on the level on the board, or on the last
+  // used one when there is no game yet.
+  if (panel) {
+    return (
+      <ThemedView style={container}>
+        {header}
+        <SudokuStatsPanel stats={stats} current={status === 'playing' ? level : lastLevel} onClose={closePanel} />
+      </ThemedView>
+    );
+  }
 
   // The picker has the screen to itself: no time or level, and the clock is paused (see `running` in use-sudoku.ts).
   // Opened without a save (status 'picker') there is no game to go back to, so no Cancel.
   if (status === 'picker' || picking) {
     return (
       <ThemedView style={container}>
-        <LevelPicker
-          lastLevel={lastLevel}
-          stats={stats}
+        {header}
+        <OptionPicker
+          heading="Pick a level"
+          options={LEVELS.map((id) => {
+            const e = stats[bucketOf(id)];
+            return {
+              id,
+              name: LEVEL_NAMES[id],
+              label: `Level: ${LEVEL_NAMES[id]}`,
+              detail: e && e.solved > 0 ? statsLine(e) : undefined,
+            };
+          })}
+          last={lastLevel}
           onPick={pickLevel}
           onCancel={status === 'picker' ? undefined : closePicker}
         />
@@ -102,6 +99,7 @@ export function SudokuScreen() {
   if (status === 'prompt') {
     return (
       <ThemedView style={container}>
+        {header}
         <ThemedView style={styles.panel}>
           <ThemedText type="subtitle" style={styles.heading}>
             Continue your game?
@@ -116,6 +114,7 @@ export function SudokuScreen() {
   const time = formatTime(elapsedMs);
   return (
     <ThemedView style={container}>
+      {header}
       <ThemedView style={styles.status}>
         {won && <ThemedText type="subtitle">{`Solved! in ${time}`}</ThemedText>}
         <ThemedView style={styles.timeRow}>

@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 
 import { useGameClock } from '@/hooks/use-game-clock';
-import { recordWin, recordWinStored, type Stats } from '@/lib/stats';
-import { load, remove, save } from '@/lib/storage';
+import { push, start } from '@/lib/history';
+import { load, remove, replaceSaveWithStats, save } from '@/lib/storage';
 
 import { isWon, newGame, redoGame, setValue, toggleNote, undoGame, type Game } from '../logic/game';
 import { nextHint, type Hint } from '../logic/hint';
-import { push, start } from '@/lib/history';
 import {
   bucketOf,
   DEFAULT_LEVEL,
   fromSave,
   fromSettings,
+  fromStats,
   hasProgress,
   SAVE_KEY,
   SAVE_VERSION,
@@ -22,6 +22,7 @@ import {
   toSave,
 } from '../logic/save';
 import { pickPuzzle } from '../logic/pool';
+import { recordWin, type Stats } from '../logic/stats';
 import type { Level } from '../logic/techniques';
 
 // loading = looking for a saved game, prompt = asking Continue or New game, picker = no game yet, pick a level,
@@ -40,12 +41,13 @@ export function useSudoku() {
   const [level, setLevel] = useState<Level>(DEFAULT_LEVEL); // of the game on the board
   const [lastLevel, setLastLevel] = useState<Level>(DEFAULT_LEVEL); // marked in the picker
   const [picking, setPicking] = useState(false);
+  const [panel, setPanel] = useState(false); // the stats panel covers the screen
   const [hint, setHint] = useState<Hint | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [notesMode, setNotesMode] = useState(false);
   const [status, setStatus] = useState<Status>('loading');
   const [pending, setPending] = useState<ReturnType<typeof fromSave>>(null);
-  const [stats, setStats] = useState<Stats>({}); // shown in the picker
+  const [stats, setStats] = useState<Stats>({}); // shown in the picker and the stats panel
   const hinted = useRef(false);
   const recorded = useRef(false);
   const game = history.present;
@@ -59,7 +61,7 @@ export function useSudoku() {
   // The clock runs while a game is on the board; stopping it (leaving the screen, app to background) saves the time.
   // The clock hook calls persist as it is at that moment, not as it was when the clock started.
   const { elapsedMs, read, reset, stop } = useGameClock({
-    enabled: status === 'playing' && !won && !picking,
+    enabled: status === 'playing' && !won && !picking && !panel,
     onStop: persist,
   });
 
@@ -99,11 +101,11 @@ export function useSudoku() {
     Promise.all([
       load(SAVE_KEY, SAVE_VERSION),
       load(SETTINGS_KEY, SETTINGS_VERSION),
-      load<Stats>(STATS_KEY, STATS_VERSION),
+      load(STATS_KEY, STATS_VERSION),
     ]).then(([data, settings, stored]) => {
       if (!alive) return;
       setLastLevel(fromSettings(settings));
-      setStats(stored ?? {});
+      setStats(fromStats(stored));
       const saved = fromSave(data);
       if (saved && hasProgress(saved.game)) {
         setPending(saved);
@@ -123,22 +125,19 @@ export function useSudoku() {
     if (status === 'playing') saveNow();
   }, [game, status, won, hint]);
 
-  // The win is recorded once: `recorded` guards against the effect running again. The picker's stats get it at once
-  // (the same recordWin as the stored ones, no waiting for storage).
+  // The win is recorded once: `recorded` guards against the effect running again. The shown stats (picker, panel) get
+  // it at once (the same recordWin as the stored ones, no waiting for storage).
   useEffect(() => {
     if (!won || recorded.current) return;
     recorded.current = true;
     const ms = stop();
     const bucket = bucketOf(level);
-    setStats((s) => recordWin(s, bucket, ms, hinted.current));
-    recordWinStored({
-      saveKey: SAVE_KEY,
-      statsKey: STATS_KEY,
-      version: STATS_VERSION,
-      bucket,
-      ms,
-      hinted: hinted.current,
-    });
+    const wasHinted = hinted.current;
+    setStats((s) => recordWin(s, bucket, ms, wasHinted));
+    // The stored stats are read again, so the win lands on what is in storage now. The save goes first.
+    load(STATS_KEY, STATS_VERSION).then((stored) =>
+      replaceSaveWithStats(SAVE_KEY, STATS_KEY, STATS_VERSION, recordWin(fromStats(stored), bucket, ms, wasHinted)),
+    );
   }, [won, level, stop]);
 
   // v = 0 always erases, even in notes mode. push ignores actions that changed nothing.
@@ -156,6 +155,7 @@ export function useSudoku() {
     lastLevel,
     stats,
     picking,
+    panel,
     hint,
     selected,
     notesMode,
@@ -182,6 +182,12 @@ export function useSudoku() {
       setPicking(true);
     },
     closePicker: () => setPicking(false),
+    // The panel has the screen to itself, so it also closes the picker.
+    openPanel: () => {
+      setPicking(false);
+      setPanel(true);
+    },
+    closePanel: () => setPanel(false),
     // Picking a level from the Continue prompt gives up the saved game.
     pickLevel: (lvl: Level) => {
       if (status === 'prompt') {
