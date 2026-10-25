@@ -44,17 +44,8 @@
     "lint": "expo lint",
     "format": "expo lint --fix",
     "test": "jest",
-    "gate": "tsc --noEmit && jest && expo lint && gitleaks git --staged --redact --no-banner"
-  },
-  "jest": {
-    "preset": "jest-expo",
-    "testTimeout": 15000,
-    "setupFilesAfterEnv": [
-      "<rootDir>/jest.setup.js"
-    ],
-    "testMatch": [
-      "**/*.test.[jt]s?(x)"
-    ]
+    "check": "tsc --noEmit && jest && expo lint",
+    "gate": "npm run check && gitleaks git --staged --redact --no-banner"
   },
   "private": true
 }
