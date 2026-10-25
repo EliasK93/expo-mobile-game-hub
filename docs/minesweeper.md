@@ -2,7 +2,7 @@
 
 Read this before working on Minesweeper. The hub-wide rules are in `CLAUDE.md`: the gate, tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Minesweeper lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-18):** M1-M4 are done. Released: every Android check passed on the phone (first APK, 2026-10-18). The decisions below are settled; don't ask about them again.
+**Status (2026-10-18):** M1-M4 are done. Released: every Android check passed on the phone (first APK, 2026-10-18). The decisions below are final.
 
 ## Overview
 
@@ -30,7 +30,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - In **Flag** mode it toggles a flag.
   - A flagged cell can't be opened; remove the flag first.
 - **Long press** on a covered cell does the opposite of the mode: it flags in Dig mode and opens in Flag mode. It works as a mouse hold in the web preview.
-- **Dig / Flag switch:** one slim row of two selected/unselected buttons above the board (the shared `Button` with `compact flex`; the active one `selected` (accent), the inactive one `muted` (grey text), the hub-wide selection look since 2026-10-18). The mode is not saved; a game always starts in Dig mode.
+- **Dig / Flag switch:** one slim row of two selected/unselected buttons above the board (the shared `Button` with `compact flex`; the active one `selected` (accent), the inactive one `muted` (grey text), the hub-wide selection look). The mode is not saved; a game always starts in Dig mode.
 - **Opening a cell:**
   - A mine ends the game (loss).
   - A number stays as it is.
@@ -70,16 +70,16 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 - **No animations** (like the original): cells change at once. The only feedback is the pressed state: a held cell looks sunken, and the face looks surprised.
 - **No undo, no hint** (classic).
 
-## Decisions (decided 2026-10-18), with reasons
+## Decisions
 
 - **Phone-fitted levels, no zoom** (user). Reason: the classic 16 × 16 and 30 × 16 boards give cells of about 22 px, too small to tap; pan/zoom would be a lot of gesture code and awkward on the web. The classic densities keep the difficulty familiar.
-- **One board shape for every level (3 : 2 portrait); the levels differ by cell size and mine density** (user, 2026-10-18, M2 browser check). Reason: the first sizes (9 × 9, 10 × 14, 10 × 18) left the lower screen empty on Beginner and made the board height jump between levels. Fixed sizes rather than rows that grow to fit the screen: those would make sizes, and so best times and win %, differ per device, and would move the board size from the level table into the game and the save. Expert's 12 columns give cells of about 26 px at 360×640, no smaller than the first 10 × 18 Expert.
+- **One board shape for every level (3 : 2 portrait); the levels differ by cell size and mine density** (user, after the M2 browser check). Reason: the first sizes (9 × 9, 10 × 14, 10 × 18) left the lower screen empty on Beginner and made the board height jump between levels. Fixed sizes rather than rows that grow to fit the screen: those would make sizes, and so best times and win %, differ per device, and would move the board size from the level table into the game and the save. Expert's 12 columns give cells of about 25 px at 360×640, no smaller than the first 10 × 18 Expert.
 - **Long press plus a Dig/Flag switch** (user). Reason: long press is the natural flag gesture on a phone; the switch makes flag-heavy play comfortable and works the same on the web.
 - **The first tap opens an area; otherwise classic random** (user). Reason: no lost game on the first tap and always a start area. No-guess boards would need a solver and pre-generated boards.
 - **No chording** (user). Reason: kept simple; every cell is opened by hand.
 - **Look: classic 3D bevel in hub colours; smiley face as the New game button; graphics drawn from Views; red LED counters** (user). Reason: recognisably Minesweeper, but in the Pencil & Paper palette with dark mode. Drawn shapes look the same on the web and on the phone (emoji differ between platforms and ignore the theme).
-- **Game end: the board stays, then the stats panel opens; a header Stats button** (user). Reason: the same pattern as 2048, confirmed on the phone. The board stays for 1 second (`PANEL_DELAY_MS`, user 2026-10-18), so the explosion or the sunglasses are seen first; the face or the header Stats button within that second cancels the automatic opening.
-- **The stats numbers row and the header Stats button are generic hub components** (`components/stats-numbers.tsx`, `components/stats-header-button.tsx`; user 2026-10-18, M3 plan), shared with 2048. Reason: a second copy would have repeated the small-screen rule and the header button's width and margin; both components know no game, so a game can still be copied out as a standalone app with the generic hub files. The stats panels and pickers stay per game.
+- **Game end: the board stays, then the stats panel opens; a header Stats button** (user). Reason: the same pattern as 2048, confirmed on the phone. The board stays for 1 second (`PANEL_DELAY_MS`), so the explosion or the sunglasses are seen first; the face or the header Stats button within that second cancels the automatic opening.
+- **The stats numbers row and the header Stats button are generic hub components** (`components/stats-numbers.tsx`, `components/stats-header-button.tsx`), shared with 2048. Reason: a second copy would have repeated the small-screen rule and the header button's width and margin; both components know no game, so a game can still be copied out as a standalone app with the generic hub files. The stats panels and pickers stay per game.
 - **Resume directly** (user). Reason: like 2048. The timer only runs while the screen is open, so there's nothing to protect with a prompt.
 - **An abandoned started game counts as a loss** (user). Reason: keeps win % and streaks honest, like 2048.
 - **Stats: played, wins, win %, best time, streaks; best times also in the picker** (user). Reason: 2048's stats plus Sudoku's best time per level.
@@ -87,7 +87,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
 - **Numbers in the classic colours** (1 blue, 2 green, 3 red, 4 navy, 5 maroon, 6 teal, 7 black, 8 grey), toned for the paper background and lightened for dark mode. Reason: players read Minesweeper by these colours.
 - **Colours:**
   - All of them are theme tokens in `constants/theme.ts`, never literals, in one family (e.g. `mineCell`, `mineBevelLight`, `mineBevelDark`, `mineOpen`, `mineGrid`, `mineNum1` … `mineNum8`, `mineLed`, `mineLedDigit`, `mineBomb`, `mineFlag`, `mineHit`, `mineFace`). The logic never knows colours; the UI maps a value to its token in one place (like 2048's `ramp.ts`).
-  - Starting values to tune in the browser:
+  - The values were checked in light and dark mode in the browser (M4) and kept; tune them only if the phone shows a problem:
 
     | Token | Light | Dark |
     |---|---|---|
@@ -112,7 +112,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - Check 360×640 and 320×568 in the browser device toolbar with **Expert**. Expert's cells are about 25 px at 360×640 and 21 px at 320×568; both fit with a few pixels to spare (M4).
 - **Text centring on Android:** numbers and LED digits use the shared `glyphStyle` (`src/components/glyph-style.ts`).
 - **Panels replace controls; they never stack.** The stats panel takes the whole screen below the header, and the level picker takes the place of the board and the controls.
-- **Header buttons get a right margin** (the Stats button first sat flush against the edge; copy its width and margin).
+- **Header buttons get a right margin** (the Stats button first sat flush against the edge; the shared `StatsHeaderButton` has its width and margin).
 - **Stats are written after the save is deleted,** through `replaceSaveWithStats` in `lib/storage.ts`, so a crash can't count a game twice. One rule in one place.
 - **Shared data checks:** `isCount`, `isRecord` and `isMs` in `lib/guards.ts`. Times are formatted with `formatTime` from `lib/timer.ts`.
 - **No side effects inside React state updaters.** Keep the current game in a ref, and save or write stats outside the updater (2048's T2 review).
@@ -125,7 +125,7 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - Each cell is a button labelled with its row, column and state ("Row 3, column 4, covered", "… flagged", "… 2").
   - A screen reader's double tap is the short tap, and double-tap-and-hold is the long press.
   - The face has the label "New game". The LED boxes have the labels "Mines left 7" and "Time 42 seconds".
-- **Saved data may be rejected during development:** a changed format bumps the version, and old data simply starts a fresh game (no migration code; user, 2026-10-17).
+- **Saved data may be rejected during development:** a changed format bumps the version, and old data simply starts a fresh game (no migration code).
 - **Shared hub pieces:**
   - `components/button` (`primary`, `compact`, `COMPACT_HEIGHT`), `components/game-route`, `components/glyph-style`;
   - `hooks/use-game-clock`, `hooks/use-theme`;
@@ -133,8 +133,6 @@ It follows the patterns Sudoku and 2048 established (see their docs): Sudoku's l
   - the theme tokens.
 
 ## Architecture and storage keys
-
-`logic/` (M1) and `ui/` (M2) are built.
 
 ```
 src/games/minesweeper/
@@ -154,7 +152,7 @@ src/games/minesweeper/
   ui/
     minesweeper-screen.tsx, board.tsx, cell.tsx, top-bar.tsx (LED boxes + face), face.tsx, mine.tsx/flag.tsx (drawn),
     use-minesweeper.ts, level-picker.tsx, colors.ts (number -> token, one place), format.ts (led, levelName), tile.tsx (home glyph:
-    a mine, red, on the hub's GlyphTile); stats-panel.tsx (M3). logic/game.ts also has cellViews(game): what each cell shows
+    a mine, red, on the hub's GlyphTile); stats-panel.tsx. logic/game.ts also has cellViews(game): what each cell shows
     (number, covered, flag, wrong flag, mine, hit), so the loss and win display are game rules, not UI
 ```
 
@@ -175,7 +173,7 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
   - `stats`: played, wins, win %, best time, streaks, abandon = loss;
   - `save`: round trips (also unmined), bad data rejected, finished games rejected.
 - [x] M2. **Playable.** Done 2026-10-18, checked by the user in the browser (level sizes and the Dig/Flag look changed after the check, see Decisions). Re-check: `npx jest src/__tests__/minesweeper.test.tsx src/games/minesweeper` (e.g. tests named with `long press`, `Flag mode`, `dizzy`, `cool face`, `timer`, `12 × 18`). Accessibility labels (cells, face, LEDs) came with M2, because the route tests find the cells by them.
-  - The route, the registry entry with `GameRoute`, the colour tokens, the home tile (then a mini board with covered and opened cells, a couple of numbers, a flag; a glyph since 2026-10-21: a mine, red, `glyphMinesweeper`, on the hub's `GlyphTile`, so all home tiles look like one set, see CLAUDE.md, Stack; the user checks the look).
+  - The route, the registry entry with `GameRoute`, the colour tokens, the home tile (a glyph: a mine, red, `glyphMinesweeper`, on the hub's `GlyphTile`, so all home tiles look like one set, see CLAUDE.md, Stack).
   - The board for the three levels with the 3D bevel, tap/long press, the Dig/Flag switch, the top bar (LED counters, drawn face), the timer, the level picker on the face, the loss and win display on the board.
   - Route tests: open by tap, flag by long press, flag mode, flood fill, loss, win, the picker and an Expert game, the LED values.
   - The user checks it in the browser.
@@ -196,13 +194,13 @@ Then the hub's Release milestone: the APK is built and tested once, after M4, wi
 - [x] The 3D bevel, numbers, mines, flags and face look right in light and dark mode; numbers and LED digits are vertically centred (shared glyph style).
 - [x] The timer pauses in the background and with the screen off, and an unfinished game comes back directly after closing the app, at the same time.
 - [x] The header Stats button sits clear of the screen edge; the picker and the stats panel fit without scrolling.
-- [x] The Minesweeper home tile looks right next to the other games. (Checked for the old mini-board tile; the glyph tile is covered by the hub-wide glyph check in CLAUDE.md.)
+- [x] The Minesweeper home tile looks right next to the other games.
 - [x] A finger on a covered cell sinks it and makes the face surprised; lifting it or sliding away brings both back. After a win or loss the stats panel opens about 1 second later.
 - [x] With TalkBack on, the cells are read with their state, double tap opens, and double-tap-and-hold flags.
 
 ## Open decisions
 
-- The token values above are starting points. The user checked them in light and dark mode in the browser (M4) and kept them; tune them only if the phone shows a problem.
+None.
 
 ## Known shortcuts
 

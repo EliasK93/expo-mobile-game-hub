@@ -8,7 +8,7 @@ Personal-use Android app (sideloaded APK, no Play Store): a hub of simple versio
 
 ## Development
 
-- Commit messages start with their area: `Sudoku: ` (or the game's name) for one game, `Hub: ` for app-wide code and config, `Docs: ` for documentation and project rules. One area per commit.
+- Commit messages start with their area: `Sudoku: ` (the game's id or title, e.g. `Anagram: `) for one game, `Hub: ` for app-wide code and config, `Docs: ` for documentation and project rules. One area per commit.
 
 ## Rules
 
@@ -43,10 +43,10 @@ git status --short       # nothing left unstaged or untracked
 
 - Expo SDK 57 (see `package.json`), React Native, TypeScript `strict`, Expo Router (routes in `src/app/`).
 - Typed routes are **off** (`experiments.typedRoutes` removed from `app.json`): their types lived in a gitignored cache that only the dev server regenerated, which broke `tsc` in the gate. Route wiring is covered by `src/__tests__/navigation.test.tsx`, which opens every route in the registry. `Game.route` is a plain string.
-- Jest via `jest-expo`, `testTimeout` 15 s (2026-10-19: with every suite in parallel, the first route test of a suite took over 5 s and the pre-commit gate refused commits).
-- Formatting: Prettier, run through ESLint as Expo's docs recommend (`eslint-plugin-prettier` in `eslint.config.js`; `.prettierrc`: 120 columns, single quotes; `.prettierignore` skips the shipped data in `src/games/*/data/`). `expo lint` reports unformatted code as an error, so the gate and the pre-commit hook catch it; `npm run format` fixes it. Added 2026-10-18 at the user's request.
+- Jest via `jest-expo`, `testTimeout` 15 s (with every suite in parallel, the first route test of a suite took over 5 s and the pre-commit gate refused commits).
+- Formatting: Prettier, run through ESLint as Expo's docs recommend (`eslint-plugin-prettier` in `eslint.config.js`; `.prettierrc`: 120 columns, single quotes; `.prettierignore` skips the shipped data in `src/games/*/data/`). `expo lint` reports unformatted code as an error, so the gate and the pre-commit hook catch it; `npm run format` fixes it.
 - Persistence: `@react-native-async-storage/async-storage`.
-- Home tiles: `react-native-svg` 15.15.4 (user, 2026-10-21, design B). The glyphs are SVG drawn in a 100×100 viewBox, so they scale for free; the library supports web and Android and is part of the Expo SDK. The no-library alternative, plain Views, was declined. Reason for glyphs at all: the old mini boards had two backgrounds and very different densities (5×5 next to 2×2) and did not look like one set.
+- Home tiles: `react-native-svg` 15.15.4 (2026-10-21). The glyphs are SVG drawn in a 100×100 viewBox, so they scale for free; the library supports web and Android and is part of the Expo SDK. The no-library alternative, plain Views, was declined. Reason for glyphs at all: the old mini boards had two backgrounds and very different densities (5×5 next to 2×2) and did not look like one set.
 - App identity (set in `app.json`, images in `assets/images/`): name "Game Hub"; the icon, adaptive-icon foreground and monochrome, favicon and splash image all show the 3×3 Sudoku tile motif in the Pencil & Paper colours. Adaptive icon on a pencil-yellow `backgroundColor` (`#F2C230`, no background image), the tile kept inside the launcher's circle mask; splash on the paper colour (`#FBFAF6`). The PNGs were rendered from SVG with Edge headless (no image library); to change them, redraw the SVG and render again.
 - Release: EAS `preview` profile → APK (`npx eas-cli@latest build -p android --profile preview`, run by the user, see rule 6).
 
@@ -61,20 +61,41 @@ Daily work runs in the web preview; Android is verified with APK builds (Expo Go
 
 ```
 src/
-  app/                  # Expo Router routes ONLY — thin files that render a game's screen
+  app/                  # Expo Router routes ONLY: thin files that render a game's screen
     _layout.tsx
     index.tsx           # home: sort chips (Recent · Name · Playtime) above a 3-column grid of the registry's tiles
     <id>.tsx            # one per game, e.g. sudoku.tsx: wraps games/sudoku/ui in <GameRoute id="sudoku">
   games/
-    registry.ts         # list of available games (id, title, route, Tile) shown on home; Tile = the game's glyph on GlyphTile, drawn in code with its glyph<Game> accent token
+    registry.ts         # the games shown on home: id, title, route, Tile
     <id>/
       logic/            # pure TS: no React/RN/Expo imports. Unit-tested (*.test.ts next to source)
       data/             # optional: data the game ships (e.g. precomputed puzzles)
       ui/               # components + hooks; only calls into logic/
-  components/ hooks/ constants/   # shared UI (themed text/view, `button` with a `primary` accent variant for a screen's one main action and a `compact` slim variant (36 px high) for secondary actions; one look for every selection (user, 2026-10-18): `selected` (the chosen option of a switch, the last used one in a picker, a toggle that is on) takes the accent look, and `muted` gives the inactive options of a switch grey text on the lighter grey, `stats-numbers`: the row of numbers in a stats panel (smaller values when a column gets narrower than 72 px), `stats-header-button`: the header's Stats button (fixed width, right margin), `game-route`: `GameRoute` records a game's playtime, `glyph-style`: the shared style for digits in cells, `glyph-tile`: the home tiles' frame (`GlyphTile`: the rounded tile in the game's accent at `TINT_OPACITY`, 16% light and 20% dark, with the glyph on top; the style rules live here: stroke 5, round caps and joins, glyphs inside the safe area 28–72 of the 100×100 box, `lineProps` for stroked shapes, `textProps` for the glyph's text; `testID="glyph-tile"`)), hooks (`use-game-clock`: the timed-screen clock that pauses when unfocused or in the background; `use-reduced-motion`: the system's reduce-motion setting, used by 2048's tile animations), theme (`constants/theme.ts`: the "Pencil & Paper" palette, light and dark, Sudoku's cell colours and one `glyph<Game>` accent per game for its home tile included (each glyph reaches 3:1 against its tint over `background`, and the `background`-coloured text and highlight 3:1 on the accent; `theme.test.tsx` checks both); the only place with colour values, also the source of the navigation header colours in `_layout.tsx`)
-  lib/                  # shared non-UI helpers: storage, stats, timer, history (undo/redo), random (seeded random, shuffle), guards (shape checks for loaded saves, e.g. isCount), playtime, game-sort (home's sort order and its setting)
+  components/           # shared UI
+  hooks/                # shared hooks
+  constants/            # theme
+  lib/                  # shared non-UI helpers
 ```
 
+- `games/registry.ts`: a game's `Tile` is its glyph on `GlyphTile`, drawn in code with the game's `glyph<Game>` accent token.
+- `components/` (shared UI):
+  - `button`: the text button. `primary` is the accent variant for a screen's one main action; `compact` is a slim variant (36 px high) for secondary actions.
+  - One look for every selection (2026-10-18): `selected` (the chosen option of a switch, the last used one in a picker, a toggle that is on) takes the accent look, and `muted` gives the inactive options of a switch grey text on the lighter grey.
+  - `stats-numbers`: the row of numbers in a stats panel (smaller values when a column gets narrower than 72 px).
+  - `stats-header-button`: the header's Stats button (fixed width, right margin).
+  - `game-route`: `GameRoute` records a game's playtime.
+  - `glyph-style`: the shared style for digits in cells.
+  - `glyph-tile`: the home tiles' frame (`GlyphTile`, `testID="glyph-tile"`): the rounded tile in the game's accent at `TINT_OPACITY` (16% light, 20% dark) with the glyph on top.
+    - The style rules live here: stroke 5, round caps and joins, glyphs inside the safe area 28–72 of the 100×100 box.
+    - `lineProps` is for stroked shapes, `textProps` for the glyph's text.
+  - Themed text and view.
+- `hooks/`:
+  - `use-game-clock`: the timed-screen clock; it pauses when the screen is unfocused or the app is in the background.
+  - `use-reduced-motion`: the system's reduce-motion setting, used by 2048's tile animations and Anagrams' feedback.
+- `constants/theme.ts`: the "Pencil & Paper" palette, light and dark. It is the only place with colour values and the source of the navigation header colours in `_layout.tsx`.
+  - It holds Sudoku's cell colours and one `glyph<Game>` accent per game for its home tile.
+  - Each glyph reaches 3:1 against its tint over `background`, and the `background`-coloured text and highlight 3:1 on the accent; `theme.test.tsx` checks both.
+- `lib/` (shared non-UI helpers): storage, stats, timer, history (undo/redo), random (seeded random, shuffle), guards (shape checks for loaded saves, e.g. `isCount`), playtime, game-sort (home's sort order and its setting).
 - Each game is self-contained in `src/games/<id>/`. Adding a game = new folder + one route file (its screen wrapped in `GameRoute`, which `navigation.test.tsx` checks for every registry game) + one registry entry (with a `Tile`: its glyph on `GlyphTile` plus a `glyph<Game>` accent token in `theme.ts`, light and dark, and the game's row in the token table of `navigation.test.tsx`) + a `docs/<id>.md`. Never edit another game's folder to add a game.
 - Games never import from each other. Shared code goes in `components/`, `hooks/`, `constants/`, `lib/`.
 - `logic/` is plain TypeScript with no framework imports (enforced by an ESLint `no-restricted-imports` block in `eslint.config.js`, so `npx expo lint` and the gate fail on a React/React Native/Expo/`@/components`/`@/hooks` import), so it can be tested without a phone or browser. All rules, solving, generating, undo history and scoring live there; UI holds no game rules.
@@ -86,7 +107,7 @@ src/
 
 ## Games
 
-- [Sudoku](docs/sudoku.md)
+- [Sudoku](docs/sudoku.md): complete (milestones 2-6), released 2026-10-18
 - [2048](docs/2048.md): complete (T1-T4), released 2026-10-17
 - [Minesweeper](docs/minesweeper.md): complete (M1-M4), released 2026-10-18
 - [Make 24](docs/make24.md): complete (M1-M5), released 2026-10-19
@@ -95,7 +116,7 @@ src/
 
 Read `docs/<game>.md` before working on a game. A game's spec, decisions, milestones, Android checks and open decisions live in its doc and nowhere else; this file holds only the hub-wide rules. The game docs are not imported into this file (no `@`), they are read on demand.
 
-A new game's doc follows this structure:
+A game's doc follows this structure. Under the title it has a one-paragraph read-first note and a **Status** line (milestones done, released or not). Headings carry no dates.
 
 1. Overview
 2. Spec
@@ -103,8 +124,14 @@ A new game's doc follows this structure:
 4. Architecture and storage keys
 5. Milestones, each with its re-check
 6. Android checks
-7. Open decisions
-8. Known shortcuts (the `ponytail:` comments in the game's folder: file, what was cut, when to revisit)
+7. Open decisions (`None.` when there are none)
+8. Known shortcuts, as bullets (the `ponytail:` comments in the game's folder: file, what was cut, when to revisit)
+
+Optional sections that the existing docs use sit between Decisions and Milestones:
+
+- "Lessons from … built into this design": what the game takes over from the games before it.
+- "Shared hub pieces to use (never copy)": the hub components, hooks and helpers the game relies on, and what it copies per game instead.
+- A section for something only this game has, e.g. Make 24's "Rating and the puzzle pool".
 
 ## Commands
 
@@ -139,7 +166,7 @@ Requires `HERDR_ENV=1`. If it is not set, say so instead of quietly doing the wo
 
 **Orient with the graph, then read the code.** For questions like "where does X live", "what connects to X" or "what would this change touch", run `graphify query "<question>"` before grepping.
 
-- **The graph is not in the repo.** `graphify-out/` is gitignored (added in milestone 1), because it contains extracted content. Without a graph, run `/graphify` or say you have none. Never answer as if you had queried it. First graph: after milestone 1 removes the template code.
+- **The graph is not in the repo.** `graphify-out/` is gitignored (added in milestone 1), because it contains extracted content. Without a graph, run `/graphify` or say you have none. Never answer as if you had queried it.
 - **Code refreshes itself, documents do not.** `graphify hook install` re-extracts code after each commit (AST only). Changes to docs or config need `/graphify . --update`. A stale graph answers confidently from things that are gone.
 - **Absence is not evidence.** Some edges point at nodes that don't exist. Confirm in code before acting on "no connection".
 - **After a refactor that deletes code,** run `GRAPHIFY_FORCE=1 graphify update .`. The detached hook refuses to shrink the graph and logs that refusal where nobody looks.
@@ -160,7 +187,7 @@ Tick an item only when its re-check (rule 7) passes and the user has verified it
 Milestones that belong to one game live in its doc (`docs/<game>.md`, "Milestones"). Hub-wide:
 
 - [x] 1. Scaffold: remove template example content; home screen listing games + empty Sudoku screen; Jest (`jest-expo`) with one passing test; `npm run gate` + pre-commit hook; `graphify-out/` in `.gitignore`; Claude Code allowlist for gate commands. Re-check: `npm run gate` (test `lists Sudoku on home and opens the Sudoku screen`).
-- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. The APK is built and tested once per finished game (after its last milestone), with that game's Android checks plus any open hub-wide ones as the checklist; not after intermediate milestones (user, 2026-10-16). Last passed: 2026-10-25 (Anagrams and the glyph tiles; before it 2026-10-20 for Snake, 2026-10-19 for Make 24 and 2026-10-18 for Sudoku, 2048 and Minesweeper).
+- [x] Release: EAS APK build (`npx eas-cli@latest build -p android --profile preview`, run by the user), installed on the phone; every Android check passes, the hub-wide ones below and each game's in its doc. The APK is built and tested once per finished game (after its last milestone), with that game's Android checks plus any open hub-wide ones as the checklist; not after intermediate milestones. Last passed: 2026-10-25 (all games).
 
 ## Open decisions
 
@@ -172,7 +199,7 @@ None.
 
 The `ponytail:` comments in hub code (`src/components`, `src/hooks`, `src/lib`, `src/constants`, `tools`): file, what was cut, when to revisit. Game-specific ones are in the game's doc. Re-check for all of them: `Get-ChildItem src/components,src/hooks,src/lib,src/constants,tools -Recurse -File | Select-String -Pattern 'ponytail:'`.
 
-- `src/components/button.tsx`: the `compact` variant is 36 px high, below the 48 px touch target, because the user asked for a slim row (Make 24's Hint · Give up row). Revisit if taps miss on the phone. Re-check: `Select-String -Path src/components/button.tsx -Pattern 'ponytail:'`.
+- `src/components/button.tsx`: the `compact` variant is 36 px high, below the 48 px touch target, a deliberate choice for the slim secondary row (Make 24's Hint · Give up row). Revisit if taps miss on the phone. Re-check: `Select-String -Path src/components/button.tsx -Pattern 'ponytail:'`.
 
 ## Android checks
 

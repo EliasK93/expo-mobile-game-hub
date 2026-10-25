@@ -2,7 +2,7 @@
 
 Read this before working on Make 24. The hub-wide rules are in `CLAUDE.md`: the gate (with Prettier formatting), tests, git, Herdr, tooling, the shared components and the palette. Everything specific to Make 24 lives here and nowhere else. Where this document and the repository disagree, the repository wins.
 
-**Status (2026-10-19):** M1-M5 are done (logic, pool, playable, save and stats, polish), all checked in the browser. Released: every Android check below passed on the phone (APK, 2026-10-19). The decisions below are settled with the user; don't ask about them again.
+**Status (2026-10-19):** M1-M5 are done (logic, pool, playable, save and stats, polish), all checked in the browser. Released: every Android check below passed on the phone (APK, 2026-10-19). The decisions below are final.
 
 ## Overview
 
@@ -12,7 +12,7 @@ Make 24 is the classic "24 game": four numbers from 1 to 13; combine all four wi
 - Its entry is in `src/games/registry.ts` (title "Make 24"), with a `Tile` for the glyph on home.
 - Components are named `Make24…` (e.g. `Make24Screen`, `Make24Tile`). Identifiers can't start with a digit, so the prefix is the whole name.
 
-It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-18). It follows the patterns the other games established; Minesweeper (`docs/minesweeper.md`) is the most recent finished game and the best reference for structure, tests and workflow.
+It is a separate game, not a drill inside a shared "Brain" game (user). It follows the patterns the other games established; Minesweeper (`docs/minesweeper.md`) is the most recent finished game and the best reference for structure, tests and workflow.
 
 ## Spec (v1)
 
@@ -43,7 +43,7 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
   - after Give up: the solution steps.
   - Next starts the next puzzle of the same level. The picker (New) stays available.
 - **Puzzle order:** each level's puzzles come in a stored shuffled order, so nothing repeats until every puzzle of that level was played (user; `logic/order.ts`).
-- **Abandon:** picking a level in the picker (New) while a **started** puzzle is unsolved counts it as not solved (played +1, streak reset), like Minesweeper. Started = at least one combine on the board now, or any hint used. An unstarted puzzle just goes (a free skip before touching it); so does one whose combines were all undone without a hint (user, 2026-10-18).
+- **Abandon:** picking a level in the picker (New) while a **started** puzzle is unsolved counts it as not solved (played +1, streak reset), like Minesweeper. Started = at least one combine on the board now, or any hint used. An unstarted puzzle just goes (a free skip before touching it); so does one whose combines were all undone without a hint.
 - **Stats per level:** played, solved, solved %, current and best streak, best time.
   - A **hinted solve** counts as played and solved but doesn't extend the streak (it neither increases nor resets it) and doesn't set a best time (the hub's hint rule, as in Sudoku).
   - Give up and abandon count as played, not solved, and reset the current streak.
@@ -51,7 +51,7 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
 - **Save and resume:** the unfinished puzzle is saved after every action and when the clock stops; opening Make 24 **resumes it directly** (with its steps, hints and time). Without one, the next puzzle of the last used level starts at once. A finished puzzle deletes the save. A new puzzle is saved as soon as it is shown (M4), so reopening the app shows the same puzzle instead of using up the next one; each pick also stores the level's order at once.
 - **No animations** (cards change at once; the pressed and selected states are the feedback). No sound, no vibration.
 
-## Decisions (decided 2026-10-18), with reasons
+## Decisions
 
 - **Separate game, not a "Brain" game with drills** (user). Reason: each game keeps its own tile, folder, doc and stats; any game can later be extracted as a standalone app (only the hub and generic code are shared).
 - **Classic 24 with rated levels; target always 24; numbers 1–13** (user). Reason: the original game; more numbers would often make it easier, not harder, so difficulty comes from the rating.
@@ -76,9 +76,9 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
 - **Rating:** all solvable sets are sorted by (`needsFraction` last, then `ways` descending: more ways = easier) and split into three equal parts: Easy, Medium, Hard. So every fraction puzzle is Hard, and the rest are graded by how many ways lead to 24.
 - **Pool size:** of the 1,820 sets of four numbers from 1 to 13, **1,362 are solvable** (the commonly cited figure for these rules). The build test checks that count; a different number means a solver bug or a rule difference, to investigate before shipping.
 - **Shipped as data:** `src/games/make24/data/puzzles.json`, `{ "easy": [[1,2,3,4], …], "medium": […], "hard": […] }`, the numbers sorted ascending. No solutions are stored (the solver finds them on the device). Built by `logic/build-puzzles.test.ts`, skipped unless `$env:MAKE24_BUILD = '1'` (the Sudoku pattern: a Jest test as the build script, so it runs in the same TypeScript setup). `logic/puzzles-data.test.ts` checks the shipped file on every gate: every puzzle solvable, sorted, in range, no duplicates across levels, the three sizes within 1 of each other, 1,362 in total. `data/` is in `.prettierignore` already (`src/games/*/data/`).
-- After the pool is built (M2) the build prints a few sample puzzles per level with their `ways`; the user plays some in the browser after M3 and may ask to move the split (an open decision then).
-- **Rebuild** (PowerShell, repo root): `$env:MAKE24_BUILD = '1'; npx.cmd jest src/games/make24/logic/build-puzzles.test.ts; Remove-Item Env:MAKE24_BUILD` (about 7 s, deterministic: ties are broken by the numbers). Each level is stored in rating order, easiest first.
-- **The split as built (2026-10-19):** Easy 454 puzzles, 300 to 20 ways; Medium 454, 20 to 8 ways; Hard 454, 8 to 1 ways. Only 16 of the 1,362 sets need fractions (3 3 8 8, 1 5 5 5, 3 3 7 7, 4 4 7 7 among them), so Hard is mostly the sets with few ways. Neighbouring levels share their boundary value (20, 8).
+- The build prints a few sample puzzles per level with their `ways`.
+- **Rebuild** (PowerShell, repo root): `$env:MAKE24_BUILD = '1'; npx jest src/games/make24/logic/build-puzzles.test.ts; Remove-Item Env:MAKE24_BUILD` (about 7 s, deterministic: ties are broken by the numbers). Each level is stored in rating order, easiest first.
+- **The split as built:** Easy 454 puzzles, 300 to 20 ways; Medium 454, 20 to 8 ways; Hard 454, 8 to 1 ways. Only 16 of the 1,362 sets need fractions (3 3 8 8, 1 5 5 5, 3 3 7 7, 4 4 7 7 among them), so Hard is mostly the sets with few ways. Neighbouring levels share their boundary value (20, 8).
 
 ## Lessons from Sudoku, 2048 and Minesweeper built into this design
 
@@ -101,12 +101,11 @@ It is a separate game, not a drill inside a shared "Brain" game (user, 2026-10-1
   - Shared test helpers live in `src/test-utils/` (e.g. `button-look.ts` reads a Button's look).
 - **The registry entry pulls Make 24 into `navigation.test.tsx` and `theme.test.tsx` automatically.**
 - **Accessibility:** each card is a button labelled with its value and state ("Card 8", "Card 8/3, selected"); empty places are not buttons; operators are labelled "Plus", "Minus", "Times", "Divided by"; the timer "Time 0:42".
-- **Saved data may be rejected during development:** a changed format bumps the version, and old data simply starts fresh (no migration code; user, 2026-10-17).
+- **Saved data may be rejected during development:** a changed format bumps the version, and old data simply starts fresh (no migration code).
 - **Browser test setups:** AsyncStorage on the web writes straight to `localStorage` under the same key, so a one-line console snippet can seed a `make24:save` for the user (run it on the home screen, not inside the game, or the running game saves over it).
 
 ## Architecture and storage keys
 
-`logic/` (M1) and `data/` with its build and data tests (M2) are built; `pool.ts` and `ui/` come in M3.
 `LEVEL_IDS`/`Level`, `replay`, `isStarted` and `message` live in `game.ts`; the operators (`Op`, `SYMBOL`, `apply`) and `TARGET` in `solve.ts`.
 
 ```
@@ -130,8 +129,6 @@ src/games/make24/
     stats-panel.tsx, tile.tsx (home glyph: the four operators, yellow, on the hub's GlyphTile)
 ```
 
-The selected card and operator may live in the UI hook instead of `Game` if that is simpler; decide in M1's plan. Whatever decides a rule (what a tap does, the result, solved) stays in `logic/`.
-
 Storage keys, all versioned (`{ version, data }`, version 1 each):
 - `make24:save`: `{ level, numbers, steps, hints, elapsedMs }`, the unfinished puzzle; `steps` are the combines in order (`{ first, second, op }` as card places), replayed on load.
 - `make24:stats`: `{ easy: …, medium: …, hard: … }`, one entry per level.
@@ -153,17 +150,16 @@ Same ticking rule as the hub: tick an item only when its re-check passes and the
 - [x] M3. **Playable.** Done 2026-10-19, checked by the user in the browser ("all good"). Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `opening`, `selecting`, `combining`, `finishing`, `level picker`, `timer`). Built as:
   - Rows from top: `Easy · 0:42` (labelled `Time 0:42`), the message line (fixed height, up to two lines), the 2 × 2 cards, the operator row (`Plus`, `Minus`, `Times`, `Divided by`), the action row (fixed height: compact Undo · Hint · Give up · New while playing; New · primary Next once finished). The picker replaces everything below the top line; the clock pauses while it is open.
   - Cards: the size is the smaller of what fits the width and the measured height (48 to 200); text size `min(size × 0.5, (size − 8) / (0.6 × length))`. A hinted card is `cellHint` (Sudoku's hint tint) and wins over selected; the label carries both (`Card 8, selected, hint`). Cards are disabled once the puzzle is finished. The raised edge is a thicker bottom border (`gridLine` and `backgroundSelected` are the same colour).
-  - ~~The home tile shows 3 3 8 8 as paper cards on `backgroundSelected`, so they stand out.~~ Replaced 2026-10-21: the home tile is a glyph, the four operators in yellow (`glyphMake24`) on the hub's `GlyphTile`, because all home tiles became glyphs of one style (see CLAUDE.md, Stack).
   - `pool.ts` `pickPuzzle(level, order, random)` wraps `nextPuzzle` over the shipped pool; the orders live in memory until M4 stores them. Route tests swap it with `jest.mock` + `requireActual`.
-  - The route, the registry entry with `GameRoute`, the home tile (then four paper cards, 3 3 8 8; a glyph since 2026-10-21; the user checks the look).
+  - The route, the registry entry with `GameRoute`, the home tile (a glyph: the four operators in yellow, `glyphMake24`, on the hub's `GlyphTile`, see CLAUDE.md, Stack).
   - The cards, operators, combine flow, Undo, Hint, Give up, the message line, the timer, the result line + Next, the level picker on New.
   - Route tests: combine and solve, − and ÷ order, ÷ 0, not 24, undo, hint, give up, next, the picker.
   - The user checks it in the browser.
-- [x] M4. **Save, stats, abandon, order.** Done 2026-10-19, checked by the user in the browser. Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `resume`, `saving`, `order`, `stats`, `abandon`, `stats panel and picker`). The stats panel has no result line and no new-game buttons (the result line stays on the board). The browser check found the home tile wrapping its cards into one column at phone width (fractional measured width); the card size was floored and the gap took the rest (that tile and its `home tile` test are gone since the glyph tiles of 2026-10-21).
+- [x] M4. **Save, stats, abandon, order.** Done 2026-10-19, checked by the user in the browser. Re-check: `npx jest src/__tests__/make24.test.tsx` (describe blocks `resume`, `saving`, `order`, `stats`, `abandon`, `stats panel and picker`). The stats panel has no result line and no new-game buttons (the result line stays on the board). The browser check found the old home tile wrapping its cards into one column at phone width (fractional measured width), so sizes taken from `onLayout` are floored.
   - Resume directly, the last used level, the shuffled order, the abandon rule, the stats panel from the header (shared components), bests in the picker.
   - Route tests for each, with the AsyncStorage mock; a seed snippet for the user.
   - The user checks it in the browser.
-- [x] M5. **Polish.** Done 2026-10-19 (run in auto mode at the user's request, no plan step), checked by the user in the browser (360×640, 320×568, the long values `−157/156` and `28561`, dark mode). Re-check: `npx jest src/games/make24/ui/cards.test.ts src/__tests__/make24.test.tsx` (tests named `textSize`, `fit without scrolling`, describe `accessibility`). Nothing needed a layout change: `textSize` fits 8 characters on the smallest (48 px) card, and the fit rule (`reservedHeight` in `make24-screen.tsx`, the one place for the rows' heights) leaves 120 px cards at 320×568 with a 48 px bottom inset. The message line is a polite live region, so TalkBack reads each new message. No literal colours in `ui/`; no dark-mode route test (no game has that pattern).
+- [x] M5. **Polish.** Done 2026-10-19, checked by the user in the browser (360×640, 320×568, the long values `−157/156` and `28561`, dark mode). Re-check: `npx jest src/games/make24/ui/cards.test.ts src/__tests__/make24.test.tsx` (tests named `textSize`, `fit without scrolling`, describe `accessibility`). Nothing needed a layout change: `textSize` fits 8 characters on the smallest (48 px) card, and the fit rule (`reservedHeight` in `make24-screen.tsx`, the one place for the rows' heights) leaves 120 px cards at 320×568 with a 48 px bottom inset. The message line is a polite live region, so TalkBack reads each new message. No literal colours in `ui/`; no dark-mode route test (no game has that pattern).
   - Card text for long values (`−11/3`, `169`), the layout at 360×640 and 320×568, accessibility labels, dark mode.
   - The user checks it in the browser.
 
@@ -177,13 +173,12 @@ Then the hub's Release milestone: the APK is built and tested once, after M5, wi
 - [x] Cards, operators, the action row and the message line fit without scrolling; nothing sits under the navigation bar.
 - [x] The timer pauses in the background and with the screen off; an unfinished puzzle comes back directly after closing the app, with its steps and time.
 - [x] The header Stats button sits clear of the edge; the picker and the stats panel fit without scrolling.
-- [x] The Make 24 home tile looks right next to the other games. (Checked for the old paper-cards tile; the glyph tile is covered by the hub-wide glyph check in CLAUDE.md.)
+- [x] The Make 24 home tile looks right next to the other games.
 - [x] With TalkBack on, cards and operators are read with their value and state, and a new message ("Can't divide by 0", "Try …", the result line) is read out by itself.
 
 ## Open decisions
 
-- After M2/M3: whether the Easy / Medium / Hard split feels right in play (the split rule above is the starting point).
-- The look (cards, colours): accepted at the M3 browser check; tune it in M5 if the phone shows a need.
+None.
 
 ## Known shortcuts
 

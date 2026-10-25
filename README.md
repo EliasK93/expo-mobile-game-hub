@@ -41,11 +41,22 @@ The project was built with [Claude Code](https://claude.com/claude-code); the ru
 1. `npm install` (once, optionally run tests with `npm test`)
 2. `npx expo start`, then press `w`
 
-## Run it on Android (Pick one option)
+## Run it on Android
 
-- **Install the release APK**: download it from the Releases page, open it on the phone, and allow "Install unknown apps" when asked.
-- **Build the APK in the cloud** with [EAS](https://expo.dev/eas) (free Expo account): after `npm install`, run `npx eas-cli@latest build -p android --profile preview`. EAS gives a download link; install the APK like the release one.
+Pick one:
+
+- **Install the release APK**: download it from the [Releases page](../../releases/latest), open it on the phone, and allow "Install unknown apps" when asked.
+- **Build the APK in the cloud** with [EAS](https://expo.dev/eas) (free Expo account): after `npm install`, with your own Expo account first remove `extra.eas.projectId` from `app.json` and run `npx eas-cli@latest init`, then run `npx eas-cli@latest build -p android --profile preview`. EAS gives a download link; install the APK like the release one.
 - **Build and run it locally**: needs [Android Studio](https://developer.android.com/studio) with the Android SDK, and a phone over USB (developer mode, USB debugging) or an emulator. After `npm install`, `npx expo run:android` builds and starts the app.
+
+## Development
+
+Needs a current Node LTS and npm.
+
+- `npm test` runs the Jest tests.
+- `npm run gate` runs the type check, the tests, lint (with Prettier formatting) and a [gitleaks](https://github.com/gitleaks/gitleaks) scan of the staged files, so gitleaks must be installed. Stage your changes with `git add` first, because the scan checks staged content.
+- The pre-commit hook that runs the gate is not part of a clone. To get it, create `.git/hooks/pre-commit` containing `#!/bin/sh` and `npm run gate`.
+- The `.ps1` files in `tools/` are Windows/PowerShell helpers for the agent orchestration described above. The app does not need them.
 
 ## License
 
