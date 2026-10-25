@@ -1,10 +1,10 @@
 # Game Hub
 
-Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.dev), [React Native](https://reactnative.dev) and [TypeScript](https://www.typescriptlang.org). It is installed as an APK, and it also runs in the browser. Saved games and stats stay on the device.
+Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.dev), [React Native](https://reactnative.dev) and [TypeScript](https://www.typescriptlang.org). It is installed as an APK, and it also runs in the browser. Saved games and stats stay on the device (fully offline, no network needed).
 
 <table>
 <tr>
-<td align="center" valign="top" width="25%"><b>Hub</b><br><img src="docs/images/home.png" width="180" alt="Hub"><br>Sort the games by Recent, Name or Playtime.</td>
+<td align="center" valign="top" width="25%"><b>Hub</b><br><img src="docs/images/home.png" width="180" alt="Hub menu"><br>Sort the games by Recent, Name or Playtime.</td>
 <td align="center" valign="top" width="25%"><b>Sudoku</b><br><img src="docs/images/sudoku.png" width="180" alt="Sudoku"><br>Five difficulty levels, notes, hints, undo and redo.</td>
 <td align="center" valign="top" width="25%"><b>2048</b><br><img src="docs/images/2048.png" width="180" alt="2048"><br>Boards from 4×4 to 7×7, swipe to play.</td>
 <td align="center" valign="top" width="25%"><b>Minesweeper</b><br><img src="docs/images/minesweeper.png" width="180" alt="Minesweeper"><br>Three levels, flags.</td>
@@ -19,11 +19,10 @@ Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.
 
 ## Features
 
-- **Hub menu**: a grid of game tiles. Sort it by Recent, Name or Playtime; the app remembers your choice.
+- **Hub main menu**: a grid of game tiles. Sort it by Recent, Name or Playtime; the app remembers your choice.
 - **Independent games**: each game saves its game in progress and keeps its own stats.
 - **Playtime**: the hub counts how long each game is open while the app is in front, for the Playtime sort.
 - **Light and dark mode** follow the system setting.
-- **Offline**: no account and no network needed; everything stays on the device.
 
 ## How it was developed with Claude Code
 
