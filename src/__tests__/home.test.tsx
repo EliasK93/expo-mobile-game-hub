@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { AppState, Text } from 'react-native';
@@ -7,7 +6,9 @@ import HomeScreen from '@/app/index';
 import { GameRoute } from '@/components/game-route';
 import { Colors } from '@/constants/theme';
 import { buttonLook } from '@/test-utils/button-look';
+import { tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // Sorting needs more than one game, so home runs here with three made-up games. The real registry is covered by navigation.test.tsx.
 jest.mock('@/games/registry', () => {
@@ -34,10 +35,7 @@ function game(id: string) {
 }
 const open = () => renderRouter({ index: HomeScreen, zeta: game('zeta'), alpha: game('alpha'), mid: game('mid') });
 
-const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 const tiles = () => screen.getAllByText(/^(Zeta|Alpha|Mid)$/).map((n) => n.props.children);
-const seed = (key: string, value: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data: value }));
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null')?.data;
 const PLAYED = { zeta: { totalMs: 1000, lastPlayedAt: 300 }, mid: { totalMs: 9000, lastPlayedAt: 100 } };
 
 beforeEach(() => {
@@ -58,7 +56,7 @@ describe('Home grid', () => {
   });
 
   it('sorts by each chip', async () => {
-    await seed('hub:playtime', PLAYED);
+    await seed('hub:playtime', 1, PLAYED);
     open();
     await settle();
     expect(tiles()).toEqual(['Zeta', 'Mid', 'Alpha']); // Recent
@@ -83,12 +81,12 @@ describe('Home grid', () => {
   });
 
   it('remembers the sort for the next visit', async () => {
-    await seed('hub:playtime', PLAYED);
+    await seed('hub:playtime', 1, PLAYED);
     open();
     await settle();
     fireEvent.press(screen.getByLabelText('Sort by Playtime'));
     await settle();
-    expect(await saved('hub:settings')).toEqual({ sort: 'playtime' });
+    expect((await saved('hub:settings')).data).toEqual({ sort: 'playtime' });
 
     screen.unmount();
     await settle();
@@ -123,7 +121,7 @@ describe('Playtime', () => {
     await play('Alpha', 5000);
     await tick(4000);
 
-    expect((await saved('hub:playtime')).alpha.totalMs).toBe(5000);
+    expect((await saved('hub:playtime')).data.alpha.totalMs).toBe(5000);
   });
 
   it('adds up over visits, and a game played now moves to the front of Recent and counts in Playtime', async () => {
@@ -133,7 +131,7 @@ describe('Playtime', () => {
     await play('Alpha', 3000);
     await play('Zeta', 1000);
 
-    expect((await saved('hub:playtime')).alpha.totalMs).toBe(5000);
+    expect((await saved('hub:playtime')).data.alpha.totalMs).toBe(5000);
     expect(tiles()).toEqual(['Zeta', 'Alpha', 'Mid']);
     fireEvent.press(screen.getByLabelText('Sort by Playtime'));
     expect(tiles()).toEqual(['Alpha', 'Zeta', 'Mid']);
@@ -159,6 +157,6 @@ describe('Playtime', () => {
     await act(async () => router.back());
     await settle();
 
-    expect((await saved('hub:playtime')).alpha.totalMs).toBe(3000);
+    expect((await saved('hub:playtime')).data.alpha.totalMs).toBe(3000);
   });
 });

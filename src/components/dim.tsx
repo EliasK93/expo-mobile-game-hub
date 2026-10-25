@@ -4,8 +4,8 @@ import { StyleSheet, View } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 
-// A layer over the whole board (the board hands it a spot inside itself): the board dimmed, the children centred on it.
-// Paused and the result both use it.
+// A layer over a board or letter block (the parent hands it a spot inside itself): the content dimmed, the children
+// centred on it.
 export function Dim({ children }: { children: ReactNode }) {
   return (
     <View style={[StyleSheet.absoluteFill, styles.layer]}>

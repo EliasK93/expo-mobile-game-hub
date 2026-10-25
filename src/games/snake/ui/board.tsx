@@ -1,26 +1,18 @@
-import { memo, useMemo } from 'react';
-import { PanResponder, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { Dim } from '@/components/dim';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useSwipe } from '@/hooks/use-swipe';
 import { useTheme } from '@/hooks/use-theme';
 
-import { COLS, colRow, DIRS, ROWS, type Dir } from '../logic/board';
+import { COLS, colRow, ROWS, type Dir } from '../logic/board';
 import type { Game } from '../logic/game';
-import { Dim } from './dim';
 
 export const MIN_CELL = 8; // a very short area gets small cells and an overflowing board, never a zero or negative cell
-const MOVE_START = 4; // px of movement before the swipe area takes the gesture (small on purpose: better too sensitive than not enough)
-const SWIPE_MIN = 8; // px a drag needs to count as a swipe
 const INSET = 1; // px between a segment and the grid lines around its cell
-
-// The longer axis decides the direction; a drag shorter than SWIPE_MIN is no swipe.
-function swipeDir(dx: number, dy: number): Dir | null {
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN) return null;
-  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'left' : 'right';
-  return dy < 0 ? 'up' : 'down';
-}
 
 // The cell size from the width and the height the board may use (null until the screen is measured: then the width
 // alone). Whole pixels, so the board's sides are whole pixels (a fractional size blurs the lines and wraps rows).
@@ -46,7 +38,7 @@ const Grid = memo(function Grid({ cell, color }: { cell: number; color: string }
 });
 
 // available = the height the board may use (the screen's measured area minus everything else), null until measured.
-// onSwipe must be a stable function: the PanResponder is built from it once.
+// onSwipe must be a stable function (see useSwipe).
 type Props = {
   game: Game;
   available: number | null;
@@ -63,25 +55,7 @@ export function SnakeBoard({ game, available, newBest, onSwipe, onResume, onPlay
   const cell = cellSize(width, available);
   const { status, apples } = game;
 
-  // Touch (and a mouse drag on the web): the swipe area (the board and the free space under it) takes the gesture after
-  // MOVE_START px and the screen may not take it back.
-  // PanResponder resets dx/dy to 0 when it grants the gesture, so the distance up to that moment (lead) is kept and added
-  // back: otherwise a quick flick that is granted on its first big move would count as no swipe at all.
-  const pan = useMemo(() => {
-    const lead = { dx: 0, dy: 0 };
-    return PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => {
-        const take = Math.max(Math.abs(g.dx), Math.abs(g.dy)) > MOVE_START;
-        if (take) [lead.dx, lead.dy] = [g.dx, g.dy];
-        return take;
-      },
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: (_, g) => {
-        const dir = swipeDir(lead.dx + g.dx, lead.dy + g.dy);
-        if (dir) onSwipe(dir);
-      },
-    });
-  }, [onSwipe]);
+  const swipe = useSwipe(onSwipe, 'Turn');
 
   const square = (i: number) => {
     const [col, row] = colRow(i);
@@ -97,22 +71,15 @@ export function SnakeBoard({ game, available, newBest, onSwipe, onResume, onPlay
   const finished = status === 'over' || status === 'won';
   const line = `${status === 'won' ? 'You win!' : 'Game over'} · ${apples} ${apples === 1 ? 'apple' : 'apples'}${newBest ? ' · New best!' : ''}`;
 
-  // The touch handlers sit on the wrapper (the swipe area: flex 1, so it reaches from the board down to the bottom of the
-  // screen) and the accessibility actions on the board inside it: the testing library skips an action on an element that
-  // also has touch handlers. They do nothing on the web (react-native-web has no support).
   // The overlays are siblings of the accessible board, not inside it, so a screen reader still reaches their buttons.
   return (
-    <View testID="swipe-area" {...pan.panHandlers} style={styles.area}>
+    <View testID="swipe-area" {...swipe.area} style={styles.area}>
       <View style={[styles.board, { width: COLS * cell, height: ROWS * cell }]}>
         <View
           accessible
           accessibilityLabel={`Board ${COLS} by ${ROWS}`}
           accessibilityValue={{ text: value }}
-          accessibilityActions={DIRS.map((name) => ({ name, label: `Turn ${name}` }))}
-          onAccessibilityAction={(e) => {
-            const name = e.nativeEvent.actionName as Dir; // also called with the platform's own names, e.g. `activate`
-            if (DIRS.includes(name)) onSwipe(name);
-          }}
+          {...swipe.actions}
           style={[StyleSheet.absoluteFill, styles.rounded, { backgroundColor: theme.snakeBoard }]}>
           <Grid cell={cell} color={theme.snakeGrid} />
           {game.apple !== null && (

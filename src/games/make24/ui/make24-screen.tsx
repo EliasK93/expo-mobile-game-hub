@@ -3,17 +3,18 @@ import { type LayoutChangeEvent, StyleSheet, useWindowDimensions } from 'react-n
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { OptionPicker } from '@/components/option-picker';
 import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { capitalize } from '@/lib/text';
 import { formatTime } from '@/lib/timer';
 
-import { message } from '../logic/game';
+import { LEVEL_IDS, message } from '../logic/game';
 import { cardSize, Make24Cards } from './cards';
-import { levelName, LevelPicker } from './level-picker';
 import { Make24Operators } from './operators';
-import { StatsPanel } from './stats-panel';
+import { Make24StatsPanel } from './stats-panel';
 import { useMake24 } from './use-make24';
 
 // The heights of the rows around the cards: the time line, the message line (two lines of small text), and the operator
@@ -72,7 +73,7 @@ export function Make24Screen() {
     return (
       <ThemedView style={container} onLayout={onLayout}>
         {header}
-        <StatsPanel stats={stats} current={game.level} onClose={closePanel} />
+        <Make24StatsPanel stats={stats} current={game.level} onClose={closePanel} />
       </ThemedView>
     );
   }
@@ -80,7 +81,7 @@ export function Make24Screen() {
   const time = formatTime(elapsedMs);
   const timeLine = (
     <ThemedText accessibilityLabel={`Time ${time}`} style={styles.time}>
-      {`${levelName(game.level)} · ${time}`}
+      {`${capitalize(game.level)} · ${time}`}
     </ThemedText>
   );
 
@@ -89,7 +90,16 @@ export function Make24Screen() {
       <ThemedView style={container} onLayout={onLayout}>
         {header}
         {timeLine}
-        <LevelPicker last={lastLevel} stats={stats} onPick={pickLevel} onCancel={closePicker} />
+        <OptionPicker
+          heading="Pick a level"
+          options={LEVEL_IDS.map((id) => {
+            const { bestMs } = stats[id];
+            return { id, name: capitalize(id), detail: bestMs === null ? undefined : `Best ${formatTime(bestMs)}` };
+          })}
+          last={lastLevel}
+          onPick={pickLevel}
+          onCancel={closePicker}
+        />
       </ThemedView>
     );
   }

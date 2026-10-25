@@ -2,20 +2,21 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { Dim } from '@/components/dim';
+import { OptionPicker } from '@/components/option-picker';
 import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { capitalize } from '@/lib/text';
 import { formatTime } from '@/lib/timer';
 
 import { canAct, isWrong } from '../logic/game';
-import { LENGTH } from '../logic/words';
-import { Dim } from './dim';
-import { levelName, LevelPicker } from './level-picker';
+import { LENGTH, LEVEL_IDS } from '../logic/words';
 import { AnswerRow, Rack, tileSize } from './letters';
 import { ScoreBox } from './score-box';
-import { StatsPanel } from './stats-panel';
+import { AnagramStatsPanel } from './stats-panel';
 import { useAnagram } from './use-anagram';
 
 // The tallest layer over the letters (a 44 px title or two 24 px lines, the gap, a 48 px button); Hard at 320 px has 104.
@@ -39,7 +40,7 @@ export function AnagramScreen() {
     return (
       <ThemedView style={container}>
         {header}
-        <StatsPanel stats={a.stats} current={game.level} onClose={a.closePanel} />
+        <AnagramStatsPanel stats={a.stats} current={game.level} onClose={a.closePanel} />
       </ThemedView>
     );
   }
@@ -49,7 +50,16 @@ export function AnagramScreen() {
     return (
       <ThemedView style={container}>
         {header}
-        <LevelPicker last={a.lastLevel} stats={a.stats} onPick={a.pickLevel} onCancel={a.closePicker} />
+        <OptionPicker
+          heading="Pick a level"
+          options={LEVEL_IDS.map((id) => {
+            const { best } = a.stats[id];
+            return { id, name: capitalize(id), detail: `${LENGTH[id]} letters${best > 0 ? ` · Best ${best}` : ''}` };
+          })}
+          last={a.lastLevel}
+          onPick={a.pickLevel}
+          onCancel={a.closePicker}
+        />
       </ThemedView>
     );
   }
@@ -74,7 +84,7 @@ export function AnagramScreen() {
       </ThemedText>
       <ThemedView style={styles.row}>
         <ScoreBox
-          title={`${levelName(game.level)} · Score`}
+          title={`${capitalize(game.level)} · Score`}
           value={game.solved}
           flash={a.solvedFlash}
           reduceMotion={reduceMotion}

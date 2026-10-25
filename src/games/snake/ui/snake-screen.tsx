@@ -3,14 +3,16 @@ import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, COMPACT_HEIGHT } from '@/components/button';
+import { OptionPicker } from '@/components/option-picker';
+import { ScoreBox, SCORE_BOX_HEIGHT } from '@/components/score-box';
 import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { capitalize } from '@/lib/text';
 
+import { LEVEL_IDS } from '../logic/board';
 import { SnakeBoard } from './board';
-import { levelName, LevelPicker } from './level-picker';
-import { ScoreBox, SCORE_BOX_HEIGHT } from './score-box';
-import { StatsPanel } from './stats-panel';
+import { SnakeStatsPanel } from './stats-panel';
 import { useSnake } from './use-snake';
 
 // Everything on the screen except the board: padding top and bottom (the bottom inset on top), the boxes, the button
@@ -59,7 +61,7 @@ export function SnakeScreen() {
     return (
       <ThemedView style={container} onLayout={onLayout}>
         {header}
-        <StatsPanel stats={stats} current={game.level} onClose={closePanel} />
+        <SnakeStatsPanel stats={stats} current={game.level} onClose={closePanel} />
       </ThemedView>
     );
   }
@@ -69,7 +71,16 @@ export function SnakeScreen() {
     return (
       <ThemedView style={container} onLayout={onLayout}>
         {header}
-        <LevelPicker last={lastLevel} stats={stats} onPick={pickLevel} onCancel={closePicker} />
+        <OptionPicker
+          heading="Pick a level"
+          options={LEVEL_IDS.map((id) => {
+            const { best } = stats[id];
+            return { id, name: capitalize(id), detail: best > 0 ? `Best ${best}` : undefined };
+          })}
+          last={lastLevel}
+          onPick={pickLevel}
+          onCancel={closePicker}
+        />
       </ThemedView>
     );
   }
@@ -78,7 +89,7 @@ export function SnakeScreen() {
     <ThemedView testID="game-area" style={container} onLayout={onLayout}>
       {header}
       <ThemedView style={styles.row}>
-        <ScoreBox title={`${levelName(game.level)} · Score`} value={game.apples} />
+        <ScoreBox title={`${capitalize(game.level)} · Score`} value={game.apples} />
         <ScoreBox title="Best" value={best} />
       </ThemedView>
       <ThemedView style={styles.row}>

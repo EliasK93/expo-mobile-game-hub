@@ -1,17 +1,19 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { AccessibilityInfo, Animated, AppState, Dimensions, StyleSheet } from 'react-native';
 
 import { COMPACT_HEIGHT } from '@/components/button';
+import { SCORE_BOX_HEIGHT } from '@/components/score-box';
 import { Colors, Spacing } from '@/constants/theme';
 import { LAYER_HEIGHT } from '@/games/anagram/ui/anagram-screen';
 import { SHAKE_MS } from '@/games/anagram/ui/letters';
-import { POP_MS, SCORE_BOX_HEIGHT } from '@/games/anagram/ui/score-box';
+import { POP_MS } from '@/games/anagram/ui/score-box';
 import { FLASH_MS } from '@/games/anagram/ui/use-anagram';
 import { EMPTY_STATS, type LevelStats } from '@/games/anagram/logic/stats';
 import { pickWord, scramble, type Level } from '@/games/anagram/logic/words';
+import { disabled, press, selected, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // pickWord and scramble are replaced so every test knows its words and racks (the real ones are tested in logic/).
 // The words below have no repeated letter, so a tile is found by its letter.
@@ -53,22 +55,30 @@ const appStates = () => {
   return (s: string) => act(async () => listeners.forEach((l) => l(s)));
 };
 
-// Fake timers drive the clock (it updates every 250 ms) and the 1 s the solution of a skip shows.
-const tick = (ms: number) =>
-  act(async () => {
-    jest.advanceTimersByTime(ms);
-  });
-const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
 // The result overlay has its own New and Play again; the row above the board has the other New.
 const result = () => within(screen.getByTestId('result'));
 const tap = (letters: string) => {
   for (const letter of letters) press(`Letter ${letter.toUpperCase()}`);
 };
-const disabled = (label: string) => screen.getByLabelText(label).props.accessibilityState.disabled;
-const selected = (label: string) => screen.getByLabelText(label).props.accessibilityState.selected;
 // The rack as the letters on screen, in order (a placed tile leaves an empty spot, so it is not listed).
 const rack = () => screen.queryAllByLabelText(/^Letter /).map((n) => n.props.accessibilityLabel.slice(7));
 const faceColor = (testID: string) => StyleSheet.flatten(screen.getByTestId(testID).props.style).backgroundColor;
+
+const stats = (played: number, best: number, totalWords: number) => ({ played, best, totalWords }) satisfies LevelStats;
+const seedStats = (level: Level, s: LevelStats) => seed('anagram:stats', 1, { ...EMPTY_STATS, [level]: s });
+
+// A started round as it is stored: PLATE in the rack order T L P E A, P and A placed (rack indices 2 and 4), three words
+// solved, one skip, 42 s run: 60 - 42 - 5 = 13 s left.
+const SAVE = {
+  level: 'normal',
+  word: 'plate',
+  rack: 'tlpea',
+  answer: [2, 4, null, null, null],
+  solved: 3,
+  skips: 1,
+  used: ['house', 'water', 'light', 'plate'],
+  elapsedMs: 42_000,
+};
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -491,30 +501,9 @@ describe('accessibility', () => {
     expect(within(screen.getByTestId('result')).getByLabelText('Play again')).toBeTruthy();
   });
 });
-
-// ---- Save, stats, abandon ----
-
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
-const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
-const stats = (played: number, best: number, totalWords: number) => ({ played, best, totalWords }) satisfies LevelStats;
-const seedStats = (level: Level, s: LevelStats) => seed('anagram:stats', { ...EMPTY_STATS, [level]: s });
-
-// A started round as it is stored: PLATE in the rack order T L P E A, P and A placed (rack indices 2 and 4), three words
-// solved, one skip, 42 s run: 60 - 42 - 5 = 13 s left.
-const SAVE = {
-  level: 'normal',
-  word: 'plate',
-  rack: 'tlpea',
-  answer: [2, 4, null, null, null],
-  solved: 3,
-  skips: 1,
-  used: ['house', 'water', 'light', 'plate'],
-  elapsedMs: 42_000,
-};
-
 describe('resume', () => {
   it('opens a saved round directly, paused, with its level, word, rack, answer, score and time; Continue goes on', async () => {
-    await seed('anagram:save', SAVE);
+    await seed('anagram:save', 1, SAVE);
     await open();
 
     expect(screen.getByText('Paused')).toBeTruthy();
@@ -546,8 +535,8 @@ describe('resume', () => {
     ['a bad save', { ...SAVE, word: 'plat' }],
     ['one with no time left', { ...SAVE, elapsedMs: 55_000 }],
   ])('ignores %s and shows a new ready round of the stored level', async (_, data) => {
-    await seed('anagram:save', data);
-    await seed('anagram:settings', { level: 'easy' });
+    await seed('anagram:save', 1, data);
+    await seed('anagram:settings', 1, { level: 'easy' });
     words('bake');
     await open();
 
@@ -753,7 +742,7 @@ describe('abandon', () => {
 
 describe('stats', () => {
   it('the Best box and the picker read the stored bests', async () => {
-    await seed('anagram:stats', { ...EMPTY_STATS, normal: stats(4, 23, 50), hard: stats(1, 7, 7) });
+    await seed('anagram:stats', 1, { ...EMPTY_STATS, normal: stats(4, 23, 50), hard: stats(1, 7, 7) });
     await open();
 
     expect(screen.getByLabelText('Best 23')).toBeTruthy();
@@ -789,8 +778,8 @@ describe('stats', () => {
 
 describe('stats panel', () => {
   it('opens from the header on the current level with its numbers; the switch shows another level; Close goes back', async () => {
-    await seed('anagram:settings', { level: 'hard' });
-    await seed('anagram:stats', { ...EMPTY_STATS, normal: stats(4, 23, 50), hard: stats(1, 7, 7) });
+    await seed('anagram:settings', 1, { level: 'hard' });
+    await seed('anagram:stats', 1, { ...EMPTY_STATS, normal: stats(4, 23, 50), hard: stats(1, 7, 7) });
     await open();
 
     press('Stats');
@@ -1112,7 +1101,7 @@ describe('feedback and layout', () => {
           [320, 568],
         ]) {
           resize(width, height);
-          await seed('anagram:settings', { level });
+          await seed('anagram:settings', 1, { level });
           words(word);
           await open();
           press('Start');

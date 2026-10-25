@@ -3,16 +3,19 @@ import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, COMPACT_HEIGHT } from '@/components/button';
+import { OptionPicker } from '@/components/option-picker';
 import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { capitalize } from '@/lib/text';
+import { formatTime } from '@/lib/timer';
 
+import { LEVEL_IDS, LEVELS } from '../logic/board';
 import { minesLeft, type Status } from '../logic/game';
 import { MinesweeperBoard } from './board';
 import type { Mood } from './face';
 import { clampLed } from './format';
-import { LevelPicker } from './level-picker';
-import { StatsPanel } from './stats-panel';
+import { MinesweeperStatsPanel } from './stats-panel';
 import { TOP_BAR_HEIGHT, TopBar } from './top-bar';
 import { useMinesweeper } from './use-minesweeper';
 
@@ -61,7 +64,21 @@ export function MinesweeperScreen() {
     return (
       <ThemedView style={container} onLayout={onLayout}>
         {header}
-        <LevelPicker last={lastLevel} stats={stats} onPick={pickLevel} onCancel={closePicker} />
+        <OptionPicker
+          heading="Pick a level"
+          options={LEVEL_IDS.map((id) => {
+            const { cols, rows, mines } = LEVELS[id];
+            const { bestMs } = stats[id];
+            return {
+              id,
+              name: capitalize(id),
+              detail: `${cols} × ${rows} · ${mines} mines${bestMs === null ? '' : ` · Best ${formatTime(bestMs)}`}`,
+            };
+          })}
+          last={lastLevel}
+          onPick={pickLevel}
+          onCancel={closePicker}
+        />
       </ThemedView>
     );
   }
@@ -72,7 +89,7 @@ export function MinesweeperScreen() {
       <ThemedView style={container} onLayout={onLayout}>
         {header}
         {/* Play again: the same level (pickLevel also keeps it as the last used one). */}
-        <StatsPanel
+        <MinesweeperStatsPanel
           stats={stats}
           game={game}
           ms={elapsedMs}

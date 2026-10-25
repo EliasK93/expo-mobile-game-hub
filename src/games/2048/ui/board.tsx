@@ -1,8 +1,10 @@
-import { type ReactNode, useMemo } from 'react';
-import { PanResponder, StyleSheet, useWindowDimensions, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
+import { Dim } from '@/components/dim';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useSwipe } from '@/hooks/use-swipe';
 import { useTheme } from '@/hooks/use-theme';
 
 import { sizeOf, type Dir } from '../logic/board';
@@ -10,26 +12,15 @@ import type { Game } from '../logic/game';
 import type { Merge, Slide } from '../logic/move';
 import type { Spawned } from '../logic/spawn';
 import { AnimatedTile } from './animated-tile';
-import { Dim } from './dim';
 
 const GAP = 4;
 const MIN_TILE = 8; // a very short area gets small tiles and an overflowing board, never a zero or negative tile
-const MOVE_START = 4; // px of movement before the swipe area takes the gesture (small on purpose: better too sensitive than not enough)
-const SWIPE_MIN = 8; // px a drag needs to count as a swipe
-const DIRS: Dir[] = ['up', 'down', 'left', 'right'];
-
-// The longer axis decides the direction; a drag shorter than SWIPE_MIN is no swipe.
-function swipeDir(dx: number, dy: number): Dir | null {
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE_MIN) return null;
-  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? 'left' : 'right';
-  return dy < 0 ? 'up' : 'down';
-}
 
 // What the last move did, for the animations (the hook keeps it next to the game). seq tells one move from the next.
 export type Motion = { seq: number; slides: Slide[]; merges: Merge[]; spawned: Spawned | null };
 
 // available = the height the board may use (the screen's measured area minus everything else), null until measured:
-// then the board is sized by the width alone. onSwipe must be a stable function: the PanResponder is built from it once.
+// then the board is sized by the width alone. onSwipe must be a stable function (see useSwipe).
 // motion = the last move, null when the board did not change by a move (start, undo, resume) or with reduced motion: then
 // the board just changes, no slides and no ghosts. overlay = the win overlay, drawn over the cells.
 type Props = {
@@ -57,42 +48,17 @@ export function Game2048Board({ game, available, motion, onSwipe, overlay }: Pro
     return slide ? { dx: px(slide.from).x - px(to).x, dy: px(slide.from).y - px(to).y } : { dx: 0, dy: 0 };
   };
 
-  // Touch (and a mouse drag on the web): the swipe area (the board and the free space under it) takes the gesture after
-  // MOVE_START px and the screen may not take it back.
-  // PanResponder resets dx/dy to 0 when it grants the gesture, so the distance up to that moment (lead) is kept and added
-  // back: otherwise a quick flick that is granted on its first big move would count as no swipe at all.
-  const pan = useMemo(() => {
-    const lead = { dx: 0, dy: 0 };
-    return PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) => {
-        const take = Math.max(Math.abs(g.dx), Math.abs(g.dy)) > MOVE_START;
-        if (take) [lead.dx, lead.dy] = [g.dx, g.dy];
-        return take;
-      },
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderRelease: (_, g) => {
-        const dir = swipeDir(lead.dx + g.dx, lead.dy + g.dy);
-        if (dir) onSwipe(dir);
-      },
-    });
-  }, [onSwipe]);
+  const swipe = useSwipe(onSwipe, 'Move');
 
-  // The touch handlers sit on the wrapper (the swipe area: flex 1, so it reaches from the board down to the bottom of the
-  // screen) and the accessibility actions on the board inside it: the testing library skips an action on an element that
-  // also has touch handlers. They do nothing on the web (react-native-web has no support).
   // The value lists the board row by row for a screen reader; the route tests read the board from it too.
   const rows = Array.from({ length: n }, (_, r) => game.board.slice(r * n, (r + 1) * n));
   return (
-    <View testID="swipe-area" {...pan.panHandlers} style={styles.area}>
+    <View testID="swipe-area" {...swipe.area} style={styles.area}>
       <View
         accessible
         accessibilityLabel={`Board ${n} by ${n}`}
         accessibilityValue={{ text: rows.map((row) => row.map((t) => t?.value ?? 'empty').join(', ')).join('; ') }}
-        accessibilityActions={DIRS.map((name) => ({ name, label: `Move ${name}` }))}
-        onAccessibilityAction={(e) => {
-          const name = e.nativeEvent.actionName as Dir; // also called with the platform's own names, e.g. `activate`
-          if (DIRS.includes(name)) onSwipe(name);
-        }}
+        {...swipe.actions}
         style={[styles.board, { width: side, height: side, backgroundColor: theme.rampBoard }]}>
         {/* The empty cells stay put; the tiles are laid over them. Every move gives the tiles new keys (they are remade in
             their end state), which is also what finishes a running animation when the next swipe comes. */}

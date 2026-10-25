@@ -6,7 +6,9 @@ import { AppState, StyleSheet } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { parseGrid } from '@/games/sudoku/logic/board';
 import { pickPuzzle } from '@/games/sudoku/logic/pool';
+import { press, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // The pool pick is replaced by a fixed puzzle with two empty cells: row 1 column 1 (answer 5) and row 9 column 9 (answer 9).
 jest.mock('@/games/sudoku/logic/pool', () => ({ pickPuzzle: jest.fn() }));
@@ -44,9 +46,6 @@ const reopen = async (setup?: () => Promise<void>) => {
   await setup?.();
   await open();
 };
-const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
-const seed = (key: string, value: unknown) => AsyncStorage.setItem(key, JSON.stringify(value));
 
 // Most tests start from a running Medium game: open Sudoku (no save, so the picker) and pick Medium.
 beforeEach(async () => {
@@ -176,7 +175,7 @@ describe('Level picker', () => {
     expect(screen.getByText('Expert')).toBeTruthy();
     expect((await saved('sudoku:settings')).data).toEqual({ level: 5 });
 
-    await reopen(() => seed('sudoku:settings', { version: 1, data: { level: 5 } }));
+    await reopen(() => seed('sudoku:settings', 1, { level: 5 }));
     expect(screen.queryAllByLabelText(/^Row \d, column \d/)).toHaveLength(0); // the picker, nothing started
     expect(screen.getByLabelText('Level: Expert').props.accessibilityState.selected).toBe(true);
     expect(screen.getByLabelText('Level: Medium').props.accessibilityState.selected).toBe(false);
@@ -191,7 +190,7 @@ describe('Level picker', () => {
     const detail = (name: string) => within(screen.getByLabelText(`Level: ${name}`));
 
     it('each level button shows its solved count and best time; a level without wins shows nothing', async () => {
-      await reopen(() => seed('sudoku:stats', { version: 1, data: STATS }));
+      await reopen(() => seed('sudoku:stats', 1, STATS));
 
       expect(detail('Easy').getByText('5 solved · Best 3:10')).toBeTruthy();
       expect(detail('Medium').getByText('2 solved')).toBeTruthy(); // hinted wins count, but have no best time
@@ -201,7 +200,7 @@ describe('Level picker', () => {
     });
 
     it('shows the same stats when the picker is opened from a running game', async () => {
-      await reopen(() => seed('sudoku:stats', { version: 1, data: STATS }));
+      await reopen(() => seed('sudoku:stats', 1, STATS));
       level('Medium');
       fireEvent.press(screen.getByLabelText('New game'));
 
@@ -210,14 +209,14 @@ describe('Level picker', () => {
 
     it('ignores a leftover classic entry in the stored stats: no line for it, the levels still show', async () => {
       const classic = { solved: 3, timedCount: 2, totalMs: 780_000, bestMs: 252_000 };
-      await reopen(() => seed('sudoku:stats', { version: 1, data: { ...STATS, classic } }));
+      await reopen(() => seed('sudoku:stats', 1, { ...STATS, classic }));
 
       expect(screen.queryByText(/^Classic/)).toBeNull();
       expect(detail('Easy').getByText('5 solved · Best 3:10')).toBeTruthy();
     });
 
     it('does not show an average time', async () => {
-      await reopen(() => seed('sudoku:stats', { version: 1, data: STATS }));
+      await reopen(() => seed('sudoku:stats', 1, STATS));
 
       expect(screen.queryByText(/Avg/)).toBeNull();
     });
@@ -242,7 +241,6 @@ describe('Level picker', () => {
 });
 
 describe('Hint', () => {
-  const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
   const hintCells = () => screen.queryAllByLabelText(/, hint$/);
 
   it('highlights the cells and explains, then Apply places the digit and Undo takes it back', () => {
@@ -308,10 +306,7 @@ describe('Hint', () => {
   });
 
   it('a win after a hint counts as solved but leaves best and average time alone', async () => {
-    await seed('sudoku:stats', {
-      version: 1,
-      data: { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } },
-    });
+    await seed('sudoku:stats', 1, { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } });
     press('Hint');
     press('Apply hint');
     await tick(1000);
@@ -496,7 +491,7 @@ describe('Save and resume', () => {
       elapsedMs: 4000,
       hinted: false,
     };
-    await reopen(() => seed('sudoku:save', { version: 1, data: v1 }));
+    await reopen(() => seed('sudoku:save', 1, v1));
 
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
     level('Medium');
@@ -582,7 +577,7 @@ describe('Save and resume', () => {
 
   it('an unusable save is ignored: no prompt, the level picker, then a fresh board', async () => {
     screen.unmount();
-    await AsyncStorage.setItem('sudoku:save', JSON.stringify({ version: 1, data: { values: [1, 2, 3] } }));
+    await seed('sudoku:save', 1, { values: [1, 2, 3] });
     await open();
 
     expect(screen.queryByLabelText(CONTINUE)).toBeNull();
@@ -727,10 +722,7 @@ describe('Win', () => {
   });
 
   it('adds to the stats of earlier wins', async () => {
-    await seed('sudoku:stats', {
-      version: 1,
-      data: { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } },
-    });
+    await seed('sudoku:stats', 1, { 3: { solved: 2, timedCount: 2, totalMs: 10_000, bestMs: 4000 } });
     await win();
 
     expect((await saved('sudoku:stats')).data['3']).toEqual({

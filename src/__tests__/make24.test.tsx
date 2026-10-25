@@ -1,12 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 import { StyleSheet } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import type { Level } from '@/games/make24/logic/game';
 import { pickPuzzle, POOL } from '@/games/make24/logic/pool';
 import { EMPTY_STATS, type LevelStats } from '@/games/make24/logic/stats';
+import { disabled, press, selected, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // pickPuzzle is replaced so each test starts from hand-picked numbers; everything else stays real.
 jest.mock('@/games/make24/logic/pool', () => ({
@@ -45,16 +47,34 @@ const play = (...actions: (number | Op)[]) =>
   actions.forEach((a) =>
     fireEvent.press(typeof a === 'number' ? screen.getByTestId(`card-${a}`) : screen.getByLabelText(OPS[a])),
   );
-const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
 const label = (i: number) => screen.getByTestId(`card-${i}`).props.accessibilityLabel as string;
-const selected = (name: string) => screen.getByLabelText(name).props.accessibilityState.selected;
-const disabled = (name: string) => screen.getByLabelText(name).props.accessibilityState.disabled;
 // The colour of a card's face (CardFace's own view, testID face-<place>).
 const faceColor = (i: number) => StyleSheet.flatten(screen.getByTestId(`face-${i}`).props.style).backgroundColor;
-const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 
 // 3 3 8 8 sits on places 0 1 2 3. Solved by 8 ÷ 3, then 3 − 8/3 (= 1/3), then 8 ÷ 1/3.
 const SOLVE: (number | Op)[] = [2, '/', 0, 1, '-', 0, 3, '/', 0];
+
+const stats = (played: number, solved: number, currentStreak: number, bestStreak: number, bestMs: number | null) =>
+  ({ played, solved, currentStreak, bestStreak, bestMs }) satisfies LevelStats;
+const seedStats = (level: Level, s: LevelStats) => seed('make24:stats', 1, { ...EMPTY_STATS, [level]: s });
+// Fake timers make the times in the result line and the save exact.
+const openFake = async (...sets: number[][]) => {
+  jest.useFakeTimers();
+  await open(...sets);
+};
+// The real pickPuzzle (and so the real order), for the tests of the stored order.
+const openReal = async () => {
+  (pickPuzzle as jest.Mock).mockReset().mockImplementation(realPickPuzzle);
+  renderRouter('./src/app', { initialUrl: '/make24' });
+  await settle();
+};
+const cardsOf = (puzzle: number[]) => [...puzzle].sort((a, b) => a - b).map((n) => `Card ${n}`);
+const onScreen = () => [0, 1, 2, 3].map(label);
+
+// 3 3 8 8 after 8 ÷ 3 (place 2 into place 0), with one hint used and 42 s on the clock.
+const STEP_DIV = { first: 2, second: 0, op: '/' } as const;
+const SAVE = { level: 'easy', numbers: [3, 3, 8, 8], steps: [STEP_DIV], hints: 1, elapsedMs: 42_000 };
+const SOLVE_STEPS = [STEP_DIV, { first: 1, second: 0, op: '-' }, { first: 3, second: 0, op: '/' }];
 
 afterEach(async () => {
   jest.useRealTimers();
@@ -306,41 +326,41 @@ describe('timer', () => {
     await open();
   });
 
-  it('runs from the moment the puzzle is shown, not from the first tap', () => {
-    tick(3000);
+  it('runs from the moment the puzzle is shown, not from the first tap', async () => {
+    await tick(3000);
 
     expect(screen.getByLabelText('Time 0:03')).toBeTruthy();
     expect(screen.getByText('Easy · 0:03')).toBeTruthy();
   });
 
-  it('stops when the puzzle is solved, and the result line shows that time', () => {
-    tick(3000);
+  it('stops when the puzzle is solved, and the result line shows that time', async () => {
+    await tick(3000);
     play(...SOLVE);
 
-    tick(5000);
+    await tick(5000);
 
     expect(screen.getByLabelText('Time 0:03')).toBeTruthy();
     expect(screen.getByText('Solved in 0:03 · New best!')).toBeTruthy();
   });
 
-  it('stops while the picker is open', () => {
-    tick(2000);
+  it('stops while the picker is open', async () => {
+    await tick(2000);
 
     press('New');
-    tick(5000);
+    await tick(5000);
     press('Cancel');
 
     expect(screen.getByLabelText('Time 0:02')).toBeTruthy();
-    tick(1000);
+    await tick(1000);
     expect(screen.getByLabelText('Time 0:03')).toBeTruthy();
   });
 
-  it('goes back to 0:00 on Next and on a new level', () => {
-    tick(3000);
+  it('goes back to 0:00 on Next and on a new level', async () => {
+    await tick(3000);
     play(...SOLVE);
     press('Next');
     expect(screen.getByLabelText('Time 0:00')).toBeTruthy();
-    tick(2000);
+    await tick(2000);
     expect(screen.getByLabelText('Time 0:02')).toBeTruthy();
 
     press('New');
@@ -350,36 +370,10 @@ describe('timer', () => {
   });
 });
 
-// ---- Save, stats, abandon, order ----
-
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
-const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
-const stats = (played: number, solved: number, currentStreak: number, bestStreak: number, bestMs: number | null) =>
-  ({ played, solved, currentStreak, bestStreak, bestMs }) satisfies LevelStats;
-const seedStats = (level: Level, s: LevelStats) => seed('make24:stats', { ...EMPTY_STATS, [level]: s });
-// Fake timers make the times in the result line and the save exact.
-const openFake = async (...sets: number[][]) => {
-  jest.useFakeTimers();
-  await open(...sets);
-};
-// The real pickPuzzle (and so the real order), for the tests of the stored order.
-const openReal = async () => {
-  (pickPuzzle as jest.Mock).mockReset().mockImplementation(realPickPuzzle);
-  renderRouter('./src/app', { initialUrl: '/make24' });
-  await settle();
-};
-const cardsOf = (puzzle: number[]) => [...puzzle].sort((a, b) => a - b).map((n) => `Card ${n}`);
-const onScreen = () => [0, 1, 2, 3].map(label);
-
-// 3 3 8 8 after 8 ÷ 3 (place 2 into place 0), with one hint used and 42 s on the clock.
-const STEP_DIV = { first: 2, second: 0, op: '/' } as const;
-const SAVE = { level: 'easy', numbers: [3, 3, 8, 8], steps: [STEP_DIV], hints: 1, elapsedMs: 42_000 };
-const SOLVE_STEPS = [STEP_DIV, { first: 1, second: 0, op: '-' }, { first: 3, second: 0, op: '/' }];
-
 describe('resume', () => {
   it('opens a saved puzzle directly, with its cards, its hint and its time', async () => {
     jest.useFakeTimers();
-    await seed('make24:save', SAVE);
+    await seed('make24:save', 1, SAVE);
     await open(P1234);
 
     expect(label(0)).toBe('Card 8/3, selected');
@@ -397,7 +391,7 @@ describe('resume', () => {
     ['a bad save', { ...SAVE, numbers: [3, 3, 8] }],
     ['a finished one', { ...SAVE, steps: SOLVE_STEPS }],
   ])('ignores %s and starts the next puzzle', async (_, data) => {
-    await seed('make24:save', data);
+    await seed('make24:save', 1, data);
     await open(P1234);
 
     expect(onScreen()).toEqual(['Card 1', 'Card 2', 'Card 3', 'Card 4']);
@@ -411,7 +405,7 @@ describe('resume', () => {
     screen.unmount();
     await settle(); // leaving the screen saves the puzzle too, so the save is removed after that
     await AsyncStorage.removeItem('make24:save');
-    await seed('make24:settings', { level: 'hard' });
+    await seed('make24:settings', 1, { level: 'hard' });
     serve(P1155);
     renderRouter('./src/app', { initialUrl: '/make24' });
     await settle();
@@ -445,7 +439,7 @@ describe('saving', () => {
   it('leaving the screen saves the time', async () => {
     await openFake();
     play(2, '/', 0);
-    act(() => jest.advanceTimersByTime(4000));
+    await tick(4000);
 
     screen.unmount();
     await settle();
@@ -499,7 +493,7 @@ describe('order', () => {
 
   it('continues a stored order with its next puzzle', async () => {
     const puzzles = [...POOL.easy].reverse();
-    await seed('make24:order', { easy: { puzzles, next: 5 } });
+    await seed('make24:order', 1, { easy: { puzzles, next: 5 } });
 
     await openReal();
 
@@ -511,7 +505,7 @@ describe('order', () => {
 describe('stats', () => {
   it('a clean solve counts as played and solved, sets the streak and the best time, and says "New best!"', async () => {
     await openFake();
-    act(() => jest.advanceTimersByTime(83_000));
+    await tick(83_000);
 
     play(...SOLVE);
     await settle();
@@ -527,7 +521,7 @@ describe('stats', () => {
   it('a solve that is no best time has no "New best!" and keeps the stored one', async () => {
     await seedStats('easy', stats(1, 1, 1, 1, 50_000));
     await openFake();
-    act(() => jest.advanceTimersByTime(83_000));
+    await tick(83_000);
 
     play(...SOLVE);
     await settle();
@@ -609,8 +603,8 @@ describe('abandon', () => {
 
 describe('stats panel and picker', () => {
   it('opens from the header on the level on screen, shows the other levels on the switch, and Close goes back', async () => {
-    await seed('make24:settings', { level: 'hard' });
-    await seed('make24:stats', {
+    await seed('make24:settings', 1, { level: 'hard' });
+    await seed('make24:stats', 1, {
       ...EMPTY_STATS,
       medium: stats(4, 3, 1, 2, 83_000),
       hard: stats(1, 1, 1, 1, 90_000),
@@ -646,17 +640,17 @@ describe('stats panel and picker', () => {
 
   it('opening it from the picker closes the picker; the clock is paused while it is open', async () => {
     await openFake();
-    act(() => jest.advanceTimersByTime(2000));
+    await tick(2000);
 
     press('New');
     press('Stats');
     expect(screen.queryByText('Pick a level')).toBeNull();
     expect(screen.getByLabelText('Played: 0')).toBeTruthy();
-    act(() => jest.advanceTimersByTime(5000));
+    await tick(5000);
     press('Close');
 
     expect(screen.getByLabelText('Time 0:02')).toBeTruthy();
-    act(() => jest.advanceTimersByTime(1000));
+    await tick(1000);
     expect(screen.getByLabelText('Time 0:03')).toBeTruthy();
   });
 

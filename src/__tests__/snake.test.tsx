@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { AppState } from 'react-native';
@@ -6,7 +5,9 @@ import { AppState } from 'react-native';
 import { placeApple } from '@/games/snake/logic/apple';
 import { cell, COLS, ROWS, type Dir, type Level } from '@/games/snake/logic/board';
 import { EMPTY_STATS, type LevelStats } from '@/games/snake/logic/stats';
+import { disabled, press, selected, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // placeApple is replaced so each test puts the apples where it wants them (the real one is tested in logic/).
 jest.mock('@/games/snake/logic/apple', () => ({ placeApple: jest.fn() }));
@@ -26,11 +27,6 @@ const open = async () => {
   await settle();
 };
 
-// Fake timers drive the ticks. A tick re-arms the next one only after React has rendered, so each tick is its own act.
-const tick = (ms: number) =>
-  act(async () => {
-    jest.advanceTimersByTime(ms);
-  });
 const ticks = async (n: number, ms = 160) => {
   for (let i = 0; i < n; i++) await tick(ms);
 };
@@ -47,10 +43,43 @@ const board = () => {
   return { head: [hc, hr], length, apple: [ac, ar] };
 };
 const head = () => board().head;
-const disabled = (label: string) => screen.getByLabelText(label).props.accessibilityState.disabled;
-const selected = (label: string) => screen.getByLabelText(label).props.accessibilityState.selected;
 // The result overlay has its own New and Play again; the row above the board has the other New.
 const result = () => within(screen.getByTestId('result'));
+
+const stats = (played: number, best: number, totalApples: number, longestMs: number) =>
+  ({ played, best, totalApples, longestMs }) satisfies LevelStats;
+const seedStats = (level: Level, s: LevelStats) => seed('snake:stats', 1, { ...EMPTY_STATS, [level]: s });
+
+// A started game as it is stored: cells as [col, row] 0-based (head column 8, row 13 in the 1-based words of the tests).
+const SAVE = {
+  level: 'normal',
+  snake: [
+    [7, 12],
+    [7, 13],
+    [7, 14],
+  ],
+  dir: 'up',
+  apple: [1, 4],
+  apples: 0,
+  elapsedMs: 42_000,
+};
+// Two apples eaten, on Fast: the head at column 8, row 11.
+const SAVE_LONG = {
+  ...SAVE,
+  level: 'fast',
+  snake: [
+    [7, 10],
+    [7, 11],
+    [7, 12],
+    [7, 13],
+    [7, 14],
+  ],
+  apples: 2,
+};
+// A snake over every cell, row by row: what a won game would look like (it has no place for an apple).
+const FULL = Array.from({ length: ROWS }, (_, r) =>
+  Array.from({ length: COLS }, (_, c) => [r % 2 ? COLS - 1 - c : c, r]),
+).flat();
 
 beforeEach(() => {
   jest.useFakeTimers();
@@ -290,7 +319,7 @@ describe('Snake screen', () => {
   });
 
   it('the result says New best! only when the score is above the stored best', async () => {
-    await seed('snake:stats', { ...EMPTY_STATS, normal: { played: 1, best: 1, totalApples: 1, longestMs: 5000 } });
+    await seed('snake:stats', 1, { ...EMPTY_STATS, normal: { played: 1, best: 1, totalApples: 1, longestMs: 5000 } });
     place(at(8, 12));
     await open();
     swipe('up');
@@ -374,49 +403,9 @@ describe('accessibility', () => {
   });
 });
 
-// ---- Save, stats, abandon ----
-
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
-const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
-const stats = (played: number, best: number, totalApples: number, longestMs: number) =>
-  ({ played, best, totalApples, longestMs }) satisfies LevelStats;
-const seedStats = (level: Level, s: LevelStats) => seed('snake:stats', { ...EMPTY_STATS, [level]: s });
-const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
-
-// A started game as it is stored: cells as [col, row] 0-based (head column 8, row 13 in the 1-based words of the tests).
-const SAVE = {
-  level: 'normal',
-  snake: [
-    [7, 12],
-    [7, 13],
-    [7, 14],
-  ],
-  dir: 'up',
-  apple: [1, 4],
-  apples: 0,
-  elapsedMs: 42_000,
-};
-// Two apples eaten, on Fast: the head at column 8, row 11.
-const SAVE_LONG = {
-  ...SAVE,
-  level: 'fast',
-  snake: [
-    [7, 10],
-    [7, 11],
-    [7, 12],
-    [7, 13],
-    [7, 14],
-  ],
-  apples: 2,
-};
-// A snake over every cell, row by row: what a won game would look like (it has no place for an apple).
-const FULL = Array.from({ length: ROWS }, (_, r) =>
-  Array.from({ length: COLS }, (_, c) => [r % 2 ? COLS - 1 - c : c, r]),
-).flat();
-
 describe('resume', () => {
   it('opens a saved game directly, paused, with its level, score, snake and apple; Continue ticks on', async () => {
-    await seed('snake:save', SAVE_LONG);
+    await seed('snake:save', 1, SAVE_LONG);
     await open();
 
     expect(screen.getByText('Paused')).toBeTruthy();
@@ -444,8 +433,8 @@ describe('resume', () => {
     ['a bad save', { ...SAVE, snake: SAVE.snake.slice(0, 2) }],
     ['a finished-looking one', { ...SAVE, snake: FULL, apples: FULL.length - 3 }],
   ])('ignores %s and shows a new ready game of the stored level', async (_, data) => {
-    await seed('snake:save', data);
-    await seed('snake:settings', { level: 'slow' });
+    await seed('snake:save', 1, data);
+    await seed('snake:settings', 1, { level: 'slow' });
     place(at(4, 4));
     await open();
 
@@ -623,7 +612,7 @@ describe('abandon', () => {
 
 describe('stats', () => {
   it('the Best box and the picker read the stored bests', async () => {
-    await seed('snake:stats', {
+    await seed('snake:stats', 1, {
       ...EMPTY_STATS,
       normal: stats(4, 23, 50, 83_000),
       fast: stats(1, 7, 7, 30_000),
@@ -641,8 +630,8 @@ describe('stats', () => {
 
 describe('stats panel', () => {
   it('opens from the header on the current level with its numbers; the switch shows another level; Close goes back', async () => {
-    await seed('snake:settings', { level: 'fast' });
-    await seed('snake:stats', {
+    await seed('snake:settings', 1, { level: 'fast' });
+    await seed('snake:stats', 1, {
       ...EMPTY_STATS,
       normal: stats(4, 23, 50, 83_000),
       fast: stats(1, 7, 7, 90_000),

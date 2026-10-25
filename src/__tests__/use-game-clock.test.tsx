@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AppState, Pressable, Text } from 'react-native';
 
 import { useGameClock } from '@/hooks/use-game-clock';
+import { tick } from '@/test-utils/events';
 
 // A throwaway route that uses the hook: shows the time, a switch for `enabled`, and buttons for reset and stop.
 const stops: number[] = [];
@@ -22,7 +23,6 @@ function Probe() {
   );
 }
 
-const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
 const time = () => screen.getByText(/^time /).props.children;
 const running = () => screen.getByText(/^running /).props.children;
 const open = () => renderRouter({ index: Probe });

@@ -1,10 +1,9 @@
 import { StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { Dim } from '@/components/dim';
 import { ThemedText } from '@/components/themed-text';
 import { Spacing } from '@/constants/theme';
-
-import { Dim } from './dim';
 
 // Covers the board when the win tile is reached.
 export function WinOverlay({ onKeepGoing, onNewGame }: { onKeepGoing: () => void; onNewGame: () => void }) {

@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { act, fireEvent, renderRouter, screen, within } from 'expo-router/testing-library';
 import { AccessibilityInfo, StyleSheet } from 'react-native';
 
@@ -6,7 +5,9 @@ import { fromValues, type Dir, type Size } from '@/games/2048/logic/board';
 import { newGame } from '@/games/2048/logic/game';
 import { EMPTY_STATS, type SizeStats } from '@/games/2048/logic/stats';
 import { SLIDE_MS } from '@/games/2048/ui/animated-tile';
+import { disabled, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // newGame is replaced so each test starts from a board built by hand; play and the rest stay real.
 jest.mock('@/games/2048/logic/game', () => ({ ...jest.requireActual('@/games/2048/logic/game'), newGame: jest.fn() }));
@@ -29,11 +30,9 @@ const open = async () => {
   await settle();
 };
 
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
-const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
 // An unfinished game in storage, as a move would have left it.
 const seedSave = (vals: number[], extra: Record<string, unknown> = {}) =>
-  seed('2048:save', {
+  seed('2048:save', 1, {
     size: Math.round(Math.sqrt(vals.length)),
     values: vals,
     score: 0,
@@ -43,7 +42,7 @@ const seedSave = (vals: number[], extra: Record<string, unknown> = {}) =>
     moves: 3,
     ...extra,
   });
-const seedStats = (size: Size, stats: SizeStats) => seed('2048:stats', { ...EMPTY_STATS, [size]: stats });
+const seedStats = (size: Size, stats: SizeStats) => seed('2048:stats', 1, { ...EMPTY_STATS, [size]: stats });
 // The screen reads storage when it opens, so a seed needs a reopen.
 const reopen = async () => {
   screen.unmount();
@@ -51,7 +50,6 @@ const reopen = async () => {
   await open();
 };
 const useRealNewGame = () => (newGame as jest.Mock).mockReset().mockImplementation(realNewGame);
-const disabled = (label: string) => screen.getByLabelText(label).props.accessibilityState.disabled;
 
 // Every cell's value in reading order, 0 for an empty one, read from the board's accessibility value
 // ("2, empty, 4, empty; ..." row by row).
@@ -395,7 +393,7 @@ describe('resume', () => {
     await reopen();
     expect(screen.getByLabelText('Board 4 by 4', { exact: false })).toBeTruthy();
 
-    await seed('2048:settings', { size: 5 });
+    await seed('2048:settings', 1, { size: 5 });
     await reopen();
     expect(screen.getByLabelText('Board 5 by 5', { exact: false })).toBeTruthy();
     expect(tiles()).toHaveLength(2);
@@ -423,7 +421,7 @@ describe('size picker', () => {
         .fill(0)
         .map((v, i) => (i === 0 ? 2 : v)),
     );
-    await seed('2048:settings', { size: 5 });
+    await seed('2048:settings', 1, { size: 5 });
     await seedStats(6, { played: 1, wins: 0, bestScore: 4321, bestTile: 256 });
     await reopen();
     expect(screen.getByLabelText('Board 6 by 6', { exact: false })).toBeTruthy();
@@ -588,8 +586,6 @@ describe('the undo rule', () => {
 });
 
 describe('Animations', () => {
-  const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
-
   beforeEach(async () => {
     jest.useFakeTimers();
     jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(false);
@@ -599,32 +595,32 @@ describe('Animations', () => {
 
   afterEach(() => jest.useRealTimers());
 
-  it('draws the merged-away tile sliding for one slide, then drops it', () => {
+  it('draws the merged-away tile sliding for one slide, then drops it', async () => {
     swipe('left');
 
     expect(screen.getByTestId('ghost')).toBeTruthy();
     expect(values()[0]).toBe(4); // the board is final at once, the ghost is only drawn
 
-    tick(SLIDE_MS - 1);
+    await tick(SLIDE_MS - 1);
     expect(screen.getByTestId('ghost')).toBeTruthy();
 
-    tick(1);
+    await tick(1);
     expect(screen.queryByTestId('ghost')).toBeNull();
   });
 
-  it('has the spawned tile on the board, and it is still there once the animation is over', () => {
+  it('has the spawned tile on the board, and it is still there once the animation is over', async () => {
     swipe('left');
     expect(screen.getByTestId('tile-3')).toBeTruthy(); // the new tile: the start() game's next id is 3
 
-    tick(5 * SLIDE_MS);
+    await tick(5 * SLIDE_MS);
 
     expect(screen.getByTestId('tile-3')).toBeTruthy();
     expect(tiles()).toHaveLength(2);
   });
 
-  it('a swipe in the middle of an animation still applies: both moves are on the board and the ghost is gone', () => {
+  it('a swipe in the middle of an animation still applies: both moves are on the board and the ghost is gone', async () => {
     swipe('left');
-    tick(SLIDE_MS / 2);
+    await tick(SLIDE_MS / 2);
     swipe('down');
 
     expect(screen.queryByTestId('ghost')).toBeNull();
@@ -632,7 +628,7 @@ describe('Animations', () => {
     expect([...tiles()].sort((a, b) => a - b)).toEqual([2, 2, 4]); // the 4, the first spawn, the second spawn
     expect(screen.getByLabelText('Score 4')).toBeTruthy();
 
-    tick(5 * SLIDE_MS);
+    await tick(5 * SLIDE_MS);
 
     expect(tiles()).toHaveLength(3);
   });

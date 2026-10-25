@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Animated, Platform, StyleSheet, useWindowDimensions } from 'react-native';
 
+import { scoreBoxStyles } from '@/components/score-box';
 import { ThemedText } from '@/components/themed-text';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 import { useSolvedFade } from './use-solved-fade';
 
-export const SCORE_BOX_HEIGHT = 56;
 export const POP_MS = 250; // the score pops once when a word is solved
 const POP_SCALE = 1.15;
 
@@ -44,7 +44,7 @@ export function ScoreBox({ title, value, flash, reduceMotion = false }: Props) {
       accessible
       accessibilityLabel={`${title} ${value}`}
       style={[
-        styles.box,
+        scoreBoxStyles.box,
         {
           backgroundColor: fade.interpolate({
             inputRange: [0, 1],
@@ -60,7 +60,7 @@ export function ScoreBox({ title, value, flash, reduceMotion = false }: Props) {
         style={{
           transform: [{ scale: pop.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, POP_SCALE, 1] }) }],
         }}>
-        <ThemedText type="smallBold" style={styles.value}>
+        <ThemedText type="smallBold" style={scoreBoxStyles.value}>
           {value}
         </ThemedText>
       </Animated.View>
@@ -69,7 +69,5 @@ export function ScoreBox({ title, value, flash, reduceMotion = false }: Props) {
 }
 
 const styles = StyleSheet.create({
-  box: { flex: 1, height: SCORE_BOX_HEIGHT, borderRadius: Spacing.two, alignItems: 'center', justifyContent: 'center' },
   narrowTitle: { fontSize: 12 }, // same line height: the box doesn't change
-  value: { fontSize: 18, lineHeight: 24, fontVariant: ['tabular-nums'] },
 });

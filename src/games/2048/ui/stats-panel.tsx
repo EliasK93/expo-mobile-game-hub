@@ -1,13 +1,6 @@
-import { useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { StatsPanel } from '@/components/stats-panel';
 
-import { Button } from '@/components/button';
-import { StatsNumbers } from '@/components/stats-numbers';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-
-import { SIZES, type Size } from '../logic/board';
+import { SIZES } from '../logic/board';
 import { resultOf, type Game } from '../logic/game';
 import type { Stats } from '../logic/stats';
 import { formatScore } from './format';
@@ -21,11 +14,8 @@ type Props = {
   onChangeSize: () => void;
 };
 
-// The whole screen below the header: a result line (after a game), the 4 · 5 · 6 · 7 switch, the numbers and the buttons.
-// It opens on the size of the game on the board.
-export function StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChangeSize }: Props) {
-  const [size, setSize] = useState<Size>(game.size);
-  const s = stats[size];
+// The 4 · 5 · 6 · 7 switch opens on the size of the game on the board.
+export function Game2048StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChangeSize }: Props) {
   const over = game.status === 'over';
   const { score, bestTile, undoUsed } = resultOf(game);
   const result = over
@@ -36,48 +26,23 @@ export function StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChang
         ...(undoUsed ? ['with undo'] : []),
       ].join(' · ')
     : null;
-  const numbers: [string, string][] = [
-    ['Played', String(s.played)],
-    ['Wins', String(s.wins)],
-    ['Best score', s.bestScore === null ? '—' : formatScore(s.bestScore)],
-    ['Best tile', s.bestTile === null ? '—' : String(s.bestTile)],
-  ];
 
   return (
-    <ThemedView style={styles.panel}>
-      {result && (
-        <ThemedText type="smallBold" style={styles.centered}>
-          {result}
-        </ThemedText>
-      )}
-      <ThemedView style={styles.row}>
-        {SIZES.map((n) => (
-          <Button
-            key={n}
-            compact
-            flex
-            label={`${n}×${n} stats`}
-            text={String(n)}
-            selected={n === size}
-            muted={n !== size}
-            onPress={() => setSize(n)}
-          />
-        ))}
-      </ThemedView>
-      <StatsNumbers numbers={numbers} />
-      {over && (
-        <ThemedView style={styles.row}>
-          <Button primary flex label="Play again" onPress={onPlayAgain} />
-          <Button flex label="Change size" onPress={onChangeSize} />
-        </ThemedView>
-      )}
-      <Button label="Close" onPress={onClose} />
-    </ThemedView>
+    <StatsPanel
+      options={SIZES.map((n) => ({ id: n, text: String(n), label: `${n}×${n} stats` }))}
+      initial={game.size}
+      numbersFor={(size) => {
+        const s = stats[size];
+        return [
+          ['Played', String(s.played)],
+          ['Wins', String(s.wins)],
+          ['Best score', s.bestScore === null ? '—' : formatScore(s.bestScore)],
+          ['Best tile', s.bestTile === null ? '—' : String(s.bestTile)],
+        ];
+      }}
+      result={result}
+      actions={over ? { change: 'Change size', onPlayAgain, onChange: onChangeSize } : undefined}
+      onClose={onClose}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  panel: { flex: 1, width: '100%', maxWidth: MaxContentWidth, gap: Spacing.two },
-  centered: { textAlign: 'center' },
-  row: { flexDirection: 'row', gap: Spacing.two },
-});

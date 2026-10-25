@@ -3,14 +3,16 @@ import { type LayoutChangeEvent, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, COMPACT_HEIGHT } from '@/components/button';
+import { OptionPicker } from '@/components/option-picker';
+import { ScoreBox, SCORE_BOX_HEIGHT } from '@/components/score-box';
 import { StatsHeaderButton } from '@/components/stats-header-button';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
+import { SIZES } from '../logic/board';
 import { Game2048Board } from './board';
-import { ScoreBox, SCORE_BOX_HEIGHT } from './score-box';
-import { SizePicker } from './size-picker';
-import { StatsPanel } from './stats-panel';
+import { formatScore } from './format';
+import { Game2048StatsPanel } from './stats-panel';
 import { useGame2048 } from './use-game2048';
 import { WinOverlay } from './win-overlay';
 
@@ -56,7 +58,21 @@ export function Game2048Screen() {
     return (
       <ThemedView style={container} onLayout={onLayout}>
         {header}
-        <SizePicker last={lastSize} stats={stats} onPick={pickSize} onCancel={closePicker} />
+        <OptionPicker
+          heading="Pick a size"
+          options={SIZES.map((size) => {
+            const { bestScore } = stats[size];
+            return {
+              id: size,
+              name: `${size}×${size}`,
+              label: `Size ${size}×${size}`,
+              detail: bestScore === null ? undefined : `Best ${formatScore(bestScore)}`,
+            };
+          })}
+          last={lastSize}
+          onPick={pickSize}
+          onCancel={closePicker}
+        />
       </ThemedView>
     );
   }
@@ -67,7 +83,7 @@ export function Game2048Screen() {
       <ThemedView style={container} onLayout={onLayout}>
         {header}
         {/* Play again: the same size (pickSize also keeps it as the last used one). */}
-        <StatsPanel
+        <Game2048StatsPanel
           stats={stats}
           game={game}
           newBest={newBest}
@@ -85,8 +101,8 @@ export function Game2048Screen() {
     <ThemedView testID="game-area" style={container} onLayout={onLayout}>
       {header}
       <ThemedView style={styles.row}>
-        <ScoreBox title="Score" value={game.score} />
-        <ScoreBox title="Best" value={best} />
+        <ScoreBox title="Score" value={formatScore(game.score)} />
+        <ScoreBox title="Best" value={formatScore(best)} />
       </ThemedView>
       <ThemedView style={styles.row}>
         {!winOpen && <Button compact flex label="Undo" onPress={undo} disabled={!canUndo} />}

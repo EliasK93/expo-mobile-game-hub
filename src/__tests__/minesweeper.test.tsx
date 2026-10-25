@@ -1,5 +1,4 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { act, fireEvent, renderRouter, screen } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen } from 'expo-router/testing-library';
 
 import { Colors } from '@/constants/theme';
 import { LEVELS, cellCount, type Level } from '@/games/minesweeper/logic/board';
@@ -7,7 +6,9 @@ import { placeMines } from '@/games/minesweeper/logic/generate';
 import { EMPTY_STATS, type LevelStats } from '@/games/minesweeper/logic/stats';
 import { PANEL_DELAY_MS } from '@/games/minesweeper/ui/use-minesweeper';
 import { buttonLook } from '@/test-utils/button-look';
+import { press, selected, tick } from '@/test-utils/events';
 import { settle } from '@/test-utils/settle';
+import { saved, seed } from '@/test-utils/storage';
 
 // placeMines is replaced so each test starts from a mine layout built by hand; open and the rest stay real.
 jest.mock('@/games/minesweeper/logic/generate', () => ({
@@ -48,7 +49,30 @@ const tap = (i: number, cols = COLS) => fireEvent.press(cell(i, cols));
 const hold = (i: number, cols = COLS) => fireEvent(cell(i, cols), 'longPress');
 const count = (state: RegExp) => screen.queryAllByLabelText(state).length;
 const covered = () => count(/^Row \d+, column \d+, covered$/);
-const selected = (label: string) => screen.getByLabelText(label).props.accessibilityState.selected;
+const seedStats = (level: Level, stats: LevelStats) => seed('minesweeper:stats', 1, { ...EMPTY_STATS, [level]: stats });
+const NO_GAMES: LevelStats = { played: 0, wins: 0, currentStreak: 0, bestStreak: 0, bestMs: null };
+// The screen reads storage when it opens, so a seed needs a reopen.
+const reopen = async () => {
+  screen.unmount();
+  await settle();
+  await open();
+};
+const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
+
+// An unfinished Beginner game as the wall layout leaves it after a tap on cell 0, with a flag on the wall mine 44.
+const WALL_SAVE = {
+  level: 'beginner',
+  mines: WALL,
+  opened: range(0, CELLS).filter((i) => i % COLS < 4),
+  flagged: [44],
+  elapsedMs: 65_000,
+};
+// A game one tap from the win: the mines are the first cells, every other cell but the last is open, so a tap on the
+// last cell wins and a tap on cell 0 (a mine) loses.
+const nearlyWon = (level: Level, elapsedMs: number) => {
+  const { mines } = LEVELS[level];
+  return { level, mines: range(0, mines), opened: range(mines, cellCount(level) - 1), flagged: [], elapsedMs };
+};
 
 beforeEach(async () => {
   useRealPlaceMines();
@@ -59,6 +83,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await settle();
   jest.restoreAllMocks();
+  jest.useRealTimers(); // the tests that switch to fake timers don't undo it on a failure
 });
 
 describe('Minesweeper screen', () => {
@@ -244,8 +269,6 @@ describe('win', () => {
 });
 
 describe('timer', () => {
-  const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
-
   beforeEach(async () => {
     screen.unmount();
     await settle();
@@ -253,51 +276,51 @@ describe('timer', () => {
     await open(); // the clock reads the screen's focus when it mounts
   });
 
-  it('stays at 0 before the first opening and after a first tap in Flag mode', () => {
-    tick(3000);
+  it('stays at 0 before the first opening and after a first tap in Flag mode', async () => {
+    await tick(3000);
     expect(screen.getByLabelText('Time 0 seconds')).toBeTruthy();
 
     fireEvent.press(screen.getByLabelText('Flag'));
     tap(44);
-    tick(3000);
+    await tick(3000);
 
     expect(screen.getByLabelText('Time 0 seconds')).toBeTruthy();
   });
 
-  it('counts from the first opening and stops when the game ends', () => {
+  it('counts from the first opening and stops when the game ends', async () => {
     layout(WALL);
     tap(0);
 
-    tick(3000);
+    await tick(3000);
     expect(screen.getByLabelText('Time 3 seconds')).toBeTruthy();
 
     tap(12); // a mine
-    tick(5000);
+    await tick(5000);
     fireEvent.press(screen.getByLabelText('Close')); // the stats panel has opened over the board by now
 
     expect(screen.getByTestId('face-dizzy')).toBeTruthy();
     expect(screen.getByLabelText('Time 3 seconds')).toBeTruthy();
   });
 
-  it('stops on a win, too', () => {
+  it('stops on a win, too', async () => {
     layout(TOP);
-    tick(2000); // nothing runs yet
+    await tick(2000); // nothing runs yet
     tap(80);
 
-    tick(5000);
+    await tick(5000);
     fireEvent.press(screen.getByLabelText('Close')); // the stats panel has opened over the board by now
 
     expect(screen.getByTestId('face-cool')).toBeTruthy();
     expect(screen.getByLabelText('Time 0 seconds')).toBeTruthy();
   });
 
-  it('stops while the picker is open', () => {
+  it('stops while the picker is open', async () => {
     layout(WALL);
     tap(0);
-    tick(2000);
+    await tick(2000);
 
     fireEvent.press(screen.getByLabelText('New game'));
-    tick(5000);
+    await tick(5000);
     fireEvent.press(screen.getByLabelText('Cancel'));
 
     expect(screen.getByLabelText('Time 2 seconds')).toBeTruthy();
@@ -378,42 +401,9 @@ describe('level picker', () => {
   });
 });
 
-// ---- Save, stats, abandon ----
-
-const saved = async (key: string) => JSON.parse((await AsyncStorage.getItem(key)) ?? 'null');
-const seed = (key: string, data: unknown) => AsyncStorage.setItem(key, JSON.stringify({ version: 1, data }));
-const seedStats = (level: Level, stats: LevelStats) => seed('minesweeper:stats', { ...EMPTY_STATS, [level]: stats });
-const NO_GAMES: LevelStats = { played: 0, wins: 0, currentStreak: 0, bestStreak: 0, bestMs: null };
-// The tests that switch to fake timers don't undo it on a failure.
-afterEach(() => jest.useRealTimers());
-// The screen reads storage when it opens, so a seed needs a reopen.
-const reopen = async () => {
-  screen.unmount();
-  await settle();
-  await open();
-};
-const tick = (ms: number) => act(() => jest.advanceTimersByTime(ms));
-const range = (from: number, to: number) => Array.from({ length: to - from }, (_, i) => from + i);
-const press = (label: string) => fireEvent.press(screen.getByLabelText(label));
-
-// An unfinished Beginner game as the wall layout leaves it after a tap on cell 0, with a flag on the wall mine 44.
-const WALL_SAVE = {
-  level: 'beginner',
-  mines: WALL,
-  opened: range(0, CELLS).filter((i) => i % COLS < 4),
-  flagged: [44],
-  elapsedMs: 65_000,
-};
-// A game one tap from the win: the mines are the first cells, every other cell but the last is open, so a tap on the
-// last cell wins and a tap on cell 0 (a mine) loses.
-const nearlyWon = (level: Level, elapsedMs: number) => {
-  const { mines } = LEVELS[level];
-  return { level, mines: range(0, mines), opened: range(mines, cellCount(level) - 1), flagged: [], elapsedMs };
-};
-
 describe('resume', () => {
   it('opens a saved game directly, with the saved cells, flags and time', async () => {
-    await seed('minesweeper:save', WALL_SAVE);
+    await seed('minesweeper:save', 1, WALL_SAVE);
     await reopen();
 
     expect(stateOf(0)).toBe('empty');
@@ -427,14 +417,14 @@ describe('resume', () => {
   });
 
   it('a bad or old save starts a fresh board of the last level', async () => {
-    await seed('minesweeper:settings', { level: 'intermediate' });
-    await seed('minesweeper:save', { ...WALL_SAVE, mines: [0] }); // 1 mine is not Beginner's 12
+    await seed('minesweeper:settings', 1, { level: 'intermediate' });
+    await seed('minesweeper:save', 1, { ...WALL_SAVE, mines: [0] }); // 1 mine is not Beginner's 12
     await reopen();
 
     expect(covered()).toBe(cellCount('intermediate'));
     expect(screen.getByLabelText('Time 0 seconds')).toBeTruthy();
 
-    await AsyncStorage.setItem('minesweeper:save', JSON.stringify({ version: 0, data: WALL_SAVE }));
+    await seed('minesweeper:save', 0, WALL_SAVE);
     await reopen();
 
     expect(covered()).toBe(cellCount('intermediate'));
@@ -443,7 +433,7 @@ describe('resume', () => {
   it('without a save starts a board of the stored last level, Beginner the first time', async () => {
     expect(covered()).toBe(CELLS);
 
-    await seed('minesweeper:settings', { level: 'expert' });
+    await seed('minesweeper:settings', 1, { level: 'expert' });
     await reopen();
 
     expect(covered()).toBe(cellCount('expert'));
@@ -455,14 +445,14 @@ describe('resume', () => {
       screen.unmount();
       await settle();
       jest.useFakeTimers();
-      await seed('minesweeper:save', WALL_SAVE);
+      await seed('minesweeper:save', 1, WALL_SAVE);
       await open();
     });
 
-    it('continues from the saved time', () => {
+    it('continues from the saved time', async () => {
       expect(screen.getByLabelText('Time 65 seconds')).toBeTruthy();
 
-      tick(3000);
+      await tick(3000);
 
       expect(screen.getByLabelText('Time 68 seconds')).toBeTruthy();
     });
@@ -507,7 +497,7 @@ describe('saving', () => {
     it('leaving the screen saves it', async () => {
       layout(WALL);
       tap(0);
-      tick(4000);
+      await tick(4000);
 
       screen.unmount();
       await settle();
@@ -522,7 +512,7 @@ describe('after a win', () => {
     screen.unmount();
     await settle();
     jest.useFakeTimers();
-    await seed('minesweeper:save', nearlyWon('beginner', 83_000));
+    await seed('minesweeper:save', 1, nearlyWon('beginner', 83_000));
     await open();
     tap(CELLS - 1);
   });
@@ -541,13 +531,13 @@ describe('after a win', () => {
     expect(await saved('minesweeper:save')).toBeNull();
   });
 
-  it('opens the panel after 1 s, not before, with the result line and a new best', () => {
+  it('opens the panel after 1 s, not before, with the result line and a new best', async () => {
     expect(screen.getByTestId('face-cool')).toBeTruthy();
-    tick(999);
+    await tick(999);
     expect(screen.getByTestId('face-cool')).toBeTruthy();
     expect(screen.queryByLabelText('Played: 1')).toBeNull();
 
-    tick(1);
+    await tick(1);
 
     expect(screen.getByText('Won in 1:23 · New best!')).toBeTruthy();
     expect(screen.queryByLabelText(/^Row \d+, column/)).toBeNull();
@@ -560,7 +550,7 @@ describe('after a win', () => {
   });
 
   it('Play again starts a new game of the same level, with the clock at 0', async () => {
-    tick(1000);
+    await tick(1000);
 
     press('Play again');
     await settle();
@@ -577,8 +567,8 @@ describe('after a win', () => {
     });
   });
 
-  it('Close shows the finished board', () => {
-    tick(1000);
+  it('Close shows the finished board', async () => {
+    await tick(1000);
 
     press('Close');
 
@@ -587,10 +577,10 @@ describe('after a win', () => {
     expect(screen.queryByLabelText('Played: 1')).toBeNull();
   });
 
-  it('the face during the second opens the picker, and the panel never opens behind it', () => {
+  it('the face during the second opens the picker, and the panel never opens behind it', async () => {
     press('New game');
 
-    tick(5000);
+    await tick(5000);
     expect(screen.getByText('Pick a level')).toBeTruthy();
     press('Cancel');
 
@@ -598,32 +588,32 @@ describe('after a win', () => {
     expect(screen.queryByLabelText('Played: 1')).toBeNull();
   });
 
-  it('the header Stats during the second opens the panel at once, and it stays as it is when the second is over', () => {
-    tick(500);
+  it('the header Stats during the second opens the panel at once, and it stays as it is when the second is over', async () => {
+    await tick(500);
 
     press('Stats');
     expect(screen.getByLabelText('Played: 1')).toBeTruthy();
-    tick(500);
+    await tick(500);
 
     expect(screen.getByLabelText('Played: 1')).toBeTruthy();
   });
 
-  it('closing the header Stats panel before the second is over: it does not open again', () => {
-    tick(500);
+  it('closing the header Stats panel before the second is over: it does not open again', async () => {
+    await tick(500);
     press('Stats');
     press('Close');
 
-    tick(5000);
+    await tick(5000);
 
     expect(screen.getByTestId('face-cool')).toBeTruthy();
     expect(screen.queryByLabelText('Played: 1')).toBeNull();
   });
 
-  it('the panel does not open on a new game started during the second', () => {
+  it('the panel does not open on a new game started during the second', async () => {
     press('New game');
     press('Intermediate');
 
-    tick(5000);
+    await tick(5000);
 
     expect(screen.queryByLabelText('Played: 1')).toBeNull();
     expect(covered()).toBe(cellCount('intermediate'));
@@ -636,7 +626,7 @@ describe('the panel timer', () => {
     screen.unmount();
     await settle();
     jest.useFakeTimers();
-    await seed('minesweeper:save', nearlyWon('beginner', 83_000));
+    await seed('minesweeper:save', 1, nearlyWon('beginner', 83_000));
     await open();
     const set = jest.spyOn(globalThis, 'setTimeout');
     const clear = jest.spyOn(globalThis, 'clearTimeout');
@@ -656,11 +646,11 @@ describe('after a win that is no best', () => {
     screen.unmount();
     await settle();
     await seedStats('beginner', { played: 1, wins: 1, currentStreak: 1, bestStreak: 1, bestMs: 50_000 });
-    await seed('minesweeper:save', nearlyWon('beginner', 83_000));
+    await seed('minesweeper:save', 1, nearlyWon('beginner', 83_000));
     await open();
 
     tap(CELLS - 1);
-    tick(1000);
+    await tick(1000);
     await settle();
 
     expect(screen.getByText('Won in 1:23')).toBeTruthy();
@@ -681,10 +671,10 @@ describe('after a loss', () => {
     screen.unmount();
     await settle();
     await seedStats('beginner', { played: 2, wins: 2, currentStreak: 2, bestStreak: 2, bestMs: 100_000 });
-    await seed('minesweeper:save', nearlyWon('beginner', 20_000));
+    await seed('minesweeper:save', 1, nearlyWon('beginner', 20_000));
     await open();
     tap(0); // a mine
-    tick(1000);
+    await tick(1000);
     await settle();
   });
 
@@ -779,7 +769,7 @@ describe('header Stats', () => {
     await open();
     layout(WALL);
     tap(0);
-    tick(2000);
+    await tick(2000);
 
     press('Stats');
 
@@ -789,12 +779,12 @@ describe('header Stats', () => {
     expect(screen.queryByLabelText('Change level')).toBeNull();
     expect(screen.queryByLabelText(/^Row \d+, column/)).toBeNull();
 
-    tick(5000);
+    await tick(5000);
     press('Close');
 
     expect(screen.getByLabelText('Time 2 seconds')).toBeTruthy();
     expect(stateOf(0)).toBe('empty');
-    tick(1000);
+    await tick(1000);
     expect(screen.getByLabelText('Time 3 seconds')).toBeTruthy();
   });
 
@@ -943,7 +933,7 @@ describe('screen reader', () => {
 describe('level picker with stats', () => {
   it('shows the best times and marks the last used level from the setting', async () => {
     await seedStats('intermediate', { played: 3, wins: 1, currentStreak: 1, bestStreak: 1, bestMs: 83_000 });
-    await seed('minesweeper:settings', { level: 'expert' });
+    await seed('minesweeper:settings', 1, { level: 'expert' });
     await reopen();
 
     press('New game');
