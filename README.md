@@ -1,5 +1,7 @@
 # Game Hub
 
+[![CI](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml)
+
 Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.dev), [React Native](https://reactnative.dev) and [TypeScript](https://www.typescriptlang.org). It is installed as an APK, and it also runs in the browser. Saved games and stats stay on the device (fully offline, no network needed).
 
 <table>
@@ -33,7 +35,7 @@ The project was built with [Claude Code](https://claude.com/claude-code); the ru
 - A review pane with [ponytail](https://github.com/DietrichGebert/ponytail) looks for over-engineering: the laziest version that passes the checks.
 - [graphify](https://github.com/Graphify-Labs/graphify) keeps a knowledge graph of the code and docs for orientation.
 - The check is written first, then the code. Game rules are unit-tested with [Jest](https://jestjs.io), and screens are tested by opening the real routes.
-- The gate (`npm run gate`) runs before every hand-off: type check, Jest tests, [ESLint](https://eslint.org) with [Prettier](https://prettier.io) for formatting, and [gitleaks](https://github.com/gitleaks/gitleaks) on the staged files. It also runs as the git pre-commit hook, so a commit with a failing check is refused.
+- The gate (`npm run gate`) runs before every hand-off: type check, Jest tests, [ESLint](https://eslint.org) with [Prettier](https://prettier.io) for formatting, and [gitleaks](https://github.com/gitleaks/gitleaks) on the staged files. It also runs as the git pre-commit hook, so a commit with a failing check is refused. The same checks run on GitHub Actions for every push to `main`.
 - The change is tried in the browser before each commit. Commits are local, and pushing is done by hand.
 
 ## Run it in the browser

@@ -33,17 +33,17 @@ Run every step from the repository root, every time, before handing off work for
 
 ```bash
 git add <the change>     # stage first: the secret scan checks staged content
-npm run gate             # tsc --noEmit, jest, expo lint (incl. Prettier formatting), gitleaks on the staged content
+npm run gate             # npm run check (tsc --noEmit, jest, expo lint incl. Prettier formatting), gitleaks on the staged content
 git status --short       # nothing left unstaged or untracked
 ```
 
-`git add` here is part of the gate, not a commit; rule 1 still applies to commit and push. `npm run gate` does not stage anything itself. Every check that exists is a gate line, because a check people must remember to run does not exist. Iterate on the affected tests while you work, run `npm run format` before the gate (the gate only checks formatting, it does not fix it), and run the full gate once, at hand-off. The same `npm run gate` runs in the pre-commit hook in `.git/hooks/pre-commit` (next to graphify's hooks; do not set `core.hooksPath`, it would silently disable them). Hooks are not part of a clone: on a fresh clone, recreate it as `#!/bin/sh` + `npm run gate`.
+`git add` here is part of the gate, not a commit; rule 1 still applies to commit and push. `npm run gate` does not stage anything itself. Every check that exists is a gate line, because a check people must remember to run does not exist. Iterate on the affected tests while you work, run `npm run format` before the gate (the gate only checks formatting, it does not fix it), and run the full gate once, at hand-off. The same `npm run gate` runs in the pre-commit hook in `.git/hooks/pre-commit` (next to graphify's hooks; do not set `core.hooksPath`, it would silently disable them). Hooks are not part of a clone: on a fresh clone, recreate it as `#!/bin/sh` + `npm run gate`. CI (`.github/workflows/ci.yml`, GitHub Actions on `main`) runs `npm run check` plus gitleaks on the pushed commits.
 
 ## Stack
 
 - Expo SDK 57 (see `package.json`), React Native, TypeScript `strict`, Expo Router (routes in `src/app/`).
 - Typed routes are **off** (`experiments.typedRoutes` removed from `app.json`): their types lived in a gitignored cache that only the dev server regenerated, which broke `tsc` in the gate. Route wiring is covered by `src/__tests__/navigation.test.tsx`, which opens every route in the registry. `Game.route` is a plain string.
-- Jest via `jest-expo`, `testTimeout` 15 s (with every suite in parallel, the first route test of a suite took over 5 s and the pre-commit gate refused commits).
+- Jest via `jest-expo`, `testTimeout` 15 s (with every suite in parallel, the first route test of a suite took over 5 s and the pre-commit gate refused commits), 60 s when `CI` is set (`jest.config.js`: a CI runner starts with a cold transform cache, and 2048's `beforeEach` went over 15 s with `--no-cache`).
 - Formatting: Prettier, run through ESLint as Expo's docs recommend (`eslint-plugin-prettier` in `eslint.config.js`; `.prettierrc`: 120 columns, single quotes; `.prettierignore` skips the shipped data in `src/games/*/data/`). `expo lint` reports unformatted code as an error, so the gate and the pre-commit hook catch it; `npm run format` fixes it.
 - Persistence: `@react-native-async-storage/async-storage`.
 - Home tiles: `react-native-svg` 15.15.4 (2026-10-21). The glyphs are SVG drawn in a 100×100 viewBox, so they scale for free; the library supports web and Android and is part of the Expo SDK. The no-library alternative, plain Views, was declined. Reason for glyphs at all: the old mini boards had two backgrounds and very different densities (5×5 next to 2×2) and did not look like one set.
@@ -146,7 +146,8 @@ Optional sections that the existing docs use sit between Decisions and Milestone
 | `npx expo start -c` | Same, but clears Expo's cache first; use when errors make no sense. |
 | `npx tsc --noEmit` | Type-checks all TS without producing output. |
 | `npm test` | Runs the Jest unit tests. |
-| `npm run gate` | Runs type check, Jest, lint and the secret scan on staged files. Stage first with `git add`. |
+| `npm run check` | Runs type check, Jest and lint (what CI runs). |
+| `npm run gate` | Runs `npm run check` and the secret scan on staged files. Stage first with `git add`. |
 | `npx expo lint` | Lints the code for common mistakes and unformatted code. |
 | `npm run format` | Formats the code with Prettier (`expo lint --fix`); run it before the gate. |
 | `npx expo-doctor` | Checks the project for dependency/config problems. |
