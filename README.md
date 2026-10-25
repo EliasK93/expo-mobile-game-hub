@@ -1,6 +1,6 @@
 # Game Hub
 
-[![CI](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml)
+[![CI](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml) [![Tests](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/EliasK93/9036b9ad1f3d5277a608c6fe48c090c9/raw/tests.json)](https://github.com/EliasK93/expo-mobile-game-hub/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/EliasK93/expo-mobile-game-hub)](LICENSE) [![Release](https://img.shields.io/github/v/release/EliasK93/expo-mobile-game-hub)](https://github.com/EliasK93/expo-mobile-game-hub/releases) ![Platform](https://img.shields.io/badge/platform-Android%20%C2%B7%20Web-blue)
 
 Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.dev), [React Native](https://reactnative.dev) and [TypeScript](https://www.typescriptlang.org). It is installed as an APK, and it also runs in the browser. Saved games and stats stay on the device (fully offline, no network needed).
 
