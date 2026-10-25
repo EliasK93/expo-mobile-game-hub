@@ -5,15 +5,15 @@ Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.
 <table>
 <tr>
 <td align="center" valign="top" width="25%"><b>Hub</b><br><img src="docs/images/home.png" width="180" alt="Hub menu"><br>Sort the games by Recent, Name or Playtime.</td>
+<td align="center" valign="top" width="25%"><b>Hub (dark)</b><br><img src="docs/images/home-dark.png" width="180" alt="Hub menu in dark mode"><br>Light and dark mode follow the system.</td>
 <td align="center" valign="top" width="25%"><b>Sudoku</b><br><img src="docs/images/sudoku.png" width="180" alt="Sudoku"><br>Five difficulty levels, notes, hints, undo and redo.</td>
 <td align="center" valign="top" width="25%"><b>2048</b><br><img src="docs/images/2048.png" width="180" alt="2048"><br>Boards from 4×4 to 7×7, swipe to play.</td>
-<td align="center" valign="top" width="25%"><b>Minesweeper</b><br><img src="docs/images/minesweeper.png" width="180" alt="Minesweeper"><br>Three levels, flags.</td>
 </tr>
 <tr>
+<td align="center" valign="top" width="25%"><b>Minesweeper</b><br><img src="docs/images/minesweeper.png" width="180" alt="Minesweeper"><br>Three levels, flags.</td>
 <td align="center" valign="top" width="25%"><b>Make 24</b><br><img src="docs/images/make24.png" width="180" alt="Make 24"><br>Combine four numbers with + − × ÷ to make 24.</td>
 <td align="center" valign="top" width="25%"><b>Snake</b><br><img src="docs/images/snake.png" width="180" alt="Snake"><br>Swipe to turn, walls kill.</td>
 <td align="center" valign="top" width="25%"><b>Anagrams</b><br><img src="docs/images/anagram.png" width="180" alt="Anagrams"><br>Unscramble as many words as you can in 60 seconds.</td>
-<td align="center" valign="top" width="25%"><b>Hub (dark)</b><br><img src="docs/images/home-dark.png" width="180" alt="Hub menu in dark mode"><br>Light and dark mode follow the system.</td>
 </tr>
 </table>
 
