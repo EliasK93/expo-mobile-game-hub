@@ -4,16 +4,16 @@ Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.
 
 <table>
 <tr>
-<td align="center" valign="top" width="25%"><b>Hub menu</b><br><img src="docs/images/home.png" width="180" alt="Hub menu"><br>Sort the games by Recent, Name or Playtime.</td>
-<td align="center" valign="top" width="25%"><b>Hub menu (dark)</b><br><img src="docs/images/home-dark.png" width="180" alt="Hub menu in dark mode"><br>Light and dark mode follow the system.</td>
-<td align="center" valign="top" width="25%"><b>Sudoku</b><br><img src="docs/images/sudoku.png" width="180" alt="Sudoku"><br>Five difficulty levels, notes, hints, undo and redo.</td>
-<td align="center" valign="top" width="25%"><b>2048</b><br><img src="docs/images/2048.png" width="180" alt="2048"><br>Boards from 4×4 to 7×7, swipe to play.</td>
+<td align="center" valign="top" width="25%"><p><b>Hub menu</b></p><img src="docs/images/home.png" width="180" alt="Hub menu"><br>Sort the games by Recent, Name or Playtime.</td>
+<td align="center" valign="top" width="25%"><p><b>Hub menu (dark)</b></p><img src="docs/images/home-dark.png" width="180" alt="Hub menu in dark mode"><br>Light and dark mode follow the system.</td>
+<td align="center" valign="top" width="25%"><p><b>Sudoku</b></p><img src="docs/images/sudoku.png" width="180" alt="Sudoku"><br>Five difficulty levels, notes, hints, undo and redo.</td>
+<td align="center" valign="top" width="25%"><p><b>2048</b></p><img src="docs/images/2048.png" width="180" alt="2048"><br>Boards from 4×4 to 7×7, swipe to play.</td>
 </tr>
 <tr>
-<td align="center" valign="top" width="25%"><b>Minesweeper</b><br><img src="docs/images/minesweeper.png" width="180" alt="Minesweeper"><br>Three levels, flag mode or long press, a safe first tap.</td>
-<td align="center" valign="top" width="25%"><b>Make 24</b><br><img src="docs/images/make24.png" width="180" alt="Make 24"><br>Combine four numbers with + − × ÷ to make 24.</td>
-<td align="center" valign="top" width="25%"><b>Snake</b><br><img src="docs/images/snake.png" width="180" alt="Snake"><br>Three speeds, swipe to turn, eat apples to grow.</td>
-<td align="center" valign="top" width="25%"><b>Anagrams</b><br><img src="docs/images/anagram.png" width="180" alt="Anagrams"><br>Unscramble as many words as you can in 60 seconds.</td>
+<td align="center" valign="top" width="25%"><p><b>Minesweeper</b></p><img src="docs/images/minesweeper.png" width="180" alt="Minesweeper"><br>Three levels, flag mode or long press, a safe first tap.</td>
+<td align="center" valign="top" width="25%"><p><b>Make 24</b></p><img src="docs/images/make24.png" width="180" alt="Make 24"><br>Combine four numbers with + − × ÷ to make 24.</td>
+<td align="center" valign="top" width="25%"><p><b>Snake</b></p><img src="docs/images/snake.png" width="180" alt="Snake"><br>Three speeds, swipe to turn, eat apples to grow.</td>
+<td align="center" valign="top" width="25%"><p><b>Anagrams</b></p><img src="docs/images/anagram.png" width="180" alt="Anagrams"><br>Unscramble as many words as you can in 60 seconds.</td>
 </tr>
 </table>
 
@@ -22,7 +22,7 @@ Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.
 - **Hub main menu**: a grid of game tiles. Sort it by Recent, Name or Playtime; the app remembers your choice.
 - **Independent games**: each game saves its game in progress and keeps its own stats.
 - **Playtime**: the hub counts how long each game is open while the app is in front, for the Playtime sort.
-- **Light and dark mode** follow the system setting.
+- **Light and dark mode**: follows the system setting.
 
 ## How it was developed with Claude Code
 
@@ -41,9 +41,7 @@ The project was built with [Claude Code](https://claude.com/claude-code); the ru
 1. `npm install` (once, optionally run tests with `npm test`)
 2. `npx expo start`, then press `w`
 
-## Run it on Android
-
-Pick one:
+## Run it on Android (Pick one)
 
 - **Install the release APK**: download it from the [Releases page](../../releases/latest), open it on the phone, and allow "Install unknown apps" when asked.
 - **Build the APK in the cloud** with [EAS](https://expo.dev/eas) (free Expo account): after `npm install`, with your own Expo account first remove `extra.eas.projectId` from `app.json` and run `npx eas-cli@latest init`, then run `npx eas-cli@latest build -p android --profile preview`. EAS gives a download link; install the APK like the release one.
@@ -51,7 +49,7 @@ Pick one:
 
 ## Development
 
-Needs a current Node LTS and npm.
+Built and tested with Node 22.13.0 (LTS) and npm 11.0.0; other current Node LTS versions should work.
 
 - `npm test` runs the Jest tests.
 - `npm run gate` runs the type check, the tests, lint (with Prettier formatting) and a [gitleaks](https://github.com/gitleaks/gitleaks) scan of the staged files, so gitleaks must be installed. Stage your changes with `git add` first, because the scan checks staged content.
