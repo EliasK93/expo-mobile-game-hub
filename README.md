@@ -13,7 +13,7 @@ Fully vibe-coded hub of simple games for Android built with [Expo](https://expo.
 <td align="center" valign="top" width="25%"><b>Make 24</b><br><img src="docs/images/make24.png" width="180" alt="Make 24"><br>Combine four numbers with + − × ÷ to make 24.</td>
 <td align="center" valign="top" width="25%"><b>Snake</b><br><img src="docs/images/snake.png" width="180" alt="Snake"><br>Swipe to turn, walls kill.</td>
 <td align="center" valign="top" width="25%"><b>Anagrams</b><br><img src="docs/images/anagram.png" width="180" alt="Anagrams"><br>Unscramble as many words as you can in 60 seconds.</td>
-<td></td>
+<td align="center" valign="top" width="25%"><b>Hub (dark)</b><br><img src="docs/images/home-dark.png" width="180" alt="Hub menu in dark mode"><br>Light and dark mode follow the system.</td>
 </tr>
 </table>
 
