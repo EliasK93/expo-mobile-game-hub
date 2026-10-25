@@ -14,7 +14,7 @@ type Props = {
   onChangeSize: () => void;
 };
 
-// The 4 · 5 · 6 · 7 switch opens on the size of the game on the board.
+// The 4×4 · 5×5 · 6×6 · 7×7 switch opens on the size of the game on the board.
 export function Game2048StatsPanel({ stats, game, newBest, onClose, onPlayAgain, onChangeSize }: Props) {
   const over = game.status === 'over';
   const { score, bestTile, undoUsed } = resultOf(game);
@@ -29,7 +29,7 @@ export function Game2048StatsPanel({ stats, game, newBest, onClose, onPlayAgain,
 
   return (
     <StatsPanel
-      options={SIZES.map((n) => ({ id: n, text: String(n), label: `${n}×${n} stats` }))}
+      options={SIZES.map((n) => ({ id: n, text: `${n}×${n}` }))}
       initial={game.size}
       numbersFor={(size) => {
         const s = stats[size];
