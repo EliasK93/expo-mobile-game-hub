@@ -2,7 +2,7 @@
 
 Read this before working on Sudoku. The hub-wide rules (gate, tests, git, Herdr, tooling) are in `CLAUDE.md`; everything specific to Sudoku lives here and nowhere else. Where this document and the repository disagree, the repository wins: check the code before acting on any status claim, including the checklists below.
 
-**Status (2026-10-18):** milestones 2-6 are done (core logic, playable game, notes and undo, save and stats, levels and hints); released 2026-10-18 (APK, every Android check below passed on the phone). The decisions below are final.
+**Status (2026-10-18):** milestones 2-6 are done (core logic, playable game, notes and undo, save and stats, levels and hints); released 2026-10-18 (APK, every Android check below passed on the phone). The header Stats button and stats panel came later (2026-10-25) and are not yet checked on the phone (see Android checks). The decisions below are final.
 
 ## Overview
 
@@ -27,10 +27,15 @@ Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its ro
   - While a hint is shown, the hint panel (explanation, Apply, Close) takes the place of the number pad, the Undo/Redo/Notes/Erase row and the Hint / New game row; the grid stays visible for the highlighted cells, and Apply or Close brings the pad back.
   - Hints reason from the real candidates, not the notes. A wrong digit you entered is reported first ("This 4 is wrong.") and Apply erases it; that is the one place the solution is compared.
   - Showing a hint already sets `hinted`: such a win counts as solved but stays out of best and average time.
-- **Level picker:** "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked, and a Cancel button. The last level is stored in `sudoku:settings`; the default is Medium. Opening Sudoku without a save shows the picker at once (the last level used marked, no Cancel, nothing starts by itself); with a save it shows the Continue / New game prompt at once. The current level is shown next to the timer.
-- **Timer:** it runs only while the Sudoku screen is focused, the app is in the foreground, the game isn't won and the level picker isn't open (`lib/timer.ts` is a pure clock). It sits above the grid; while the picker is open the time and level are hidden and the time spent there doesn't count.
+- **Level picker:** the shared `OptionPicker`. "New game" (also the prompt's) replaces the number pad with the five levels, the last one used marked, and a Cancel button (passed only while a game is on the board or the prompt is up; `OptionPicker` draws Cancel only when given `onCancel`). The last level is stored in `sudoku:settings`; the default is Medium. Opening Sudoku without a save shows the picker at once (the last level used marked, no Cancel, nothing starts by itself); with a save it shows the Continue / New game prompt at once. The current level is shown next to the timer.
+- **Timer:** it runs only while the Sudoku screen is focused, the app is in the foreground, the game isn't won and neither the level picker nor the stats panel is open (`lib/timer.ts` is a pure clock). It sits above the grid; while the picker is open the time and level are hidden and the time spent there doesn't count.
 - **Stats** count only solved games; abandoned games are discarded. A win with a hint counts as solved but never enters best or average time (the `hinted` flag is in the save format). They are kept per level (the level number as text, e.g. `"3"`): solved count, best time, average time.
-- **Stats in the picker:** each level button shows "5 solved · Best 3:10" from `sudoku:stats` under its name; a level with only hinted wins shows just "2 solved", a level without wins shows nothing. No average is shown (it is still stored). The stats are read when Sudoku opens and refreshed when a win is recorded. Home shows no stats.
+- **Stats in the picker:** each level button shows "5 solved · Best 3:10" from `sudoku:stats` under its name; a level with only hinted wins shows just "2 solved", a level without wins shows nothing. No average is shown there (the panel has it). The stats are read when Sudoku opens, checked by `fromStats` (an entry of the wrong shape or a bucket that is not a level is dropped, so the picker never shows "undefined" or "NaN"), and refreshed when a win is recorded. Home shows no stats.
+- **Stats panel:** the header's Stats button (the shared `StatsHeaderButton`, shown from the moment storage is read, also on the picker and the Continue prompt) opens the shared `StatsPanel` over the whole screen below the header.
+  - The five-level switch opens on the level of the game on the board, or on the last used level when there is no game (picker, prompt). Its buttons read the level names, "Very easy" shortened to "V. easy" so five fit in a row on a narrow phone; the accessibility labels keep the full names ("<level> stats").
+  - Numbers per level: Solved, Best, Average (timed wins only) and Hinted (wins with a hint). "—" where there is nothing yet (Solved shows 0).
+  - Opening it closes the level picker and pauses the clock; Close returns to the board with the time where it was, or to the picker or prompt.
+  - No result line and no Play again row: Sudoku keeps its own win screen.
 - **Save and resume:** one save slot. When an unfinished save with progress exists, opening Sudoku asks **Continue** or **New game**. Saved after every move and when the clock stops; nothing is saved before the first move, and a win deletes the save.
 - **Buttons:** the in-game "New game" button and the "Continue" button of the Continue prompt use the hub Button's `primary` (accent) variant; every other Sudoku button is plain.
 - **Save format:** `sudoku:save` is version 2 (it adds `level`); older saves are rejected and Sudoku starts fresh.
@@ -46,6 +51,8 @@ Sudoku is the first game in the hub. It lives in `src/games/sudoku/`, has its ro
 - **Saved data doesn't need to survive during development.** Reason: the old `classic` bucket and the version 1 loader were removed instead of migrated, so an older save is rejected.
 - **The home tile is a glyph** (`ui/tile.tsx`: a 3×3 grid with a filled centre cell, blue, `glyphSudoku`, on the hub's `GlyphTile`). Reason: all home tiles are glyphs of one style (see CLAUDE.md, Stack).
 
+- **Sudoku stays different from the newer games on purpose in two places:** opening with a saved game asks Continue or New game instead of resuming directly, and `use-sudoku.ts` saves and records the win in effects rather than in event handlers. Reason: both work and are tested; changing them would change behaviour for no gain.
+
 ## Architecture and storage keys
 
 The Sudoku folder follows the hub layout (`CLAUDE.md`, "Architecture"): `logic/` is pure TypeScript, `ui/` only calls into `logic/`, the route file is a thin wrapper.
@@ -57,8 +64,9 @@ src/games/sudoku/
   ui/
 src/app/sudoku.tsx        # route, renders ui/sudoku-screen
 src/__tests__/sudoku.test.tsx, home.test.tsx, navigation.test.tsx   # route tests
-src/lib/stats.ts, storage.ts, timer.ts, history.ts, random.ts   # helpers from lib/ that Sudoku uses; stats.ts's solved/best-time bookkeeping is used by Sudoku only (its `winPercent` is shared), the others are hub-wide
-src/hooks/use-game-clock.ts, src/components/button.tsx   # the shared clock hook and text button Sudoku uses
+src/lib/storage.ts, timer.ts, history.ts, guards.ts   # helpers from lib/ that Sudoku uses; the stats bookkeeping is Sudoku's own (`logic/stats.ts`)
+src/hooks/use-game-clock.ts   # the shared clock hook
+src/components/button.tsx, option-picker.tsx, stats-panel.tsx, stats-header-button.tsx   # the shared text button, level picker, stats panel and header Stats button Sudoku uses
 ```
 
 ### `logic/`
@@ -74,7 +82,8 @@ src/hooks/use-game-clock.ts, src/components/button.tsx   # the shared clock hook
 | `generate.ts` | `fill`, and `generateLevel` (a plain function: fills a grid, digs out cells while the puzzle stays unique and rates at most the level, retries when it rates below). Used to build the pool, not by the app at runtime |
 | `pool.ts` | `pickPuzzle(level)` and `transform()` over `data/puzzles.json` (see Decisions) |
 | `game.ts` | `Game` model and the pure moves: `newGame`, `setValue`, `toggleNote`, `notesOf`, `isGiven`, `isWon`, `highlights`, `undoGame`/`redoGame` (wrappers over `lib/history`) |
-| `save.ts` | Save/settings formats, storage keys and versions, `toSave`/`fromSave`/`fromSettings`, `DEFAULT_LEVEL`, `bucketOf`, `levelName`, `LevelId` |
+| `stats.ts` | `StatsEntry`/`Stats` (per level bucket), `EMPTY_ENTRY`, `recordWin` (a hinted win raises `solved` only), `averageMs` (timed wins only) |
+| `save.ts` | Save/settings formats, storage keys and versions, `toSave`/`fromSave`/`fromSettings`/`fromStats` (the shape checks for what storage returns), `DEFAULT_LEVEL`, `bucketOf` |
 
 The soundness tests in `rate`/`techniques` use `src/test-utils/sparse-puzzle.ts`, a test helper that digs a unique puzzle to about N givens with no rating.
 
@@ -88,7 +97,8 @@ The shipped pool: 1000 puzzles per level as 81-character strings, read only by `
 
 | File | What it does |
 |---|---|
-| `sudoku-screen.tsx` | The screen: timer and level, grid, number pad, hint panel, level picker (with the stats), Continue / New game prompt |
+| `sudoku-screen.tsx` | The screen: timer and level, grid, number pad, hint panel, level picker (the shared `OptionPicker`, with the stats line), Continue / New game prompt, the header Stats button |
+| `stats-panel.tsx` | `SudokuStatsPanel`: the numbers (Solved, Best, Average, Hinted) and the five-level switch on the shared `StatsPanel` |
 | `use-sudoku.ts` | The hook that holds the state and wires `logic/` to storage and the shared clock (`hooks/use-game-clock`, which handles app focus and foreground) |
 | `grid.tsx` | The 9x9 grid: selection, highlighting, conflicts, notes, hint cells |
 | `number-pad.tsx` | Digits, Undo, Redo, Notes, Erase |
@@ -101,7 +111,7 @@ All stored through `lib/storage.ts` as JSON `{ version, data }`; a different ver
 | Key | Version | Content |
 |---|---|---|
 | `sudoku:save` | 2 (older versions are rejected) | The one save slot: puzzle, solution, values, notes, elapsed time, `hinted`, `level`. No undo history |
-| `sudoku:stats` | 1 | Per bucket (level number as text): solved, timed count, total time, best time |
+| `sudoku:stats` | 1 | Per bucket (level number as text): solved, timed count, total time, best time. Checked on load by `fromStats` |
 | `sudoku:settings` | 1 | The last level used |
 
 ## Milestones
@@ -136,6 +146,7 @@ Verified only in the web preview so far; test them on the phone (add as they com
 - [x] With the Pencil & Paper palette, the selected cell (yellow), same-digit cells, hint cells (blue), conflicts (red) and entered digits (blue ink) are clearly different from each other in light and dark mode on the phone.
 
 - [x] Digits in the grid and the pencil notes are vertically centred in their cells (not sitting low). Shared style: `glyphStyle` in `src/components/glyph-style.ts`.
+- [ ] The Stats panel (2026-10-25): the Stats button sits clear of the right edge, the panel fits the screen with its four numbers, and the five-level switch is readable. Measured at 320 px in a browser with the full names: each switch button is 51 px wide, "Very easy" (about 62-65 px) did not fit and "Medium" (about 53-55 px) was a few px too wide; "Very easy" is therefore shown as "V. easy" (not measured on a phone), so check that "Medium" still fits and none of the texts breaks mid-word, and shorten more if it is cramped (the labels keep the full names). TalkBack reads "<level> stats" for each switch button and "Solved: 5" and so on for each number. Re-check: `src/__tests__/sudoku.test.tsx`, `Stats panel`.
 
 ## Open decisions
 
